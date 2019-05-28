@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019 Fitbit, Inc. All rights reserved.
+  ~
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0. If a copy of the MPL was not distributed with this
+  ~ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  -->
+
+<issues format="4" by="lint 3.1.2">
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 21 (current min is 19): `android.bluetooth.BluetoothGatt#CONNECTION_PRIORITY_LOW_POWER`"
+        errorLine1="        LOW(BluetoothGatt.CONNECTION_PRIORITY_LOW_POWER),"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/fitbit/bluetooth/fbgatt/tx/RequestGattConnectionIntervalTransaction.java"
+            line="37"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 21 (current min is 19): `android.bluetooth.BluetoothGatt#CONNECTION_PRIORITY_BALANCED`"
+        errorLine1="        MID(BluetoothGatt.CONNECTION_PRIORITY_BALANCED),"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/fitbit/bluetooth/fbgatt/tx/RequestGattConnectionIntervalTransaction.java"
+            line="38"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 21 (current min is 19): `android.bluetooth.BluetoothGatt#CONNECTION_PRIORITY_HIGH`"
+        errorLine1="        HIGH(BluetoothGatt.CONNECTION_PRIORITY_HIGH);"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/fitbit/bluetooth/fbgatt/tx/RequestGattConnectionIntervalTransaction.java"
+            line="39"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.android.support:multidex than 1.0.2 is available: 1.0.3"
+        errorLine1="    implementation &quot;com.android.support:multidex:${Versions.multidex}&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="35"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `FitbitGatt` which has field `appContext` pointing to `Context`); this is a memory leak (and also breaks Instant Run)"
+        errorLine1="    private static final FitbitGatt ourInstance = new FitbitGatt();"
+        errorLine2="            ~~~~~~">
+        <location
+            file="src/main/java/com/fitbit/bluetooth/fbgatt/FitbitGatt.java"
+            line="50"
+            column="13"/>
+    </issue>
+
+</issues>

@@ -1,0 +1,146 @@
+/*
+ * Copyright 2019 Fitbit, Inc. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.3.1'
+        classpath "org.jfrog.buildinfo:build-info-extractor-gradle:4.7.3"
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'maven-publish'
+
+def packageName = 'com.fitbit.bluetooth.fbgatt'
+
+def sharedProperties = new Properties()
+sharedProperties.load(file("shared.properties").newReader())
+
+def buildNumber = System.getenv("BUILD_NUMBER") != null ? System.getenv("BUILD_NUMBER").toInteger() : 10000
+def libraryVersionName = sprintf(sharedProperties['FBGATT_VERSION'], buildNumber)
+
+android {
+    compileSdkVersion 28
+    buildToolsVersion "28.0.3"
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 28
+        versionCode buildNumber
+        versionName libraryVersionName
+        multiDexEnabled true
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            testCoverageEnabled true
+        }
+        library {
+            debuggable true
+            minifyEnabled false
+            testCoverageEnabled false
+        }
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        google()
+    }
+}
+
+ext {
+    MULTIDEX_VERSION = '1.0.3'
+    APP_COMPAT_VERSION = '28.0.0'
+    TIMBER_VERSION = '4.7.1'
+    JUNIT_VERSION = '4.12'
+    TEST_RUNNER_VERSION = '1.0.2'
+    MOCKITO_VERSION = '2.19.1'
+    STETHO_VERSION = '1.5.0'
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1", {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    implementation "com.android.support:multidex:$MULTIDEX_VERSION"
+    implementation "com.android.support:appcompat-v7:$APP_COMPAT_VERSION"
+    implementation "com.jakewharton.timber:timber:$TIMBER_VERSION"
+    debugImplementation "com.facebook.stetho:stetho:$STETHO_VERSION"
+    testImplementation "junit:junit:$JUNIT_VERSION"
+    testImplementation "com.android.support.test:runner:$TEST_RUNNER_VERSION"
+    testImplementation "com.android.support.test:rules:$TEST_RUNNER_VERSION"
+    testImplementation "org.mockito:mockito-inline:$MOCKITO_VERSION"
+    testImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
+    androidTestImplementation "junit:junit:$JUNIT_VERSION"
+    androidTestImplementation "com.android.support.test:runner:$TEST_RUNNER_VERSION"
+    androidTestImplementation "com.android.support.test:rules:$TEST_RUNNER_VERSION"
+    androidTestImplementation "org.mockito:mockito-inline:$MOCKITO_VERSION"
+    androidTestImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
+    androidTestImplementation("org.mockito:mockito-android:$MOCKITO_VERSION") {
+        exclude group: "net.bytebuddy"
+    }
+}
+
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier "sources"
+}
+
+publishing {
+    publications {
+        aar(MavenPublication) {
+            groupId packageName
+            version = libraryVersionName
+            artifactId project.getName()
+
+            artifact(sourceJar)
+            artifact("$buildDir/outputs/aar/${project.getName()}-library.aar")
+        }
+    }
+}
+
+artifactory {
+    publish {
+        contextUrl = 'https://artifacts.site-ops.fitbit.com/artifactory'
+        repository {
+            // The Artifactory repository key to publish to
+            repoKey = 'internal'
+            username = sharedProperties['artifactory_username']
+            password = sharedProperties['artifactory_password']
+        }
+        defaults {
+            publications('aar')
+            publishArtifacts = true
+            properties = ['qa.level': 'basic', 'dev.team': 'core']
+            publishPom = true
+        }
+    }
+}
+
+artifactoryPublish.dependsOn('assembleLibrary')

@@ -1,0 +1,31 @@
+<!--
+  ~ Copyright 2019 Fitbit, Inc. All rights reserved.
+  ~
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0. If a copy of the MPL was not distributed with this
+  ~ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  -->
+
+<manifest package="com.fitbit.bluetooth.fbgatt"
+
+          xmlns:android="http://schemas.android.com/apk/res/android"
+>
+
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Be sure to add this into your app's manifest or utilize the manifest merger to make sure
+         that you can use the pending intent scanner, otherwise results will not be delivered
+         to your application -->
+    <application>
+        <receiver android:exported="true" android:name=".HandleIntentBasedScanResult"
+            android:permission="android.permission.ACCESS_COURSE_LOCATION">
+            <intent-filter>
+                <!-- if you change this make sure to also change it in {@link PeripheralScanner} -->
+                <action android:name="com.fitbit.bluetooth.fbgatt.ScannedDevice" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>
