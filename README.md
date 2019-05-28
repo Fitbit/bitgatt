@@ -17,6 +17,7 @@
 13. [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
 14. [Runtime Mocking](#runtime-mocking)
 15. [Bitgatt Transaction Manual](#bitgatt-transaction-manual)
+16. [License](#license)
 
 ### [Original Contributors](#original-contributors)
 
@@ -1022,3 +1023,11 @@ wedge the GATT queue and cause the system to become unresponsive.
 
 * Does it block on failure? Yes, if the characteristic doesn't exist
 * Includes copy in result? No, but does include data in the TransactionResult
+
+## [License](#license)
+
+    Copyright 2019 Fitbit, Inc. All rights reserved.
+    
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at https://mozilla.org/MPL/2.0/.
