@@ -23,15 +23,23 @@
 
 #### Fitbit Maintainers
 Irvin Owens Jr <iowens@fitbit.com>, <0xbadbeef@sigsegv.us> - Creator and Maintainer
+
 Ionut Lepadatescu - <ilepadatescu@fitbit.com>
+
 
 #### Fitbit Contributors
 Andy Branscomb <abranscomb@fitbit.com>
+
 Adriana Draghici - <adraghici@fitbit.com>
+
 Cristian Ichimescu - <cichimescu@fitbit.com>
+
 Murtuza Khan - <murtuza.kahn@fitbit.com>
+
 Ionut Lepadatescu - <ilepadatescu@fitbit.com>
+
 Irvin Owens Jr - <iowens@fitbit.com>
+
 
 ## [Purpose](#purpose)
 
