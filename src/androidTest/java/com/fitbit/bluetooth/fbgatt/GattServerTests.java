@@ -126,6 +126,16 @@ public class GattServerTests {
             public void onPendingIntentScanStarted() {
 
             }
+
+            @Override
+            public void onBluetoothOff() {
+
+            }
+
+            @Override
+            public void onBluetoothOn() {
+
+            }
         });
         cdl.await(1, TimeUnit.SECONDS);
     }
