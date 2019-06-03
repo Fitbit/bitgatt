@@ -53,10 +53,11 @@ class PeripheralScanner {
     final static long SCAN_DURATION = TimeUnit.SECONDS.toMillis(120);
     final static long SCAN_INTERVAL = SCAN_DURATION * 2;
     private final static long SCAN_TOO_MUCH_WARN_INTERVAL = TimeUnit.SECONDS.toMillis(30);
-    private final static int MAX_BACKOFF_MULTIPLIER = 16;
+    private final static int MAX_BACKOFF_MULTIPLIER = 2; // should always correspond to roughly 16 minutes worst case
     static final int BACKGROUND_SCAN_REQUEST_CODE = 21436;
     protected static final String SCANNED_DEVICE_ACTION = "com.fitbit.bluetooth.fbgatt.ScannedDevice";
     private static final int MAX_SCANS_ALLOWED_PER_30_SECONDS = 4;
+    private static final int DEFAULT_SCAN_BACKOFF_MULTIPLIER = 1;
 
     Handler mHandler;
     private final Runnable scanTimeoutRunnable = new ScanTimeoutRunnable();
@@ -157,7 +158,7 @@ class PeripheralScanner {
             @Override
             public void onScanFailed(int errorCode) {
                 super.onScanFailed(errorCode);
-                Timber.w("onScanFailed %s", errorCode);
+                Timber.w("onScanFailed %s", ScanFailure.getFailureForReason(errorCode));
                 isScanning.set(false);
                 listener.onScanStatusChanged(isScanning.get());
                 if (!FitbitGatt.getInstance().isBluetoothOn()) {
@@ -193,40 +194,41 @@ class PeripheralScanner {
     }
 
     /**
-     * This will start periodic scan with low power mode
+     * This will start periodic scan with low power mode, please note that this will return false
+     * if there is already a high-priority scan going on.
+     * @return true if scan started, false if not
      */
-    void startPeriodicScan(@Nullable Context context) {
+    boolean startPeriodicScan(@Nullable Context context) {
         if (context == null) {
             Timber.v("Can't start a high priority scan with a null context");
-            return;
+            return false;
         }
         if (stopPeriodicalScan || isScanning.get()) {
             Timber.v("Not starting periodical scan: isScanning: %b, was stopPeriodicalScan requested? %b", isScanning.get(), stopPeriodicalScan);
-            return;
+            return false;
         }
         Timber.d("Start Periodic Scan");
         scanMode = ScanSettings.SCAN_MODE_LOW_POWER;
-        scanBackoffMultiplier = 1;
+        scanBackoffMultiplier = DEFAULT_SCAN_BACKOFF_MULTIPLIER;
         periodicalScanEnabled.set(true);
-        startScan(context);
-
+        return startScan(context);
     }
 
     /**
      * This will start a high priority scan
+     * @return true if scan started, false if not
      */
-    void startHighPriorityScan(@Nullable Context context) {
+    boolean startHighPriorityScan(@Nullable Context context) {
         if (context == null) {
             Timber.v("Can't start a high priority scan with a null context");
-            return;
+            return false;
         }
         if (isScanning.get()) {
             cancelScan(context);
         }
         Timber.d("Start High priority Scan");
         scanMode = ScanSettings.SCAN_MODE_LOW_LATENCY;
-        startScan(context);
-
+        return startScan(context);
     }
 
     /**
@@ -242,8 +244,52 @@ class PeripheralScanner {
         periodicalScanEnabled.set(false);
         mHandler.removeCallbacks(scanTimeoutRunnable);
         mHandler.removeCallbacks(periodicRunnable);
+    }
 
+    /**
+     * This will stop any high priority scans that are in progress, but will not cancel any
+     * periodical scans that are already in progress.  If there are none, this is equivalent
+     * to cancelScan(Context context).
+     */
 
+    void cancelHighPriorityScan(@Nullable Context context) {
+        if (context == null) {
+            Timber.v("Can't cancel the scan with a null context");
+            return;
+        }
+        Timber.d("Stop high-priority scan requested");
+        // if there was a periodical scan enabled we will want to make sure it is restarted after
+        // we stop the scan
+        if(periodicalScanEnabled.get()) {
+            stopScan(context);
+            mHandler.removeCallbacks(scanTimeoutRunnable);
+            mHandler.removeCallbacks(periodicRunnable);
+            mHandler.post(periodicRunnable);
+        } else {
+            cancelScan(context);
+        }
+    }
+
+    /**
+     * This will stop any future periodical scans that are happening, but will not affect any scans
+     * that are already in progress, high-priority or otherwise.
+     */
+
+    void cancelPeriodicalScan(@Nullable Context context) {
+        if (context == null) {
+            Timber.v("Can't cancel the scan with a null context");
+            return;
+        }
+        // set scan multipliers back to default
+        scanBackoffMultiplier = DEFAULT_SCAN_BACKOFF_MULTIPLIER;
+        periodicalScanEnabled.set(false);
+        mHandler.removeCallbacks(scanTimeoutRunnable);
+        mHandler.removeCallbacks(periodicRunnable);
+        // if we are presently actively scanning we will let that scan run it's course and then
+        // let it call onScanStatusChanged, otherwise we will fire it from here so the caller knows
+        if(!isScanning()) {
+            listener.onScanStatusChanged(isScanning());
+        }
     }
 
     /**
@@ -373,12 +419,34 @@ class PeripheralScanner {
         }
     }
 
-    boolean isScanning() {
+    /**
+     * To determine if there is an active scan going on right now
+     * @return True if this class is actively scanning
+     */
+    @SuppressWarnings("WeakerAccess")
+    // API Method
+    public boolean isScanning() {
         return isScanning.get();
     }
 
-    boolean isPendingIntentScanning(){
+    /**
+     * To determine if there is a pending intent scan going right now
+     * @return True if there is a pending intent scan occurring
+     */
+    @SuppressWarnings("WeakerAccess")
+    // API Method
+    public boolean isPendingIntentScanning(){
         return pendingIntentIsScanning.get();
+    }
+
+    /**
+     * To determine if there is a periodical scan enabled
+     * @return True if there is a periodical scan enabled
+     */
+    @SuppressWarnings("WeakerAccess")
+    // API Method
+    public boolean isPeriodicalScanEnabled(){
+        return periodicalScanEnabled.get();
     }
 
     /**
@@ -617,19 +685,19 @@ class PeripheralScanner {
         }
     }
 
-    private synchronized void startScan(@Nullable Context context) {
+    private synchronized boolean startScan(@Nullable Context context) {
         ArrayList<ScanFilter> filters;
         synchronized (scanFilters) {
             filters = new ArrayList<>(scanFilters);
         }
         if (context == null) {
             Timber.v("Can't start scan with a null context");
-            return;
+            return false;
         }
         if(scanCount.get() >= MAX_SCANS_ALLOWED_PER_30_SECONDS) {
             Timber.e("Yo Dawg I heard u like scanning ... You have already started 4 scanners in this 30s, you must wait");
             listener.onScanStatusChanged(isScanning.get());
-            return;
+            return false;
         }
         //remove timeout and other scan request
         mHandler.removeCallbacks(scanTimeoutRunnable);
@@ -643,8 +711,9 @@ class PeripheralScanner {
                 Timber.w("We will not start a scan without filters");
                 isScanning.getAndSet(false);
                 listener.onScanStatusChanged(isScanning.get());
-                return;
+                return false;
             }
+            boolean scanStarted;
             if (scanner != null) {
                 if (!FitbitGatt.getInstance().isBluetoothOn()) {
                     Timber.v("No scanners can be started while bluetooth is off");
@@ -653,16 +722,18 @@ class PeripheralScanner {
                     scanner = null;
                     isScanning.set(false);
                     listener.onScanStatusChanged(isScanning.get());
-                    return;
+                    return false;
                 }
                 scanner.startScan(filters, settings, callback);
                 int count = scanCount.incrementAndGet();
                 Timber.v("Starting scan, scan count in this 30s is %d", count);
+                return true;
             } else {
                 // if the scanner is null here it's either because BT is off / bt is in the
                 // simulator or because we removed it before because the user disabled bt
                 if (mockMode) {
                     mockStartScan();
+                    scanStarted = true;
                 } else {
                     BluetoothAdapter adapter = FitbitGatt.getInstance().getAdapter(context);
                     if (adapter != null && FitbitGatt.getInstance().isBluetoothOn()) {
@@ -672,7 +743,7 @@ class PeripheralScanner {
                         Timber.w("BT Seems to be off, not starting scan");
                         isScanning.getAndSet(false);
                         listener.onScanStatusChanged(isScanning.get());
-                        return;
+                        scanStarted = false;
                     } else {
                         // we can get here is scanner had previously been defined, but now the
                         // adapter is turned off
@@ -680,11 +751,12 @@ class PeripheralScanner {
                             scanner.startScan(filters, settings, callback);
                             int count = scanCount.incrementAndGet();
                             Timber.v("Starting scan, scan count in this 30s is %d", count);
+                            scanStarted = true;
                         } else {
                             Timber.w("BT Seems to be off, not starting scan");
                             isScanning.getAndSet(false);
                             listener.onScanStatusChanged(isScanning.get());
-                            return;
+                            scanStarted = false;
                         }
                     }
                 }
@@ -694,8 +766,10 @@ class PeripheralScanner {
 
             //Schedule timeout
             mHandler.postDelayed(scanTimeoutRunnable, SCAN_DURATION);
+            return scanStarted;
         } else {
             Timber.w("Already scanning, will not start a new scan");
+            return false;
         }
     }
 
@@ -802,7 +876,7 @@ class PeripheralScanner {
             stopScan(FitbitGatt.getInstance().getAppContext());
             if(periodicalScanEnabled.get()) {
                 if (resetScanBackoff) {
-                    scanBackoffMultiplier = 1;
+                    scanBackoffMultiplier = DEFAULT_SCAN_BACKOFF_MULTIPLIER;
                 } else {
                     scanBackoffMultiplier = Math.min(MAX_BACKOFF_MULTIPLIER, scanBackoffMultiplier << 1);
                 }
