@@ -22,6 +22,7 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -64,8 +65,8 @@ public class PeripheralScannerTest {
         // wait for 3s before each test so that we don't end up running afoul of the scanning
         // limit
         SystemClock.sleep(3000);
+        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().getPeripheralScanner().setMockMode(false);
-        assertEquals(true, FitbitGatt.getInstance().isStarted());
         FitbitGatt.getInstance().getPeripheralScanner().cancelScan(this.appContext);
         FitbitGatt.getInstance().getPeripheralScanner().cancelPendingIntentBasedBackgroundScan();
     }
@@ -97,7 +98,6 @@ public class PeripheralScannerTest {
         names.add("Inspire HR");
         names.add("Mira");
         appContext = InstrumentationRegistry.getContext();
-        FitbitGatt.getInstance().start(appContext);
         IntentFilter filter = new IntentFilter(PeripheralScanner.SCANNED_DEVICE_ACTION);
         appContext.registerReceiver(handleIntentBasedScanResult, filter);
     }
@@ -125,6 +125,75 @@ public class PeripheralScannerTest {
                 cdl.countDown();
             }, PeripheralScanner.SCAN_DURATION);
         }, 1000);
+        cdl.await(2, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void startPeriodicalScannerThenHighPriorityScannerThenStopHighPriority() throws InterruptedException {
+        // started
+        assertFalse(FitbitGatt.getInstance().getPeripheralScanner().isScanning());
+        final boolean[] hasHPScanStarted = new boolean[1];
+        FitbitGatt.getInstance().getPeripheralScanner().resetFilters();
+        FitbitGatt.getInstance().getPeripheralScanner().addServiceUUIDWithMask(new ParcelUuid(FITBIT_SERVICE_UUID), new ParcelUuid(FITBIT_SERVICE_MASK));
+        CountDownLatch cdl = new CountDownLatch(1);
+        FitbitGatt.FitbitGattCallback callback = new FitbitGatt.FitbitGattCallback() {
+            @Override
+            public void onBluetoothPeripheralDiscovered(GattConnection connection) {
+
+            }
+
+            @Override
+            public void onBluetoothPeripheralDisconnected(GattConnection connection) {
+
+            }
+
+            @Override
+            public void onFitbitGattReady() {
+
+            }
+
+            @Override
+            public void onScanStarted() {
+                if(!hasHPScanStarted[0]) {
+                    hasHPScanStarted[0] = true;
+                    FitbitGatt.getInstance().getPeripheralScanner().startHighPriorityScan(appContext);
+                } else {
+                    FitbitGatt.getInstance().getPeripheralScanner().cancelHighPriorityScan(appContext);
+                    hasHPScanStarted[0] = false;
+                }
+            }
+
+            @Override
+            public void onScanStopped() {
+                if(!hasHPScanStarted[0]) {
+                    cdl.countDown();
+                    assertTrue(FitbitGatt.getInstance().getPeripheralScanner().isPeriodicalScanEnabled());
+                    FitbitGatt.getInstance().unregisterAllGattEventListeners();
+                }
+            }
+
+            @Override
+            public void onPendingIntentScanStopped() {
+
+            }
+
+            @Override
+            public void onPendingIntentScanStarted() {
+
+            }
+
+            @Override
+            public void onBluetoothOff() {
+
+            }
+
+            @Override
+            public void onBluetoothOn() {
+
+            }
+        };
+        FitbitGatt.getInstance().registerGattEventListener(callback);
+        FitbitGatt.getInstance().getPeripheralScanner().startPeriodicScan(appContext);
         cdl.await(2, TimeUnit.SECONDS);
     }
 
@@ -331,6 +400,16 @@ public class PeripheralScannerTest {
             public void onPendingIntentScanStarted() {
 
             }
+
+            @Override
+            public void onBluetoothOff() {
+
+            }
+
+            @Override
+            public void onBluetoothOn() {
+
+            }
         };
         FitbitGatt.getInstance().registerGattEventListener(callback);
         FitbitGatt.getInstance().startHighPriorityScan(appContext);
@@ -385,6 +464,16 @@ public class PeripheralScannerTest {
                 @Override
                 public void onPendingIntentScanStarted() {
                     Timber.i("Pending intent scan started");
+                }
+
+                @Override
+                public void onBluetoothOff() {
+
+                }
+
+                @Override
+                public void onBluetoothOn() {
+
                 }
             };
 
