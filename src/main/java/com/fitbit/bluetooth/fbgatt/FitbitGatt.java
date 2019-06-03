@@ -8,6 +8,11 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.GattDisconnectTransaction;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
@@ -31,11 +36,6 @@ import android.os.ParcelUuid;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
-
-import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.GattDisconnectTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -263,14 +263,16 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * {@link FitbitGatt#getMatchingConnectionsForDeviceNames(List)} or {@link FitbitGatt#getMatchingConnectionsForServices(List)}
      *
      * @param context The android context for providing to the scanner
+     *
+     * @return True if the scan started, false if it did not
      */
 
-    public void startHighPriorityScan(Context context) {
+    public boolean startHighPriorityScan(Context context) {
         if (peripheralScanner == null) {
             Timber.w("You are trying to start a high-priority scan, but the scanner isn't set-up, did you call FitbitGatt#start?");
-            return;
+            return false;
         }
-        peripheralScanner.startHighPriorityScan(context);
+        return peripheralScanner.startHighPriorityScan(context);
     }
 
     /**
@@ -278,18 +280,20 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * interface if a device is discovered and will provide the {@link GattConnection} to you
      *
      * @param context The android context for the scanner
+     *
+     * @return True if the scan started, false if it did not
      */
     @SuppressWarnings({"unused", "WeakerAccess"}) // API Method
-    public void startPeriodicScan(Context context) {
+    public boolean startPeriodicScan(Context context) {
         if (peripheralScanner == null) {
             Timber.w("You are trying to start a periodical scan, but the scanner isn't set-up, did you call FitbitGatt#start?");
-            return;
+            return false;
         }
-        peripheralScanner.startPeriodicScan(context);
+        return peripheralScanner.startPeriodicScan(context);
     }
 
     /**
-     * Will cancel an in-progress scan, but will not have any effect if using the background PendingIntent
+     * Will cancel high priority and periodical scans, but will not have any effect if using the background PendingIntent
      * based scanner
      *
      * @param context The android context for the scanner
@@ -301,6 +305,36 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             return;
         }
         peripheralScanner.cancelScan(context);
+    }
+
+    /**
+     * Will cancel a periodical scan, but will not have any effect if using the background PendingIntent
+     * based scanner.  Will not cancel an in progress high priority scan
+     *
+     * @param context The android context for the scanner
+     */
+    @SuppressWarnings("unused") // API Method
+    public void cancelPeriodicalScan(@Nullable Context context) {
+        if (peripheralScanner == null) {
+            Timber.w("You are trying to cancel a scan, but the scanner isn't set-up, did you call FitbitGatt#start?");
+            return;
+        }
+        peripheralScanner.cancelPeriodicalScan(context);
+    }
+
+    /**
+     * Will cancel a high-priority scan, but will not have any effect if using the background PendingIntent
+     * based scanner.  Will not cancel an enabled periodical scan
+     *
+     * @param context The android context for the scanner
+     */
+    @SuppressWarnings("unused") // API Method
+    public void cancelHighPriorityScan(@Nullable Context context) {
+        if (peripheralScanner == null) {
+            Timber.w("You are trying to cancel a scan, but the scanner isn't set-up, did you call FitbitGatt#start?");
+            return;
+        }
+        peripheralScanner.cancelHighPriorityScan(context);
     }
 
     /**
@@ -481,6 +515,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param services The services desired
      * @param filters  The filters desired
      * @param callback The {@link FitbitGattCallback} instance to be called when ready
+     *
+     * @return True if scan started, false if not
      */
     @SuppressWarnings("WeakerAccess") // API Method
     public void startWithServicesAndScanFilters(Context context, @Nullable List<BluetoothGattService> services, @Nullable List<ScanFilter> filters, FitbitGattCallback callback) {
@@ -492,15 +528,18 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             if (callback != null) {
                 registerGattEventListener(callback);
             }
+            boolean scanStarted;
             if (filters != null) {
                 if (peripheralScanner == null) {
                     throw new IllegalStateException("The peripheral scanner should not be null at this point, and you should not try to make this call with an empty or null filter list.");
                 }
                 peripheralScanner.setScanFilters(filters);
-                peripheralScanner.startPeriodicScan(context);
+                scanStarted = peripheralScanner.startPeriodicScan(context);
             } else {
                 Timber.w("Shame, you shouldn't be trying to start a scan with no filters!!!");
+                scanStarted = false;
             }
+            Timber.i("Did scan start? %b", scanStarted);
             if (services != null) {
                 Timber.v("Starting to add services, will set to started after complete");
                 // usually the android stack will add the service setup to the bt stack, if this stack
