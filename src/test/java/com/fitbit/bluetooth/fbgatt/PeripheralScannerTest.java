@@ -39,10 +39,11 @@ import static org.mockito.Mockito.when;
 public class PeripheralScannerTest {
 
     Looper mockLooper;
+    public static Context mockContext;
 
     @BeforeClass
     public static void beforeClass(){
-        Context mockContext = mock(Context.class);
+        mockContext = mock(Context.class);
         when(mockContext.getApplicationContext()).thenReturn(mockContext);
         when(mockContext.registerReceiver(any(BroadcastReceiver.class), any(IntentFilter.class))).thenReturn(new Intent());
 
@@ -403,5 +404,76 @@ public class PeripheralScannerTest {
         };
         FitbitGatt.getInstance().registerGattEventListener(cb);
         FitbitGatt.getInstance().addScannedDevice(device);
+    }
+
+    @Test
+    public void testStopHighPriorityScanCallbackWorks(){
+        final boolean[] startHP = {false};
+        FitbitGatt.FitbitGattCallback cb = new FitbitGatt.FitbitGattCallback() {
+
+            @Override
+            public void onBluetoothPeripheralDiscovered(@NonNull GattConnection connection) {
+
+            }
+
+            @Override
+            public void onBluetoothPeripheralDisconnected(@NonNull GattConnection connection) {
+
+            }
+
+            @Override
+            public void onFitbitGattReady() {
+
+            }
+
+            @Override
+            public void onScanStarted() {
+
+            }
+
+            @Override
+            public void onScanStopped() {
+                if(startHP[0]) {
+                    if (FitbitGatt.getInstance().getPeripheralScanner() == null) {
+                        fail();
+                        return;
+                    }
+                    Assert.assertTrue(FitbitGatt.getInstance().getPeripheralScanner().isPeriodicalScanEnabled());
+                    Assert.assertFalse(FitbitGatt.getInstance().getPeripheralScanner().isScanning());
+                } else {
+                    startHP[0] = true;
+                }
+            }
+
+            @Override
+            public void onPendingIntentScanStopped() {
+
+            }
+
+            @Override
+            public void onPendingIntentScanStarted() {
+
+            }
+
+            @Override
+            public void onBluetoothOff() {
+
+            }
+
+            @Override
+            public void onBluetoothOn() {
+
+            }
+        };
+        FitbitGatt.getInstance().registerGattEventListener(cb);
+        if(FitbitGatt.getInstance().getPeripheralScanner() == null) {
+            fail();
+            return;
+        }
+        FitbitGatt.getInstance().getPeripheralScanner().addRssiFilter(-10);
+        FitbitGatt.getInstance().getPeripheralScanner().startPeriodicScan(mockContext);
+        FitbitGatt.getInstance().getPeripheralScanner().startHighPriorityScan(mockContext);
+        FitbitGatt.getInstance().getPeripheralScanner().cancelHighPriorityScan(mockContext);
+        FitbitGatt.getInstance().unregisterGattEventListener(cb);
     }
 }
