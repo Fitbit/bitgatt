@@ -232,7 +232,7 @@ class PeripheralScanner {
     }
 
     /**
-     * This will cancel any current scans and will also stop the periodic ones.
+     * This will cancel any current scans and will not stop the periodic ones.
      */
     void cancelScan(@Nullable Context context) {
         if (context == null) {
@@ -241,7 +241,6 @@ class PeripheralScanner {
         }
         Timber.d("StopScanning requested ");
         stopScan(context);
-        periodicalScanEnabled.set(false);
         mHandler.removeCallbacks(scanTimeoutRunnable);
         mHandler.removeCallbacks(periodicRunnable);
     }
@@ -704,14 +703,20 @@ class PeripheralScanner {
         mHandler.removeCallbacks(periodicRunnable);
         //start scan
         if (!isScanning.getAndSet(true)) {
-            ScanSettings settings = new ScanSettings.Builder().setScanMode(scanMode).build();
-            // don't start a scanner without scan filters
-            Timber.v("Scan filter's size: %s", filters.size());
-            if (filters.isEmpty()) {
-                Timber.w("We will not start a scan without filters");
-                isScanning.getAndSet(false);
-                listener.onScanStatusChanged(isScanning.get());
-                return false;
+            // we should just use a basic one if we are in mock mode
+            ScanSettings settings;
+            if(mockMode) {
+                settings = new ScanSettings.Builder().build();
+            } else {
+                settings = new ScanSettings.Builder().setScanMode(scanMode).build();
+                // don't start a scanner without scan filters
+                Timber.v("Scan filter's size: %s", filters.size());
+                if (filters.isEmpty()) {
+                    Timber.w("We will not start a scan without filters");
+                    isScanning.getAndSet(false);
+                    listener.onScanStatusChanged(isScanning.get());
+                    return false;
+                }
             }
             boolean scanStarted;
             if (scanner != null) {
@@ -831,10 +836,14 @@ class PeripheralScanner {
     }
 
     private void mockStopScan() {
+        boolean oldValue = isScanning.getAndSet(false);
+        Timber.v("Stopping scan, changing from %b to %b", oldValue, false);
+        listener.onScanStatusChanged(false);
     }
 
     private void mockStartScan() {
-
+        int count = scanCount.incrementAndGet();
+        Timber.v("Starting scan, scan count in this 30s is %d", count);
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.NONE)
