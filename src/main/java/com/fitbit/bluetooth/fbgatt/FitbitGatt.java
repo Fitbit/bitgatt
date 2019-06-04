@@ -293,8 +293,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     }
 
     /**
-     * Will cancel high priority and periodical scans, but will not have any effect if using the background PendingIntent
-     * based scanner
+     * Will cancel high priority and periodical scans that are currently running, but will not have any effect if using the
+     * background PendingIntent based scanner, and will not un-schedule periodical scans. Use {@link PeripheralScanner#cancelPeriodicalScan(Context)}
+     * to stop periodical scans.
      *
      * @param context The android context for the scanner
      */
@@ -506,6 +507,34 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             return false;
         }
         return peripheralScanner.isScanning();
+    }
+
+    /**
+     * To determine if there is a pending intent scan going right now
+     * @return True if there is a pending intent scan occurring
+     */
+    @SuppressWarnings("unused")
+    // API Method
+    public boolean isPendingIntentScanning(){
+        if (peripheralScanner == null) {
+            Timber.w("You are trying to determine the scan state, but the scanner isn't set-up, did you call FitbitGatt#start?");
+            return false;
+        }
+        return peripheralScanner.isPendingIntentScanning();
+    }
+
+    /**
+     * To determine if there is a periodical scan enabled, should not be confused with whether a low priority scan is currently happening.
+     * @return True if there is a periodical scan enabled
+     */
+    @SuppressWarnings("unused")
+    // API Method
+    public boolean isPeriodicalScanEnabled(){
+        if (peripheralScanner == null) {
+            Timber.w("You are trying to determine the scan state, but the scanner isn't set-up, did you call FitbitGatt#start?");
+            return false;
+        }
+        return peripheralScanner.isPeriodicalScanEnabled();
     }
 
     /**
