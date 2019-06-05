@@ -41,7 +41,13 @@ public class GattClientDiscoverServicesTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.DISCOVERING);
-        boolean success = getConnection().getGatt().discoverServices();
+        boolean success;
+        if(getConnection().getGatt() == null) {
+            Timber.w("The gatt was null during discovery, are you sure the connection wasn't cancelled?  Please make sure to handle the transaction results.");
+            success = false;
+        } else {
+            success = getConnection().getGatt().discoverServices();
+        }
         if(!success) {
             getConnection().setState(GattState.DISCOVERY_FAILURE);
             TransactionResult.Builder builder = new TransactionResult.Builder();
