@@ -174,6 +174,24 @@ attempt.  If you make connecting explicit on a single-threaded implementation,
 Transactions are atomic.  A subsequent transaction provided to the connection transaction queue
 will not be executed until the prior running transaction completes in success, failure, or timeout.
 
+### Transaction Strategies
+
+The strategies are meant to be used by bitgatt for dealing with the odd phone, tablet, or chromebook
+that does not seem to want to play nice with standard GATT operations.  In this case a strategy
+should be hooked directly into a transaction wherever it makes sense to mitigate the adverse
+behavior against the GATT ( usually in these scenarios a bug should be filed against the OEM ).
+
+The StrategyProvider, Situation, and Strategy classes are all public so that you, as a GATT user
+can extend these and implement your own strategies at the business logic level.  This would be, for
+example, if you are a mobile developer and a particular firmware on your IOT device does a strange
+thing when writing to a descriptor for the first time, but in later versions of that firmware this
+is fixed.
+
+You would in this case extend strategy and StrategyProvider, overriding getStrategyForPhoneAndGattConnection(...)
+to return your own strategies.  You could determine the firmware version and after that strange thing,
+ you could retry, whatever your business logic required.  This you could do without modifying bitgatt,
+ and without adversely affecting your basic GATT logic. 
+
 ## [Validation](#validation)
 
 The transaction entry states are guarded by a transaction validator
