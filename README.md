@@ -69,7 +69,7 @@ The threading model of the Android gatt is extremely fraught with landmines.
   thread, Bitgatt intentionally delivers results on the main thread while dispatching
   transactions on a connection thread held by the client or server connection object
   in this way dispatches are not blocked by receipts, and any I/O on the main thread
-  issues are caught right away ( because it's I/O on the main thread).  This is the same
+  issues are caught right away (because it's I/O on the main thread).  This is the same
   pattern as an Android broadcast receiver so it is wise to get off of the main thread as
   soon as possible to create a responsive system.
   
@@ -148,6 +148,9 @@ we actually have to, but allowing concurrency anywhere else as the business logi
 Where necessary bitgatt provides primitives for deploying strategies around hooks to deal with
 specific OEM incompatibilities or bad behavior.  The intent behind this is to keep the bitgatt
 core code free of "hacks" around bugs in the Android BLE code, or peripheral issues.
+
+*NOTE* The present API is not stable as the library is still at 0.8.x.  Improvements in the API
+may still occur, especially around the scanner.
 
 ## [Transactions](#transactions)
 
@@ -232,6 +235,45 @@ CompositeClientTransaction composite = new CompositeClientTransaction(conn, tran
 conn.runTx(composite, result -> {
     Timber.v("Result provided %s", result);        
 });
+```
+Scanning (periodical scan) ... remember the idea behind the scanner is that it should be treated
+as a system resource, there should be a single periodical scan, and / or intent scan that occurs
+with multiple filters.  There can be multiple listeners to scan results.
+```java
+FitbitGatt gatt = FitbitGatt.getInstance();
+gatt.start(this); // start is idempotent
+gatt.registerGattEventListener(mylistener);  // also idempotent for adding instances
+gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
+boolean success = gatt.startPeriodicScan(this);
+if(!success) {
+    Timber.v("The scan didn't start, oh noes!!!!");
+}
+```
+Scanning (high priority scan) ... will stop a scan if in progress and deliver the onScanStopped
+callback
+```java
+FitbitGatt gatt = FitbitGatt.getInstance();
+gatt.start(this); // start is idempotent
+gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
+gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
+boolean success = gatt.startHighPriorityScan(this);
+if(!success) {
+    Timber.v("The scan didn't start, oh noes!!!!");
+}
+```
+Scanning (pending intent scan) ... will deliver callbacks for devices discovered by the system scan
+the backoff, and scan intervals are managed by the Android system
+```java
+FitbitGatt gatt = FitbitGatt.getInstance();
+gatt.start(this); // start is idempotent
+gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
+gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
+ArrayList<ScanFilter> scanFilters = new ArrayList<>();
+scanFilters.add(new ScanFilter.Builder().setDeviceName("Flex").build())
+boolean success = gatt.startSystemManagedPendingIntentScan(this, scanFilters);
+if(!success) {
+    Timber.v("The scan didn't start, oh noes!!!!");
+}
 ```
 
 ## [Bitgatt Scanner](#bitgatt-scanner)
