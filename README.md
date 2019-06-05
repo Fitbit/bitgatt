@@ -47,6 +47,9 @@ The FitbitGatt API is designed to provide a strong state machine around
 all Android gatt operations with the aim to make Android BLE development
 as bomb-proof as possible.
 
+We created a blog post to explain further why we need such a significant
+abstraction on top of the Android Low Energy API : [eng.fitbit.com/what-is-bitgatt-and-why-do-we-need-it/](https://eng.fitbit.com/what-is-bitgatt-and-why-do-we-need-it/)
+
 ### Getting Started
 
 To use Bitgatt, you will need to add the permission for bluetooth ( and maybe admin ) into your
