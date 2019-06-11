@@ -732,7 +732,7 @@ class PeripheralScanner {
                 scanner.startScan(filters, settings, callback);
                 int count = scanCount.incrementAndGet();
                 Timber.v("Starting scan, scan count in this 30s is %d", count);
-                return true;
+                scanStarted = true;
             } else {
                 // if the scanner is null here it's either because BT is off / bt is in the
                 // simulator or because we removed it before because the user disabled bt
