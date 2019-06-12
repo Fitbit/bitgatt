@@ -54,9 +54,20 @@ public class GattDisconnectTransaction extends GattTransaction {
         if(getDevice() != null && !new GattUtils().
                 isPerhipheralCurrentlyConnectedToPhone(FitbitGatt.getInstance().getAppContext(),
                         getDevice().getBtDevice())) {
-            onConnectionStateChange(getConnection().getGatt(),
+            BluetoothGatt localGatt = getConnection().getGatt();
+            if(localGatt != null) {
+                onConnectionStateChange(localGatt,
                     BluetoothGatt.GATT_SUCCESS,
                     BluetoothProfile.STATE_DISCONNECTED);
+            } else {
+                Timber.w("The gatt was already null");
+                TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
+                getConnection().setState(GattState.DISCONNECTED);
+                builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS)
+                    .rssi(getConnection().getDevice().getRssi())
+                    .gattState(getConnection().getGattState());
+                callCallbackWithTransactionResultAndRelease(callback, builder.build());
+            }
         } else {
             getConnection().disconnect();
         }

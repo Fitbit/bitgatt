@@ -8,6 +8,8 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
+
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -19,8 +21,6 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
-
-import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ import static com.fitbit.bluetooth.fbgatt.FitbitGatt.atLeastSDK;
 public class GattConnection implements Closeable {
     private AtomicLong disconnectedTTL;
     private FitbitBluetoothDevice device;
-    private volatile BluetoothGatt gatt;
+    private @Nullable volatile BluetoothGatt gatt;
     private GattState state;
     private GattStateTransitionValidator guard;
     private List<ConnectionEventListener> asynchronousEventListeners;
@@ -182,7 +182,7 @@ public class GattConnection implements Closeable {
      *
      * @return The raw gatt instance
      */
-    public BluetoothGatt getGatt() {
+    public @Nullable BluetoothGatt getGatt() {
         return gatt;
     }
 
@@ -242,7 +242,7 @@ public class GattConnection implements Closeable {
             // if the device has not had discovery performed, we will not know that the connection
             // is hosting the service
             if (isConnected()) {
-                return null != getGatt().getService(serviceUuid);
+                return null != getGatt() && null != getGatt().getService(serviceUuid);
             } else {
                 return false;
             }
@@ -284,8 +284,9 @@ public class GattConnection implements Closeable {
             }
             return null;
         } else {
-            if (isConnected() && gatt != null) {
-                return gatt.getService(uuid);
+            BluetoothGatt localGatt = gatt;
+            if (isConnected() && localGatt != null) {
+                return localGatt.getService(uuid);
             } else {
                 return null;
             }
@@ -371,7 +372,11 @@ public class GattConnection implements Closeable {
          * same listener which calls back everyone, but will only notify the transaction instances
          * on the connection that are relevant using the device as a discriminator.
          */
-        boolean success = gatt.connect();
+        BluetoothGatt localGatt = gatt;
+        boolean success = false;
+        if(localGatt != null) {
+            success = localGatt.connect();
+        }
         if (!success) {
             setState(GattState.FAILURE_CONNECTING);
         }
@@ -422,7 +427,8 @@ public class GattConnection implements Closeable {
             mockDisconnect();
             return;
         }
-        if (gatt == null) {
+        BluetoothGatt localGatt = gatt;
+        if (localGatt == null) {
             setState(GattState.DISCONNECTED);
         } else {
             /*
@@ -431,7 +437,7 @@ public class GattConnection implements Closeable {
              * {@link GattState.DISCONNECTING} until that is complete ...
              */
             try {
-                gatt.disconnect();
+                localGatt.disconnect();
             } catch (NullPointerException e) {
                 // this means that the hardware's underlying connection went away while
                 // we were trying to cancel a connection attempt

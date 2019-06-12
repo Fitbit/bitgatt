@@ -52,6 +52,8 @@ class PeripheralScanner {
 
     final static long SCAN_DURATION = TimeUnit.SECONDS.toMillis(120);
     final static long SCAN_INTERVAL = SCAN_DURATION * 2;
+    final static long TEST_SCAN_DURATION = TimeUnit.SECONDS.toMillis(2);
+    final static long TEST_SCAN_INTERVAL = TEST_SCAN_DURATION * 2;
     private final static long SCAN_TOO_MUCH_WARN_INTERVAL = TimeUnit.SECONDS.toMillis(30);
     private final static int MAX_BACKOFF_MULTIPLIER = 2; // should always correspond to roughly 16 minutes worst case
     static final int BACKGROUND_SCAN_REQUEST_CODE = 21436;
@@ -77,6 +79,7 @@ class PeripheralScanner {
     private TrackerScannerListener listener;
     private GattUtils bleUtils;
     private boolean mockMode;
+    private boolean instrumentationTestMode;
 
     private Map<String, BluetoothDevice> foundDevices = new HashMap<>();
     private boolean resetScanBackoff;
@@ -171,6 +174,14 @@ class PeripheralScanner {
 
     void setMockMode(boolean mock) {
         this.mockMode = mock;
+    }
+
+    void setInstrumentationTestMode(boolean instrumentationTestMode) {
+        this.instrumentationTestMode = instrumentationTestMode;
+    }
+
+    void setIsPendingIntentScanning(boolean isStillPendingIntentScanning) {
+        this.pendingIntentIsScanning.set(isStillPendingIntentScanning);
     }
 
     /**
@@ -509,6 +520,7 @@ class PeripheralScanner {
     synchronized void startPendingIntentBasedBackgroundScan(@NonNull List<ScanFilter> scanFilters, @NonNull Context context) {
         if (pendingIntentIsScanning.get()) {
             Timber.w("Not starting scan, you can't start a background scan without cancelling your existing scan");
+            listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
             return;
         }
         if(scanCount.get() >= MAX_SCANS_ALLOWED_PER_30_SECONDS) {
@@ -522,11 +534,17 @@ class PeripheralScanner {
                 return;
             }
             if (scanner == null) {
-                Timber.w("Scanner is null and you are attempting to start a scan");
-                return;
+                if(adapter.isEnabled()) {
+                    scanner = adapter.getBluetoothLeScanner();
+                } else {
+                    Timber.w("BT is off and you are attempting to start a scan");
+                    listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
+                    return;
+                }
             }
             if (scanFilters.isEmpty()) {
                 Timber.w("You can not start a background scan with no filters.");
+                listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return;
             }
             Intent broadcastIntent = new Intent(context, HandleIntentBasedScanResult.class);
@@ -546,18 +564,23 @@ class PeripheralScanner {
                 switch (didStart) {
                     case SCAN_FAILED_ALREADY_STARTED:
                         Timber.d("Can't start scan, already started");
+                        listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                         break;
                     case SCAN_FAILED_APPLICATION_REGISTRATION_FAILED:
                         Timber.d("Can't start scan, application registration failed");
+                        listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                         break;
                     case SCAN_FAILED_INTERNAL_ERROR:
                         Timber.d("Can't start scan, internal error");
+                        listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                         break;
                     case SCAN_FAILED_FEATURE_UNSUPPORTED:
                         Timber.d("Can't start scan, feature unsupported");
+                        listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                         break;
                     default:
                         Timber.d("Can't start scan, out of hardware resources, or scanning too frequently.");
+                        listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                         break;
                 }
                 return;
@@ -583,14 +606,21 @@ class PeripheralScanner {
         if (atLeastSDK(Build.VERSION_CODES.O)) {
             BluetoothAdapter adapter = bleUtils.getBluetoothAdapter(context);
             if (adapter == null) {
+                listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return null;
             }
             if (scanner == null) {
-                Timber.w("Scanner is null and you are attempting to start a scan");
-                return null;
+                if(adapter.isEnabled()) {
+                    scanner = adapter.getBluetoothLeScanner();
+                } else {
+                    Timber.w("BT is off and you are attempting to start a scan");
+                    listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
+                    return null;
+                }
             }
             if (!FitbitGatt.getInstance().isBluetoothOn()) {
                 Timber.w("Scanner cannot be started when Bluetooth is off");
+                listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return null;
             }
             if(scanCount.get() >= MAX_SCANS_ALLOWED_PER_30_SECONDS) {
@@ -607,6 +637,7 @@ class PeripheralScanner {
             // check to ensure that the address provided is valid
             if (filters.isEmpty()) {
                 Timber.w("You can not start a background scan with no filters.");
+                listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return null;
             }
             // in addition if there are mac addresses that we want to add we can do that
@@ -628,22 +659,30 @@ class PeripheralScanner {
                 Timber.v("Starting scan, scan count in this 30s is %d", count);
                 if (didStart == 0) {
                     Timber.d("You have started a DIY system background scan, stopping periodical scan until background scan is stopped");
+                    boolean oldValue = pendingIntentIsScanning.getAndSet(true);
+                    Timber.v("Scan started, changing from scanning status %b to %b", oldValue, pendingIntentIsScanning.get());
+                    listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 } else {
                     switch (didStart) {
                         case SCAN_FAILED_ALREADY_STARTED:
                             Timber.d("Can't start scan, already started");
+                            listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                             break;
                         case SCAN_FAILED_APPLICATION_REGISTRATION_FAILED:
                             Timber.d("Can't start scan, application registration failed");
+                            listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                             break;
                         case SCAN_FAILED_INTERNAL_ERROR:
                             Timber.d("Can't start scan, internal error");
+                            listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                             break;
                         case SCAN_FAILED_FEATURE_UNSUPPORTED:
                             Timber.d("Can't start scan, feature unsupported");
+                            listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                             break;
                         default:
                             Timber.d("Can't start scan, out of hardware resources, or scanning too frequently.");
+                            listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                             break;
                     }
                     return null;
@@ -770,7 +809,11 @@ class PeripheralScanner {
             resetScanBackoff = false;
 
             //Schedule timeout
-            mHandler.postDelayed(scanTimeoutRunnable, SCAN_DURATION);
+            if(instrumentationTestMode) {
+                mHandler.postDelayed(scanTimeoutRunnable, TEST_SCAN_DURATION);
+            } else {
+                mHandler.postDelayed(scanTimeoutRunnable, SCAN_DURATION);
+            }
             return scanStarted;
         } else {
             Timber.w("Already scanning, will not start a new scan");
@@ -889,7 +932,11 @@ class PeripheralScanner {
                 } else {
                     scanBackoffMultiplier = Math.min(MAX_BACKOFF_MULTIPLIER, scanBackoffMultiplier << 1);
                 }
-                mHandler.postDelayed(periodicRunnable, scanBackoffMultiplier * SCAN_INTERVAL);
+                if(PeripheralScanner.this.instrumentationTestMode) {
+                    mHandler.postDelayed(periodicRunnable, scanBackoffMultiplier * TEST_SCAN_INTERVAL);
+                } else {
+                    mHandler.postDelayed(periodicRunnable, scanBackoffMultiplier * SCAN_INTERVAL);
+                }
             }
         }
     }

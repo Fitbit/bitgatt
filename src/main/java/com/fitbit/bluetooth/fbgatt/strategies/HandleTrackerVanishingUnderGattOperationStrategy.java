@@ -13,6 +13,8 @@ import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 
+import android.bluetooth.BluetoothGatt;
+
 import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
@@ -36,7 +38,12 @@ public class HandleTrackerVanishingUnderGattOperationStrategy extends Strategy {
         Timber.d("Applying tracker vanishing while in gatt operation strategy");
         if(connection != null) {
             connection.setState(GattState.DISCONNECTING);
-            connection.getGatt().disconnect();
+            BluetoothGatt localGatt = connection.getGatt();
+            if(localGatt != null) {
+                localGatt.disconnect();
+            } else {
+                Timber.d("Could not apply strategy because the gatt was null");
+            }
         }
         // we might not get the gatt disconnect callback if the if is lost,
         // so in this scenario we will have to wait for the client_if to dump for sure,

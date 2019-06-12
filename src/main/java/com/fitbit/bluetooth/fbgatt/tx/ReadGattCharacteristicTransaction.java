@@ -48,33 +48,38 @@ public class ReadGattCharacteristicTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.READING_CHARACTERISTIC);
-        boolean success;
-        try {
-            success = getConnection().getGatt().readCharacteristic(characteristic);
-        } catch (NullPointerException ex) {
-            Timber.w(ex,"[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
-            if(getDevice() != null) {
-                Timber.w("[%s] btDevice %s characteristic %s", getDevice(), getDevice().getBtDevice(), this.characteristic.getUuid());
+        boolean success = false;
+        BluetoothGatt localGatt = getConnection().getGatt();
+        if(localGatt != null) {
+            try {
+                success = localGatt.readCharacteristic(characteristic);
+            } catch (NullPointerException ex) {
+                Timber.w(ex, "[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
+                if (getDevice() != null) {
+                    Timber.w("[%s] btDevice %s characteristic %s", getDevice(), getDevice().getBtDevice(), this.characteristic.getUuid());
+                }
+                // Ensure that the flag is set to false, and that is is
+                // impossible to be anything else stepping through after
+                // this ... strategy time
+                success = false;
             }
-            // Ensure that the flag is set to false, and that is is
-            // impossible to be anything else stepping through after
-            // this ... strategy time
-            success = false;
+        } else {
+            Timber.w("The gatt was null, can't read characteristic");
         }
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        if(!success) {
+        if (!success) {
             getConnection().setState(GattState.READ_CHARACTERISTIC_FAILURE);
             builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
-                    .gattState(getConnection().getGattState());
+                .gattState(getConnection().getGattState());
             mainThreadHandler.post(() -> {
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());
                 getConnection().setState(GattState.IDLE);
                 // we want to apply this strategy to every phone, so we will provide an empty target android
                 // device
                 Strategy strategy = strategyProvider.
-                        getStrategyForPhoneAndGattConnection(null, getConnection(),
-                                Situation.TRACKER_WENT_AWAY_DURING_GATT_OPERATION);
-                if(strategy != null) {
+                    getStrategyForPhoneAndGattConnection(null, getConnection(),
+                        Situation.TRACKER_WENT_AWAY_DURING_GATT_OPERATION);
+                if (strategy != null) {
                     strategy.applyStrategy();
                 }
             });

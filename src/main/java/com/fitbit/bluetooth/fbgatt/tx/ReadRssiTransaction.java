@@ -40,7 +40,11 @@ public class ReadRssiTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.READING_RSSI);
-        boolean success = getConnection().getGatt().readRemoteRssi();
+        BluetoothGatt localGatt = getConnection().getGatt();
+        boolean success = false;
+        if(localGatt != null) {
+            success = localGatt.readRemoteRssi();
+        }
         if(!success) {
             getConnection().setState(GattState.READ_RSSI_FAILURE);
             TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());

@@ -51,20 +51,24 @@ public class UnSubscribeToGattCharacteristicNotificationsTransaction extends Gat
         super.transaction(callback);
         getConnection().setState(GattState.DISABLING_CHARACTERISTIC_NOTIFICATION);
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        boolean success;
-        try {
-            success = getConnection().getGatt().setCharacteristicNotification(characteristic, false);
-        } catch (NullPointerException ex) {
-            success = false;
-            Timber.w(ex,"[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
-            // we want to apply this strategy to every phone, so we will provide an empty target android
-            // device
-            Strategy strategy = strategyProvider.
+        boolean success = false;
+        BluetoothGatt localGatt = getConnection().getGatt();
+        if(localGatt != null) {
+            try {
+                success = localGatt.setCharacteristicNotification(characteristic, false);
+            } catch (NullPointerException ex) {
+                Timber.w(ex, "[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
+                // we want to apply this strategy to every phone, so we will provide an empty target android
+                // device
+                Strategy strategy = strategyProvider.
                     getStrategyForPhoneAndGattConnection(null, getConnection(),
-                            Situation.TRACKER_WENT_AWAY_DURING_GATT_OPERATION);
-            if(strategy != null) {
-                strategy.applyStrategy();
+                        Situation.TRACKER_WENT_AWAY_DURING_GATT_OPERATION);
+                if (strategy != null) {
+                    strategy.applyStrategy();
+                }
             }
+        } else {
+            Timber.w("Could not unsubscribe, the gatt was null");
         }
         if (success) {
             /*

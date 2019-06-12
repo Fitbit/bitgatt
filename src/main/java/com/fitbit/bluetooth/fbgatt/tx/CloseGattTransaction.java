@@ -14,6 +14,7 @@ import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 
+import android.bluetooth.BluetoothGatt;
 import android.support.annotation.Nullable;
 
 import timber.log.Timber;
@@ -38,9 +39,10 @@ public class CloseGattTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.CLOSING_GATT_CLIENT);
-        if(getConnection().getGatt() != null) {
+        BluetoothGatt localGatt = getConnection().getGatt();
+        if(localGatt != null) {
             try {
-                getConnection().getGatt().close();
+                localGatt.close();
                 getConnection().justClearGatt();
             } catch (NullPointerException e) {
                 Timber.w(e, "[%s] If the underlying connection is gone, on some platforms, this can throw an NPE", getConnection().getDevice());

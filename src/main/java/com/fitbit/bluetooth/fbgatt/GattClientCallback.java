@@ -54,13 +54,17 @@ public class GattClientCallback extends BluetoothGattCallback {
         Looper looper;
         if(context == null || context.getMainLooper() == null) {
             Timber.w("[%s] Um.... you really need to provide a non-null context here, things will work, but you'll have an extra thread running around", Build.DEVICE);
-            HandlerThread gattServerCallbackHandlerThread = new HandlerThread("Default Gatt Client Callback Handler Thread", Thread.NORM_PRIORITY);
-            gattServerCallbackHandlerThread.start();
-            looper = gattServerCallbackHandlerThread.getLooper();
+            HandlerThread gattClientCallbackHandlerThread = new HandlerThread("Default Gatt Client Callback Handler Thread", Thread.NORM_PRIORITY);
+            gattClientCallbackHandlerThread.start();
+            looper = gattClientCallbackHandlerThread.getLooper();
         } else {
             looper = context.getMainLooper();
         }
         this.handler = new Handler(looper);
+    }
+
+    Handler getClientCallbackHandler(){
+        return this.handler;
     }
 
     void addListener(GattClientListener gattListener) {
