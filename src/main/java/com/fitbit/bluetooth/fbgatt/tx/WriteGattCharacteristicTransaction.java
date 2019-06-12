@@ -51,18 +51,23 @@ public class WriteGattCharacteristicTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.WRITING_CHARACTERISTIC);
-        boolean success;
-        try {
-            success = getConnection().getGatt().writeCharacteristic(characteristic);
-        } catch (NullPointerException ex) {
-            Timber.w(ex,"[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
-            if(getDevice() != null) {
-                Timber.w("[%s] btDevice %s characteristic %s", getDevice(), getDevice().getBtDevice(), this.characteristic.getUuid());
+        boolean success = false;
+        BluetoothGatt localGatt = getConnection().getGatt();
+        if(localGatt != null) {
+            try {
+                success = localGatt.writeCharacteristic(characteristic);
+            } catch (NullPointerException ex) {
+                Timber.w(ex, "[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
+                if (getDevice() != null) {
+                    Timber.w("[%s] btDevice %s characteristic %s", getDevice(), getDevice().getBtDevice(), this.characteristic.getUuid());
+                }
+                // Ensure that the flag is set to false, and that is is
+                // impossible to be anything else stepping through after
+                // this ... strategy time
+                success = false;
             }
-            // Ensure that the flag is set to false, and that is is
-            // impossible to be anything else stepping through after
-            // this ... strategy time
-            success = false;
+        } else {
+            Timber.w("Can't write characteristic because gatt was null");
         }
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
         if(!success) {

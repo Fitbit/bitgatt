@@ -49,8 +49,14 @@ public class RequestMtuGattTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.REQUESTING_MTU);
+        boolean success = false;
         if(FitbitGatt.atLeastSDK(LOLLIPOP)) {
-            boolean success = getConnection().getGatt().requestMtu(this.mtu);
+            BluetoothGatt localGatt = getConnection().getGatt();
+            if(localGatt != null) {
+                success = localGatt.requestMtu(this.mtu);
+            } else {
+                Timber.w("Couldn't request a new MTU because the gatt was null");
+            }
             if(success) {
                 return;
             }

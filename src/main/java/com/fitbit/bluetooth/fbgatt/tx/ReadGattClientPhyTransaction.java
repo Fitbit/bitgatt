@@ -42,10 +42,22 @@ public class ReadGattClientPhyTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         getConnection().setState(GattState.READING_CURRENT_PHY);
+        BluetoothGatt localGatt = getConnection().getGatt();
         if(FitbitGatt.atLeastSDK(O)) {
             // of course this would have no boolean result, why would it follow the same pattern as
             // mtu or connection priority? :sigh:
-            getConnection().getGatt().readPhy();
+            if(localGatt != null) {
+                localGatt.readPhy();
+            } else {
+                Timber.w("Couldn't read the phy because gatt was null");
+                TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
+                getConnection().setState(GattState.READ_CURRENT_PHY_FAILURE);
+                builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
+                    .gattState(getConnection().getGattState());
+                callCallbackWithTransactionResultAndRelease(callback, builder.build());
+                // even if we fail to request the PHY then we can still use the connection
+                getConnection().setState(GattState.IDLE);
+            }
         } else {
             Timber.i("[%s] Can't read the PHY on this version of Android, no-op", getDevice());
             getConnection().setState(GattState.IDLE);

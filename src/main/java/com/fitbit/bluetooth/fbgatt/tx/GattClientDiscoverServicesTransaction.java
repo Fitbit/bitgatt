@@ -42,11 +42,12 @@ public class GattClientDiscoverServicesTransaction extends GattTransaction {
         super.transaction(callback);
         getConnection().setState(GattState.DISCOVERING);
         boolean success;
-        if(getConnection().getGatt() == null) {
+        BluetoothGatt localGatt = getConnection().getGatt();
+        if(localGatt == null) {
             Timber.w("The gatt was null during discovery, are you sure the connection wasn't cancelled?  Please make sure to handle the transaction results.");
             success = false;
         } else {
-            success = getConnection().getGatt().discoverServices();
+            success = localGatt.discoverServices();
         }
         if(!success) {
             getConnection().setState(GattState.DISCOVERY_FAILURE);

@@ -19,6 +19,7 @@ import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
+import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.support.annotation.Nullable;
 
@@ -49,8 +50,20 @@ public class SubscribeToCharacteristicNotificationsTransaction extends GattTrans
         super.transaction(callback);
         getConnection().setState(GattState.ENABLING_CHARACTERISTIC_NOTIFICATION);
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
+        BluetoothGatt localGatt = getConnection().getGatt();
+        if(localGatt == null) {
+            Timber.w("Couldn't subscribe because gatt was null");
+            getConnection().setState(GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_FAILURE);
+            builder.characteristicUuid(characteristic.getUuid())
+                .gattState(getConnection().getGattState())
+                .responseStatus(GattStatus.GATT_UNKNOWN.ordinal())
+                .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
+                .data(characteristic.getValue())
+                .serviceUuid(characteristic.getService().getUuid());
+            return;
+        }
         try {
-            if (getConnection().getGatt().setCharacteristicNotification(this.characteristic, true)) {
+            if (localGatt.setCharacteristicNotification(this.characteristic, true)) {
                 getConnection().setState(GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS);
                 Timber.v("[%s] Notification success on %s", getDevice(), this.characteristic.getUuid());
                 builder.characteristicUuid(characteristic.getUuid())

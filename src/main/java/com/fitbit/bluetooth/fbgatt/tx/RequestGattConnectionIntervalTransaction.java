@@ -19,6 +19,8 @@ import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import android.bluetooth.BluetoothGatt;
 import android.support.annotation.Nullable;
 
+import timber.log.Timber;
+
 import static android.os.Build.VERSION_CODES.LOLLIPOP;
 
 /**
@@ -69,9 +71,14 @@ public class RequestGattConnectionIntervalTransaction extends GattTransaction {
         getConnection().setState(GattState.REQUESTING_CONNECTION_INTERVAL_CHANGE);
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
         builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
-        boolean success;
+        boolean success = false;
         if(FitbitGatt.atLeastSDK(LOLLIPOP)) {
-            success = getConnection().getGatt().requestConnectionPriority(speed.getConnectionPriority());
+            BluetoothGatt localGatt = getConnection().getGatt();
+            if(localGatt != null) {
+                success = localGatt.requestConnectionPriority(speed.getConnectionPriority());
+            } else {
+                Timber.w("Couldn't request connection priority because gatt was null");
+            }
             if(!success) {
                 getConnection().setState(GattState.REQUEST_CONNECTION_INTERVAL_FAILURE);
                 builder.responseStatus(GattStatus.GATT_NO_RESOURCES.getCode());
