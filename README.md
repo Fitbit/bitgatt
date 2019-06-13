@@ -1095,6 +1095,50 @@ wedge the GATT queue and cause the system to become unresponsive.
 * Does it block on failure? Yes, if the characteristic doesn't exist
 * Includes copy in result? No, but does include data in the TransactionResult
 
+### WriteGattServerCharacteristicDescriptorValueTransaction
+
+Will write a characteristic descriptor from a local gatt server and populate a transaction result with
+response.  This and WriteGattServerCharacteristicValueTransaction are sort of conveniences
+for testing, there is no clear reason why one wouldn't perform these operations in Java, they have
+no impact to the state machine.  But there is no harm in mainstream code using these transactions.
+
+Only provide descriptor instances obtained from the local service, if you create them yourself
+you will not have a valid instance id, which is an internal property of the descriptor and could
+wedge the GATT queue and cause the system to become unresponsive.
+
+#### Arguments
+
+* @Nullable GattServerConnection connection
+* GattState successEndState
+* BluetoothGattService service
+* BluetoothGattCharacteristic characteristic
+* BluetoothGattDescriptor descriptor
+* byte[] data
+* (optional) long timeoutMillis
+
+#### Results
+
+* Does it block on failure? Yes, if the server, service, characteristic, or descriptor doesn't exist
+* Includes copy in result? No, but does include data in the TransactionResult
+
+### CloseGattServerTransaction
+
+Will close the currently held instance of the gatt server, potentially useful if services are not
+released when bluetooth is toggled, you can use the clear services transaction and then the
+close transaction to ensure that when BT is re-enabled there are no remaining services.  This may also
+be used in the turning off callback if you implement your own bluetooth listener.
+
+#### Arguments
+
+* @Nullable GattServerConnection connection
+* GattState successEndState
+* (optional) long timeoutMillis
+
+#### Results
+
+* Does it block on failure? No
+* Includes copy in result? No
+
 ## [License](#license)
 
     Copyright 2019 Fitbit, Inc. All rights reserved.
