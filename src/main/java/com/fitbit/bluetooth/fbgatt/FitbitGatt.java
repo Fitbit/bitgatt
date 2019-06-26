@@ -33,6 +33,7 @@ import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Handler;
 import android.os.ParcelUuid;
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
@@ -116,17 +117,17 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     @SuppressWarnings("WeakerAccess") // API Method
     public boolean isBluetoothOn() {
-        if(appContext == null) {
+        if (appContext == null) {
             Timber.w("Bitgatt must not be started yet, so as far as we know BT is off.");
             return false;
         }
         BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(appContext);
-        if(adapter == null || !adapter.isEnabled()) {
-            if(isBluetoothOn) {
+        if (adapter == null || !adapter.isEnabled()) {
+            if (isBluetoothOn) {
                 isBluetoothOn = false;
             }
         } else {
-            if(!isBluetoothOn) {
+            if (!isBluetoothOn) {
                 isBluetoothOn = true;
             }
         }
@@ -159,7 +160,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
          * All gatt server services are attached and the gatt is ready to be used
          */
         void onFitbitGattReady();
-        
+
         /**
          * Will notify of scanner start
          */
@@ -185,6 +186,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
          * we will want for them to utilize the bt off / on as tracked by bitgatt and not
          * implement their own broadcast receiver.
          */
+        @MainThread
         void onBluetoothOff();
 
         /**
@@ -192,7 +194,24 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
          * we will want for them to utilize the bt off / on as tracked by bitgatt and not
          * implement their own broadcast receiver.
          */
+        @MainThread
         void onBluetoothOn();
+
+        /**
+         * Some phones may not deliver this, older ones especially may not, be aware that the code
+         * in here may not be executed, however you can execute code that you want to have happen
+         * before the radio turns on.
+         */
+        @MainThread
+        void onBluetoothTurningOn();
+
+        /**
+         * Some phones deliver this, older ones may not, be aware that code inside of here may not
+         * be executed, however you can execute code that you want to have happen
+         * before the radio turns off
+         */
+        @MainThread
+        void onBluetoothTurningOff();
     }
 
     @VisibleForTesting
@@ -215,7 +234,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-    @SuppressWarnings("unused") // API Method
+    @SuppressWarnings("unused")
+        // API Method
     List<GattClientListener> getAllGattClientListeners() {
         return getClientCallback().getGattClientListeners();
     }
@@ -263,7 +283,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * {@link FitbitGatt#getMatchingConnectionsForDeviceNames(List)} or {@link FitbitGatt#getMatchingConnectionsForServices(List)}
      *
      * @param context The android context for providing to the scanner
-     *
      * @return True if the scan started, false if it did not
      */
 
@@ -280,7 +299,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * interface if a device is discovered and will provide the {@link GattConnection} to you
      *
      * @param context The android context for the scanner
-     *
      * @return True if the scan started, false if it did not
      */
     @SuppressWarnings({"unused", "WeakerAccess"}) // API Method
@@ -511,11 +529,12 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     /**
      * To determine if there is a pending intent scan going right now
+     *
      * @return True if there is a pending intent scan occurring
      */
     @SuppressWarnings("unused")
     // API Method
-    public boolean isPendingIntentScanning(){
+    public boolean isPendingIntentScanning() {
         if (peripheralScanner == null) {
             Timber.w("You are trying to determine the scan state, but the scanner isn't set-up, did you call FitbitGatt#start?");
             return false;
@@ -525,11 +544,12 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     /**
      * To determine if there is a periodical scan enabled, should not be confused with whether a low priority scan is currently happening.
+     *
      * @return True if there is a periodical scan enabled
      */
     @SuppressWarnings("unused")
     // API Method
-    public boolean isPeriodicalScanEnabled(){
+    public boolean isPeriodicalScanEnabled() {
         if (peripheralScanner == null) {
             Timber.w("You are trying to determine the scan state, but the scanner isn't set-up, did you call FitbitGatt#start?");
             return false;
@@ -544,7 +564,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param services The services desired
      * @param filters  The filters desired
      * @param callback The {@link FitbitGattCallback} instance to be called when ready
-     *
      * @return True if scan started, false if not
      */
     @SuppressWarnings("WeakerAccess") // API Method
@@ -678,14 +697,15 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * to perform this operation.
      */
     @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-    @SuppressWarnings("unused") // API Method
+    @SuppressWarnings("unused")
+    // API Method
     void shutdown() {
         Timber.v("Someone wants to shutdown the gatt");
         if (serverCallback != null) {
             serverCallback.unregisterAll();
         }
         connectionMap.clear();
-        if(this.appContext != null) {
+        if (this.appContext != null) {
             this.appContext.unregisterReceiver(this.aclListener);
         }
         this.appContext = null;
@@ -716,13 +736,16 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         return isStarted.get();
     }
 
-    public @Nullable Context getAppContext() {
+    public @Nullable
+    Context getAppContext() {
         return appContext;
     }
+
     @SuppressWarnings("WeakerAccess") // API Method
     public GattServerCallback getServerCallback() {
         return this.serverCallback;
     }
+
     @SuppressWarnings("WeakerAccess") // API Method
     public GattClientCallback getClientCallback() {
         return this.clientCallback;
@@ -752,6 +775,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     /**
      * Will check to determine if the provided {@link FitbitBluetoothDevice} is actually in the map
+     *
      * @param device The {@link FitbitBluetoothDevice} for which to search
      * @return true if the device is present, false otherwise
      */
@@ -781,6 +805,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     void unregisterGattServerListener(GattServerListener listener) {
         serverCallback.removeListener(listener);
     }
+
     @SuppressWarnings({"unused", "WeakerAccess"}) // API Method
     public void connectToScannedDevice(BluetoothDevice device, GattTransactionCallback callback) {
         FitbitBluetoothDevice fitDevice = new FitbitBluetoothDevice(device);
@@ -791,7 +816,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     void connectToScannedDevice(FitbitBluetoothDevice fitDevice, boolean shouldMock, GattTransactionCallback callback) {
         GattConnection conn = connectionMap.get(fitDevice);
         if (conn == null) {
-            if(appContext == null) {
+            if (appContext == null) {
                 Timber.w("[%s] Bitgatt must not be started, please start bitgatt", fitDevice);
                 return;
             }
@@ -806,7 +831,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         } else {
             TransactionResult.Builder builder = new TransactionResult.Builder();
             builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS)
-                    .gattState(conn.getGattState());
+                .gattState(conn.getGattState());
             callback.onTransactionComplete(builder.build());
         }
     }
@@ -843,7 +868,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     @VisibleForTesting
     void doDecrementAndInvalidateClosedConnections() {
-        if(this.appContext == null) {
+        if (this.appContext == null) {
             Timber.w("[%s] Bitgatt must not be started, please start bitgatt.", Build.DEVICE);
             return;
         }
@@ -881,7 +906,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         // if the user has a background scan running while an active scan is running
         GattConnection conn = connectionMap.get(device);
         if (null == conn) {
-            if(appContext == null) {
+            if (appContext == null) {
                 Timber.w("[%s] Bitgatt must not be started, please start bitgatt", device);
                 return;
             }
@@ -900,9 +925,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             }
             oldDevice.origin = FitbitBluetoothDevice.DeviceOrigin.SCANNED;
             if (!previousDeviceName.equals(device.getName()) ||
-                    previousRssi != device.getRssi() ||
-                    (previousScanRecord != null && device.getScanRecord() != null &&
-                            !Arrays.equals(previousScanRecord.getBytes(), device.getScanRecord().getBytes()))) {
+                previousRssi != device.getRssi() ||
+                (previousScanRecord != null && device.getScanRecord() != null &&
+                    !Arrays.equals(previousScanRecord.getBytes(), device.getScanRecord().getBytes()))) {
                 Timber.v("Found device may have changed was %s, and now is %s", oldDevice, device);
                 oldDevice.setName(device.getName());
                 oldDevice.setScanRecord(device.getScanRecord());
@@ -928,7 +953,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                     FitbitBluetoothDevice fitBluetoothDevice = new FitbitBluetoothDevice(bondedDevice);
                     fitBluetoothDevice.origin = FitbitBluetoothDevice.DeviceOrigin.BONDED;
                     if (null == connectionMap.get(fitBluetoothDevice)) {
-                        if(appContext == null) {
+                        if (appContext == null) {
                             Timber.w("[%s] Bitgatt must not be started, please start bitgatt", fitBluetoothDevice);
                             return;
                         }
@@ -1059,11 +1084,21 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         }
     }
 
-    private boolean startServer(Context context) {
+    /**
+     * Synchronized because this can be called in effect from bluetooth on and start, there could
+     * be some odd behavior if this were called concurrently
+     * @param context The android context
+     * @return true if the gatt server started successfully, false if it didn't
+     */
+
+    private synchronized boolean startServer(Context context) {
         boolean isStarted;
         BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         if (manager != null && manager.getAdapter() != null) {
             gattServer = manager.openGattServer(context, serverCallback);
+            // make sure there are no hidden services, we don't want duplicates for the phones who
+            // carry services across BT toggle.
+            gattServer.clearServices();
             isStarted = true;
             if (gattServer == null) {
                 Timber.w("The manager could not open the gatt server!!! are you sure BT is on!");
@@ -1074,6 +1109,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             isStarted = false;
         }
         serverConnection = new GattServerConnection(gattServer, context.getMainLooper());
+        // we ready.
+        serverConnection.setState(GattState.IDLE);
         return isStarted;
     }
 
@@ -1179,7 +1216,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             try {
                 peripheralScanner.cancelPendingIntentBasedBackgroundScan();
             } catch (NoSuchMethodError error) {
-                Timber.i(error,"There was a no such method error stopping the pending intent scan, assuming stopped.");
+                Timber.i(error, "There was a no such method error stopping the pending intent scan, assuming stopped.");
             }
         } else {
             Timber.i("Can't stop because we aren't started, or the scanner is null");
@@ -1206,7 +1243,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     /**
      * Will stop the background scan with a regular intent
-     * @param context The android context
+     *
+     * @param context       The android context
      * @param regularIntent The regular intent
      */
     @SuppressWarnings("unused") // API Method
@@ -1217,16 +1255,16 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             PendingIntent pending;
             try {
                 pending = PendingIntent.getBroadcast(context,
-                        BACKGROUND_SCAN_REQUEST_CODE, regularIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                    BACKGROUND_SCAN_REQUEST_CODE, regularIntent, PendingIntent.FLAG_UPDATE_CURRENT);
             } catch (NoSuchMethodError error) {
-                Timber.i(error,"There was a no such method error stopping the pending intent scan, assuming stopped");
+                Timber.i(error, "There was a no such method error stopping the pending intent scan, assuming stopped");
                 return;
             }
-                if (peripheralScanner != null && pending != null) {
-                    peripheralScanner.stopBackgroundScan(pending);
-                } else {
-                    Timber.w("Peripheral scanner was null, did you forget to call FitbitGatt#start?");
-                }
+            if (peripheralScanner != null && pending != null) {
+                peripheralScanner.stopBackgroundScan(pending);
+            } else {
+                Timber.w("Peripheral scanner was null, did you forget to call FitbitGatt#start?");
+            }
         }
     }
 
@@ -1296,7 +1334,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @Override
     public void onScanStatusChanged(boolean isScanning) {
         Timber.i("On scan status changed %b", isScanning);
-        if(isScanning) {
+        if (isScanning) {
             for (FitbitGattCallback callback : this.overallGattEventListeners) {
                 callback.onScanStarted();
             }
@@ -1309,7 +1347,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     @Override
     public void onPendingIntentScanStatusChanged(boolean isScanning) {
-        if(isScanning) {
+        if (isScanning) {
             for (FitbitGattCallback callback : this.overallGattEventListeners) {
                 callback.onPendingIntentScanStarted();
             }
@@ -1351,8 +1389,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             cleanUpConnection(entry.getValue());
         }
         // need to clean up scanner also, if BT turns off then we can no longer be scanning
-        if(getPeripheralScanner() != null) {
-            if(getPeripheralScanner().isPendingIntentScanning() || getPeripheralScanner().isScanning()) {
+        if (getPeripheralScanner() != null) {
+            if (getPeripheralScanner().isPendingIntentScanning() || getPeripheralScanner().isScanning()) {
                 // we will try to clean up the normal way
                 getPeripheralScanner().cancelPendingIntentBasedBackgroundScan();
                 getPeripheralScanner().cancelScan(appContext);
@@ -1394,8 +1432,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
          * after bluetooth is turned off and then on again.  It seems that the IBluetoothGatt is
          * no longer connected to any process, to make sure that we don't have this situation, let's
          * replace the instance.
+         *
          */
-        if(this.appContext == null || !startServer(this.appContext)) {
+        if (this.appContext == null || !startServer(this.appContext)) {
             Timber.e("Refreshing the gatt server after BT was enabled failed");
         }
         Timber.v("Bluetooth is on");
@@ -1409,6 +1448,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     public void bluetoothTurningOff() {
         isBluetoothOn = false;
         Timber.v("Bluetooth is turning off");
+        for (FitbitGattCallback callback : overallGattEventListeners) {
+            callback.onBluetoothTurningOff();
+        }
         // you can not cancel the scan here because if you do, there is a chance that the actual
         // scanner implementation inside of the adapter could become null, even if you cache
         // the reference, like in IPD-103133 where we set it and in the next call it's null
@@ -1420,14 +1462,17 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         // still can't use it until it's on
         isBluetoothOn = false;
         Timber.v("Bluetooth is turning on");
+        for (FitbitGattCallback callback : overallGattEventListeners) {
+            callback.onBluetoothTurningOn();
+        }
     }
 
     private static class LowEnergyAclListener extends BroadcastReceiver {
         private static IntentFilter[] filters = {
-                new IntentFilter(BluetoothDevice.ACTION_FOUND),
-                new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED),
-                new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED),
-                new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
+            new IntentFilter(BluetoothDevice.ACTION_FOUND),
+            new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED),
+            new IntentFilter(BluetoothDevice.ACTION_ACL_CONNECTED),
+            new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
         };
 
         void register(Context context) {

@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 
 /**
@@ -18,5 +19,6 @@ import android.support.annotation.NonNull;
  */
 
 public interface GattTransactionCallback {
+    @MainThread
     void onTransactionComplete(@NonNull TransactionResult result);
 }

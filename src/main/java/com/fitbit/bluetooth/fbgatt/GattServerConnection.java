@@ -14,12 +14,15 @@ import android.bluetooth.BluetoothProfile;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import timber.log.Timber;
@@ -224,6 +227,25 @@ public class GattServerConnection {
         server.cancelConnection(device.getBtDevice());
         connectedDevices.remove(device);
         setState(GattState.DISCONNECTING);
+    }
+
+    @SuppressWarnings("unused") // API method and warning
+    protected void closeGattServer(){
+        Timber.v("Unregistering gatt server listeners");
+        for(ServerConnectionEventListener listener : asynchronousEventListeners) {
+            unregisterConnectionEventListener(listener);
+        }
+        BluetoothGattServer server = getServer();
+        if(server != null) {
+            setState(GattState.CLOSING_GATT_SERVER);
+            Timber.v("Clearing gatt server services");
+            server.clearServices();
+            Timber.v("Closing gatt server");
+            // it seems to me that close should not be used unless the process is dying
+            // it always prevents adding services on the GS9+ ( Exynos ) and on the Pixel 2 ( Q )
+            server.close();
+            setState(GattState.CLOSE_GATT_SERVER_SUCCESS);
+        }
     }
 
     /**

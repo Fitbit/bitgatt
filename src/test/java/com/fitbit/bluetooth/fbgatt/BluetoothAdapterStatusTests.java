@@ -161,6 +161,16 @@ public class BluetoothAdapterStatusTests {
             @Override
             public void onBluetoothOn() {
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         });
         FitbitGatt.getInstance().registerGattEventListener(cb);
         mockStatusListener.listener = FitbitGatt.getInstance();
@@ -221,6 +231,16 @@ public class BluetoothAdapterStatusTests {
 
             @Override
             public void onBluetoothOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
 
             }
         });

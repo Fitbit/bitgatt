@@ -144,6 +144,16 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
                                     public void onBluetoothOn() {
 
                                     }
+
+                                    @Override
+                                    public void onBluetoothTurningOn() {
+
+                                    }
+
+                                    @Override
+                                    public void onBluetoothTurningOff() {
+
+                                    }
                                 });
                                 FitbitGatt.getInstance().start(context);
                             }

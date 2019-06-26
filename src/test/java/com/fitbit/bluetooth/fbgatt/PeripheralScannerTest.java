@@ -130,6 +130,16 @@ public class PeripheralScannerTest {
             public void onBluetoothOn() {
 
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         };
         FitbitGatt.getInstance().registerGattEventListener(cb);
         FitbitGatt.getInstance().getPeripheralScanner().populateMockScanResultBatchValues(results);
@@ -192,6 +202,16 @@ public class PeripheralScannerTest {
 
             @Override
             public void onBluetoothOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
 
             }
         };
@@ -263,6 +283,16 @@ public class PeripheralScannerTest {
             public void onBluetoothOn() {
 
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         };
         FitbitGatt.getInstance().registerGattEventListener(cb);
         FitbitGatt.getInstance().addScannedDevice(device);
@@ -330,6 +360,16 @@ public class PeripheralScannerTest {
 
             @Override
             public void onBluetoothOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
 
             }
         };
@@ -401,6 +441,16 @@ public class PeripheralScannerTest {
             public void onBluetoothOn() {
 
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         };
         FitbitGatt.getInstance().registerGattEventListener(cb);
         FitbitGatt.getInstance().addScannedDevice(device);
@@ -462,6 +512,16 @@ public class PeripheralScannerTest {
 
             @Override
             public void onBluetoothOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
 
             }
         };

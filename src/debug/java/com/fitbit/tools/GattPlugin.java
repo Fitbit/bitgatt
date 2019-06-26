@@ -2482,6 +2482,16 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     @Override
+    public void onBluetoothTurningOn() {
+        Timber.v("Bluetooth turning on was called");
+    }
+
+    @Override
+    public void onBluetoothTurningOff() {
+        Timber.v("Bluetooth turning off was called");
+    }
+
+    @Override
     public void onBluetoothPeripheralDevicePropertiesChanged(FitbitBluetoothDevice device) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("mac", device.getAddress());

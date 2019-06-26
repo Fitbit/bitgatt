@@ -221,6 +221,12 @@ are not implemented.  Bitgatt will respond with error ( to help prevent disconne
 where the developer has not registered a listener, or where they are not using a particular
 characteristic.
 
+In order to ensure that the gatt server is always responsive after toggling bluetooth services will
+be cleared when BT is disabled, this leads to a consistent experience across Android devices.  In
+order to use services again, please re-add any gatt server services that you are hosting on the
+Android device when BT is turned on again.  You can do this by listening for bt on / off events 
+with the FitbitGattCallback.
+
 ## [Sample Code](#sample-code)
 
 Pre-Commit ( Deprecated )

@@ -12,11 +12,16 @@ import com.fitbit.bluetooth.fbgatt.tx.ReadGattServerCharacteristicDescriptorValu
 import com.fitbit.bluetooth.fbgatt.tx.ReadGattServerCharacteristicValueTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.MockNoOpTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.NotifyGattServerCharacteristicMockTransaction;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
@@ -27,6 +32,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -136,12 +142,23 @@ public class GattServerTests {
             public void onBluetoothOn() {
 
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         });
         cdl.await(1, TimeUnit.SECONDS);
     }
 
     @Test
     public void readLocalGattServerCharacteristic() throws InterruptedException {
+        FitbitGatt.getInstance().start(mockContext);
         gatt.getServer().setState(GattState.IDLE);
         cpChar.setValue(new byte[]{27, 29});
         ReadGattServerCharacteristicValueTransaction rgscvt = new ReadGattServerCharacteristicValueTransaction(gatt.getServer(), GattState.READ_CHARACTERISTIC_SUCCESS, dncs, cpChar);
@@ -203,5 +220,87 @@ public class GattServerTests {
         // if this takes less than the tx 200 ms plus the delay then it didn't happen right
         assertTrue("Should take greater than or equal to 400 ms", txTotal >= 400);
         connection.setIntraTransactionDelay(0);
+    }
+
+    @Test
+    public void btOffOnWillClearServices() throws InterruptedException {
+        // should do nothing if already started
+        final CountDownLatch cdl = new CountDownLatch(1);
+        BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
+        if(adapter == null) {
+            // if adapter is null always pass we are probably running in the simulator
+            Assert.assertTrue("adapter is null", true);
+            return;
+        }
+        FitbitGatt.getInstance().start(mockContext);
+        FitbitGatt.FitbitGattCallback callback = new FitbitGatt.FitbitGattCallback() {
+            @Override
+            public void onBluetoothPeripheralDiscovered(GattConnection connection) {
+
+            }
+
+            @Override
+            public void onBluetoothPeripheralDisconnected(GattConnection connection) {
+
+            }
+
+            @Override
+            public void onFitbitGattReady() {
+
+            }
+
+            @Override
+            public void onScanStarted() {
+
+            }
+
+            @Override
+            public void onScanStopped() {
+
+            }
+
+            @Override
+            public void onPendingIntentScanStopped() {
+
+            }
+
+            @Override
+            public void onPendingIntentScanStarted() {
+
+            }
+
+            @Override
+            public void onBluetoothOff() {
+                // turn bluetooth back on
+                new Handler(Looper.getMainLooper()).postDelayed(adapter::enable, 250);
+            }
+
+            @Override
+            public void onBluetoothOn() {
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        BluetoothGattServer server = FitbitGatt.getInstance().getServer().getServer();
+                        List<BluetoothGattService> services = server.getServices();
+                        Assert.assertTrue(services.isEmpty());
+                        cdl.countDown();
+                    }
+                }, 250);
+            }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
+        };
+        // let's listen for bt events
+        FitbitGatt.getInstance().registerGattEventListener(callback);
+        adapter.disable();
+        cdl.await(10, TimeUnit.SECONDS);
     }
 }
