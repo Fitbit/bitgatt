@@ -76,7 +76,18 @@ public class AddGattServerServiceTransaction extends GattServerTransaction {
                 getGattServer().setState(GattState.IDLE);
                 return;
             }
-            getGattServer().getServer().addService(service);
+            boolean success = getGattServer().getServer().addService(service);
+            if(!success) {
+                TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
+                builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
+                getGattServer().setState(GattState.ADD_SERVICE_FAILURE);
+                Timber.w("The gatt service failed to be added at the gatt level, try again later.", service.getUuid());
+                builder.gattState(getGattServer().getGattState())
+                    .serviceUuid(service.getUuid())
+                    .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
+                callCallbackWithTransactionResultAndRelease(callback, builder.build());
+                getGattServer().setState(GattState.IDLE);
+            }
         }
     }
 

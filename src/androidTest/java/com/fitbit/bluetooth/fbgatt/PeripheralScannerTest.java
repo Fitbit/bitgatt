@@ -67,7 +67,9 @@ public class PeripheralScannerTest {
         SystemClock.sleep(3000);
         FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().getPeripheralScanner().setMockMode(false);
+        FitbitGatt.getInstance().getPeripheralScanner().setInstrumentationTestMode(true);
         FitbitGatt.getInstance().getPeripheralScanner().cancelScan(this.appContext);
+        FitbitGatt.getInstance().getPeripheralScanner().cancelPeriodicalScan(this.appContext);
         FitbitGatt.getInstance().getPeripheralScanner().cancelPendingIntentBasedBackgroundScan();
     }
 
@@ -121,11 +123,27 @@ public class PeripheralScannerTest {
         handler.postDelayed(()->{
             assertEquals(true, FitbitGatt.getInstance().getPeripheralScanner().isScanning());
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                new Handler(Looper.getMainLooper()).postDelayed(()-> assertTrue(FitbitGatt.getInstance().getPeripheralScanner().isScanning()), PeripheralScanner.SCAN_INTERVAL);
+                new Handler(Looper.getMainLooper()).postDelayed(()-> assertTrue(FitbitGatt.getInstance().getPeripheralScanner().isScanning()), PeripheralScanner.TEST_SCAN_INTERVAL);
                 cdl.countDown();
-            }, PeripheralScanner.SCAN_DURATION);
+            }, PeripheralScanner.TEST_SCAN_DURATION);
         }, 1000);
         cdl.await(2, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testHighPriorityScanTimesOut()  throws InterruptedException{
+        // started
+        assertFalse(FitbitGatt.getInstance().getPeripheralScanner().isScanning());
+        assertEquals(true, FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().getPeripheralScanner().resetFilters();
+        FitbitGatt.getInstance().getPeripheralScanner().addServiceUUIDWithMask(new ParcelUuid(FITBIT_SERVICE_UUID), new ParcelUuid(FITBIT_SERVICE_MASK));
+        FitbitGatt.getInstance().getPeripheralScanner().startHighPriorityScan(appContext);
+        CountDownLatch cdl = new CountDownLatch(1);
+        handler.postDelayed(()->{
+            assertFalse(FitbitGatt.getInstance().getPeripheralScanner().isScanning());
+                cdl.countDown();
+        }, PeripheralScanner.TEST_SCAN_DURATION + 250);
+        cdl.await(10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -191,6 +209,16 @@ public class PeripheralScannerTest {
             public void onBluetoothOn() {
 
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         };
         FitbitGatt.getInstance().registerGattEventListener(callback);
         FitbitGatt.getInstance().getPeripheralScanner().startPeriodicScan(appContext);
@@ -234,6 +262,9 @@ public class PeripheralScannerTest {
 
     @Test
     public void testStartConcurrencyProtection() throws InterruptedException {
+        // have to wait here also so we don't yo-dawg, or have a silent android fail since
+        // this is a real scan
+        SystemClock.sleep(30000);
         assertFalse(FitbitGatt.getInstance().isScanning());
         FitbitGatt.getInstance().getPeripheralScanner().setDeviceNameFilters(names);
         FitbitGatt.getInstance().getPeripheralScanner().startHighPriorityScan(appContext);
@@ -410,6 +441,16 @@ public class PeripheralScannerTest {
             public void onBluetoothOn() {
 
             }
+
+            @Override
+            public void onBluetoothTurningOn() {
+
+            }
+
+            @Override
+            public void onBluetoothTurningOff() {
+
+            }
         };
         FitbitGatt.getInstance().registerGattEventListener(callback);
         FitbitGatt.getInstance().startHighPriorityScan(appContext);
@@ -473,6 +514,16 @@ public class PeripheralScannerTest {
 
                 @Override
                 public void onBluetoothOn() {
+
+                }
+
+                @Override
+                public void onBluetoothTurningOn() {
+
+                }
+
+                @Override
+                public void onBluetoothTurningOff() {
 
                 }
             };

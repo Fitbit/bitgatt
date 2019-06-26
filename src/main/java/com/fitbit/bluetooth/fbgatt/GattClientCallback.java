@@ -110,27 +110,31 @@ public class GattClientCallback extends BluetoothGattCallback {
                 handler.post(() -> listener.onPhyUpdate(gatt, txPhy, rxPhy, status));
             }
         }
-        GattConnection conn = null;
+        final GattConnection conn;
         if (gatt != null) {
             conn = FitbitGatt.getInstance().getConnection(gatt.getDevice());
+        } else {
+            conn = null;
         }
         if(conn != null) {
             // since this is one of the events that could happen asynchronously, we will
             // need to iterate through our connection listeners
-            for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
-                TransactionResult.Builder builder = new TransactionResult.Builder();
-                if(status == BluetoothGatt.GATT_SUCCESS) {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
-                } else {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
-                }
-                asyncConnListener.onPhyChanged(builder
+            handler.post(() -> {
+                for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
+                    TransactionResult.Builder builder = new TransactionResult.Builder();
+                    if(status == BluetoothGatt.GATT_SUCCESS) {
+                        builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
+                    } else {
+                        builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
+                    }
+                    asyncConnListener.onPhyChanged(builder
                         .transactionName(RequestGattClientPhyChangeTransaction.NAME)
                         .txPhy(txPhy)
                         .rxPhy(rxPhy)
                         .gattState(conn.getGattState())
                         .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
-            }
+                }
+            });
         }
     }
 
@@ -257,12 +261,14 @@ public class GattClientCallback extends BluetoothGattCallback {
                 // need to iterate through our connection listeners, since this is a disconnection
                 // we will want to report success so that upstream consumers don't get confused,
                 // or mixed signals on a connection attempt
-                for(ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
-                    handler.post(() -> asyncConnListener.onClientConnectionStateChanged(new TransactionResult.Builder()
+                handler.post(() -> {
+                    for(ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
+                        handler.post(() -> asyncConnListener.onClientConnectionStateChanged(new TransactionResult.Builder()
                             .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS)
                             .gattState(conn.getGattState())
                             .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn));
-                }
+                    }
+                });
                 break;
             default:
                 throw new IllegalStateException(String.format(Locale.ENGLISH,
@@ -287,20 +293,22 @@ public class GattClientCallback extends BluetoothGattCallback {
         if(conn != null) {
             // since this is one of the events that could happen asynchronously, we will
             // need to iterate through our connection listeners
-            for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
-                TransactionResult.Builder builder = new TransactionResult.Builder();
-                builder.transactionName(GattClientDiscoverServicesTransaction.NAME);
-                if(status == BluetoothGatt.GATT_SUCCESS) {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
-                } else {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
-                }
-                asyncConnListener.onServicesDiscovered(builder
+            handler.post(() -> {
+                for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
+                    TransactionResult.Builder builder = new TransactionResult.Builder();
+                    builder.transactionName(GattClientDiscoverServicesTransaction.NAME);
+                    if(status == BluetoothGatt.GATT_SUCCESS) {
+                        builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
+                    } else {
+                        builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
+                    }
+                    asyncConnListener.onServicesDiscovered(builder
                         .transactionName(GattClientDiscoverServicesTransaction.NAME)
                         .serverServices(gatt.getServices())
                         .gattState(conn.getGattState())
                         .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
-            }
+                }
+            });
         }
     }
 
@@ -351,17 +359,19 @@ public class GattClientCallback extends BluetoothGattCallback {
         if(conn == null) {
             Timber.v("[%s] Gatt was null, we could be mocking, if so we can't notify async", getDeviceMacFromGatt(gatt));
         } else {
-            for(ConnectionEventListener asyncListener: conn.getConnectionEventListeners()) {
-                // since this is async, the result status is irrelevant so it will always be
-                // success because we received this data, as this is a snapshot of a live object
-                // we will need to copy the values into the tx result
-                TransactionResult result = new TransactionResult.Builder()
+            handler.post(() -> {
+                for(ConnectionEventListener asyncListener: conn.getConnectionEventListeners()) {
+                    // since this is async, the result status is irrelevant so it will always be
+                    // success because we received this data, as this is a snapshot of a live object
+                    // we will need to copy the values into the tx result
+                    TransactionResult result = new TransactionResult.Builder()
                         .gattState(conn.getGattState())
                         .characteristicUuid(copyOfCharacteristic.getUuid())
                         .data(copyOfCharacteristic.getValue())
                         .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
-                asyncListener.onClientCharacteristicChanged(result, conn);
-            }
+                    asyncListener.onClientCharacteristicChanged(result, conn);
+                }
+            });
         }
     }
 
@@ -437,19 +447,21 @@ public class GattClientCallback extends BluetoothGattCallback {
         if(conn != null) {
             // since this is one of the events that could happen asynchronously, we will
             // need to iterate through our connection listeners
-            for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
-                TransactionResult.Builder builder = new TransactionResult.Builder();
-                if(status == BluetoothGatt.GATT_SUCCESS) {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
-                } else {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
-                }
-                asyncConnListener.onMtuChanged(builder
+            handler.post(() -> {
+                for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
+                    TransactionResult.Builder builder = new TransactionResult.Builder();
+                    if(status == BluetoothGatt.GATT_SUCCESS) {
+                        builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
+                    } else {
+                        builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
+                    }
+                    asyncConnListener.onMtuChanged(builder
                         .transactionName(RequestMtuGattTransaction.NAME)
                         .mtu(mtu)
                         .gattState(conn.getGattState())
                         .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
-            }
+                }
+            });
         }
     }
 }
