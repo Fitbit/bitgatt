@@ -17,7 +17,7 @@ import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Will read a characteristic from a local gatt server and populate a transaction result with

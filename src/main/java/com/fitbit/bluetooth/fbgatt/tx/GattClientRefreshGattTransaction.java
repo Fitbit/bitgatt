@@ -14,14 +14,12 @@ import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 
-import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothGatt;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import timber.log.Timber;
 

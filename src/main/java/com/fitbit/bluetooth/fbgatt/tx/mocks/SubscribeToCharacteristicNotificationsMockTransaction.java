@@ -16,7 +16,7 @@ import com.fitbit.bluetooth.fbgatt.tx.SubscribeToCharacteristicNotificationsTran
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Mocks the subscription, will process through for success, fail in this case will be a timeout

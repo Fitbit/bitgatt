@@ -23,8 +23,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.concurrent.TimeUnit;
 
@@ -68,11 +68,11 @@ public class CreateBondTransaction extends GattTransaction {
                 if (getConnection().getDevice().equals(extraDevice)) {
                     int oldState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.BOND_NONE);
                     int newState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE);
-                    GattUtils utils = new GattUtils();
+                    GattUtils util = new GattUtils();
                     Timber.d("[%s] Bond state changed from %s to %s",
                             getConnection().getDevice(),
-                            utils.getBondStateDescription(oldState),
-                            utils.getBondStateDescription(newState));
+                            util.getBondStateDescription(oldState),
+                            util.getBondStateDescription(newState));
                     switch (newState) {
                         case BluetoothDevice.BOND_BONDED:
                             Timber.d("[%s] Bond state changed to BONDED",getDevice());

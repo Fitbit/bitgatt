@@ -6,8 +6,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.fitbit.tools;
+package com.fitbit.bluetooth.fbgatt.tools;
 
+import com.fitbit.bluetooth.fbgatt.BuildConfig;
 import com.fitbit.bluetooth.fbgatt.ConnectionEventListener;
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
@@ -53,12 +54,11 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.os.ParcelUuid;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
 
 import com.facebook.stetho.dumpapp.ArgsHelper;
 import com.facebook.stetho.dumpapp.DumpException;
@@ -83,16 +83,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_CLASSIC;
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_DUAL;
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_LE;
+import static java.util.Locale.ENGLISH;
 
 /**
- * A delightful class, filled with stimulating code and whimsical
- * fancy for your reading pleasure
- *
+ * An implementation of a stetho gatt plugin
+ * <p>
  * Created by iowens on 7/12/18.
  */
 public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, ConnectionEventListener, FitbitBluetoothDevice.DevicePropertiesChangedCallback {
@@ -143,58 +146,59 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     enum GattCommand {
 
         HELP("help", "h", "Description: Will print this help"),
-        ADD_LOCAL_GATT_SERVER_SERVICE("add-local-gatt-server-service","algss","<uuid>\n\nDescription: Will add a local gatt server service to the mobile device"),
-        ADD_LOCAL_GATT_SERVER_CHARACTERISTIC("add-local-gatt-server-characteristic","algsc",
-                "<service uuid> <characteristic uuid> <properties int>\n" +
-                        "Properties Values: PROPERTY_BROADCAST=1, PROPERTY_EXTENDED_PROPS=2, " +
-                        "PROPERTY_INDICATE=32, PROPERTY_NOTIFY=16, PROPERTY_READ=2, " +
-                        "PROPERTY_SIGNED_WRITE=64, PROPERTY_WRITE=8, PROPERTY_WRITE_NO_RESPONSE=4\n" +
-                        " <permissions int>\nPermission Values: PERMISSION_READ=1, " +
-                        "PERMISSION_READ_ENCRYPTED=2, PERMISSION_READ_ENCRYPTED_MITM=4, " +
-                        "PERMISSION_WRITE=16, PERMISSION_WRITE_ENCRYPTED=32, " +
-                        "PERMISSION_WRITE_ENCRYPTED_MITM=64, PERMISSION_WRITE_SIGNED=128, " +
-                        "PERMISSION_WRITE_SIGNED_MITM=256\n\nDescription: Will add a local gatt server characteristic to a gatt service on the mobile device"),
-        ADD_LOCAL_GATT_SERVER_CHARACTERISTIC_DESCRIPTOR("add-local-gatt-server-characteristic-descriptor", "algscd", "<service uuid> <characteristic uuid> <descriptor uuid> <int permission>\nPermission Values: PERMISSION_READ=1, \" +\n" +
+        ADD_LOCAL_GATT_SERVER_SERVICE("add-local-gatt-server-service", "algss", "<uuid>\n\nDescription: Will add a local gatt server service to the mobile device"),
+        ADD_LOCAL_GATT_SERVER_CHARACTERISTIC("add-local-gatt-server-characteristic", "algsc",
+            "<service uuid> <characteristic uuid> <properties int>\n" +
+                "Properties Values: PROPERTY_BROADCAST=1, PROPERTY_EXTENDED_PROPS=2, " +
+                "PROPERTY_INDICATE=32, PROPERTY_NOTIFY=16, PROPERTY_READ=2, " +
+                "PROPERTY_SIGNED_WRITE=64, PROPERTY_WRITE=8, PROPERTY_WRITE_NO_RESPONSE=4\n" +
+                " <permissions int>\nPermission Values: PERMISSION_READ=1, " +
                 "PERMISSION_READ_ENCRYPTED=2, PERMISSION_READ_ENCRYPTED_MITM=4, " +
                 "PERMISSION_WRITE=16, PERMISSION_WRITE_ENCRYPTED=32, " +
                 "PERMISSION_WRITE_ENCRYPTED_MITM=64, PERMISSION_WRITE_SIGNED=128, " +
-                "PERMISSION_WRITE_SIGNED_MITM=256\n\nDescription: Will add a local gatt server characteristic descriptor to a gatt service on the mobile device"),
+                "PERMISSION_WRITE_SIGNED_MITM=256\n\nDescription: Will add a local gatt server characteristic to a gatt service on the mobile device"),
+        ADD_LOCAL_GATT_SERVER_CHARACTERISTIC_DESCRIPTOR("add-local-gatt-server-characteristic-descriptor", "algscd", "<service uuid> <characteristic uuid> <descriptor uuid> <int permission>\nPermission Values: PERMISSION_READ=1, \" +\n" +
+            "PERMISSION_READ_ENCRYPTED=2, PERMISSION_READ_ENCRYPTED_MITM=4, " +
+            "PERMISSION_WRITE=16, PERMISSION_WRITE_ENCRYPTED=32, " +
+            "PERMISSION_WRITE_ENCRYPTED_MITM=64, PERMISSION_WRITE_SIGNED=128, " +
+            "PERMISSION_WRITE_SIGNED_MITM=256\n\nDescription: Will add a local gatt server characteristic descriptor to a gatt service on the mobile device"),
         WRITE_LOCAL_GATT_SERVER_CHARACTERISTIC("write-local-gatt-server-characteristic", "wlgsc", "<service uuid> <characteristic uuid> <data>\n\nDescription: Will write to a local gatt server service characteristic on a service on the mobile device"),
         WRITE_LOCAL_GATT_SERVER_CHARACTERISTIC_DESCRIPTOR("write-local-gatt-server-characteristic-descriptor", "wlgscd", "<service uuid> <characteristic uuid> <descriptor uuid> <data>\n\nDescription: Will write to a local gatt server descriptor on a characteristic on a service on the gatt server of the mobile device"),
         READ_LOCAL_GATT_SERVER_CHARACTERISTIC("read-local-gatt-server-characteristic", "rlgsc", "<service uuid> <characteristic uuid>\n\nDescription: Will read out the data value of a local gatt server service characteristic on the mobile device"),
         READ_LOCAL_GATT_SERVER_CHARACTERISTIC_DESCRIPTOR("read-local-gatt-server-characteristic-descriptor", "rlgscd", "<service uuid> <characteristic uuid> <descriptor uuid>\n\nDescription: Will read off the value of a descriptor on a gatt server service characteristic descriptor on the mobile device"),
-        CLEAR_LOCAL_GATT_SERVER_SERVICES("clear-local-gatt-server-services","clgss","Description: Will remove all hosted service from the local gatt server on the mobile device"),
-        CLOSE_GATT_CLIENT("close-gatt-client","cgc","<mac>\n\nDescription: Will close the gatt client and release the android client_if handle"),
-        INIT_GATT("init","init","Description: Will initialize the gatt server and start passively scanning for devices"),
-        FIND_NEARBY_DEVICES("find-nearby-devices","fnd","Description: Will find nearby, connected, and bonded devices"),
-        FIND_NEARBY_DEVICES_WITH_BACKGROUND_SCAN("find-nearby-devices-background","fndbkgnd","Description: Will find nearby devices using the pending intent background scan"),
-        STOP_BACKGROUND_SCAN("stop-background-scan","sbs","Description: Will stop the background scanner"),
-        GATT_CLIENT_DISCOVER_SERVICES("gatt-client-discover-services","gcds","<mac>\n\nDescription: Will discover services on connected peripheral with the given mac address"),
-        GATT_CLIENT_CONNECT("gatt-client-connect","gcc","<mac>\n\nDescription: Will connect to the peripheral with the provided mac address"),
-        GATT_CLIENT_DISCONNECT("gatt-client-disconnect","gcd","<mac>\n\nDescription: Will unregister the android application from the peripheral with the given mac address.  Note, this does not mean that the peripheral is disconnected from the mobile device"),
-        GATT_SERVER_CONNECT("gatt-server-connect", "gsc","<mac>\n\nDescription: Will connect to the peripheral with the given mac address from the local gatt server"),
-        GATT_SERVER_DISCONNECT("gatt-server-disconnect","gsd","<mac>\n\nDescription: Will unregister the android application's gatt server instance from the peripheral with the given mac address.  Note, this does not mean that the peripheral is disconnected from the mobile device"),
-        SHOW_GATT_SERVER_SERVICES("show-gatt-server-services","sgss","Description: Will list off hosted gatt server services on the mobile device"),
-        SHOW_GATT_SERVER_SERVICE_CHARACTERISTICS("show-gatt-server-service-characteristics","sgssc","<service uuid>\n\nDescription: Will list off characteristics hosted by the provided local gatt server service"),
-        NOTIFY_GATT_SERVER_CHARACTERISTIC("notify-gatt-server-characteristic","ngsc","<mac> <service uuid> <characteristic uuid>\n\nDescription: Will notify on the given server service characteristic that something has changed, this will tell the peripheral that the service has had something done to it if the peripheral has subscribed to notifications on the characteristic that is being notified."),
-        READ_GATT_CLIENT_CHARACTERISTIC("read-gatt-client-characteristic","rgcc","<mac> <service uuid> <characteristic uuid>\n\nDescription: Will read a value from a characteristic hosted on the peripheral's gatt server for a given service"),
-        READ_GATT_CLIENT_DESCRIPTOR("read-gatt-client-descriptor","rgcd","<mac> <service uuid> <characteristic uuid> <descriptor uuid>\n\nDescription: Will read a value from a descriptor hosted on the peripheral's gatt server for a given service and characteristic"),
-        READ_GATT_CLIENT_RSSI("read-gatt-client-rssi","rgcr","<mac>\n\nDescription: Will read the RSSI value from the peripheral with the given mac"),
+        CLEAR_LOCAL_GATT_SERVER_SERVICES("clear-local-gatt-server-services", "clgss", "Description: Will remove all hosted service from the local gatt server on the mobile device"),
+        CLOSE_GATT_CLIENT("close-gatt-client", "cgc", "<mac>\n\nDescription: Will close the gatt client and release the android client_if handle"),
+        INIT_GATT("init", "init", "Description: Will initialize the gatt server and start passively scanning for devices"),
+        FIND_NEARBY_DEVICES("find-nearby-devices", "fnd", "Description: Will find nearby, connected, and bonded devices"),
+        FIND_NEARBY_DEVICES_WITH_BACKGROUND_SCAN("find-nearby-devices-background", "fndbkgnd", "Description: Will find nearby devices using the pending intent background scan"),
+        STOP_BACKGROUND_SCAN("stop-background-scan", "sbs", "Description: Will stop the background scanner"),
+        GATT_CLIENT_DISCOVER_SERVICES("gatt-client-discover-services", "gcds", "<mac>\n\nDescription: Will discover services on connected peripheral with the given mac address"),
+        GATT_CLIENT_CONNECT("gatt-client-connect", "gcc", "<mac>\n\nDescription: Will connect to the peripheral with the provided mac address"),
+        GATT_CLIENT_DISCONNECT("gatt-client-disconnect", "gcd", "<mac>\n\nDescription: Will unregister the android application from the peripheral with the given mac address.  Note, this does not mean that the peripheral is disconnected from the mobile device"),
+        GATT_SERVER_CONNECT("gatt-server-connect", "gsc", "<mac>\n\nDescription: Will connect to the peripheral with the given mac address from the local gatt server"),
+        GATT_SERVER_DISCONNECT("gatt-server-disconnect", "gsd", "<mac>\n\nDescription: Will unregister the android application's gatt server instance from the peripheral with the given mac address.  Note, this does not mean that the peripheral is disconnected from the mobile device"),
+        SHOW_GATT_SERVER_SERVICES("show-gatt-server-services", "sgss", "Description: Will list off hosted gatt server services on the mobile device"),
+        SHOW_GATT_SERVER_SERVICE_CHARACTERISTICS("show-gatt-server-service-characteristics", "sgssc", "<service uuid>\n\nDescription: Will list off characteristics hosted by the provided local gatt server service"),
+        NOTIFY_GATT_SERVER_CHARACTERISTIC("notify-gatt-server-characteristic", "ngsc", "<mac> <service uuid> <characteristic uuid>\n\nDescription: Will notify on the given server service characteristic that something has changed, this will tell the peripheral that the service has had something done to it if the peripheral has subscribed to notifications on the characteristic that is being notified."),
+        READ_GATT_CLIENT_CHARACTERISTIC("read-gatt-client-characteristic", "rgcc", "<mac> <service uuid> <characteristic uuid>\n\nDescription: Will read a value from a characteristic hosted on the peripheral's gatt server for a given service"),
+        READ_GATT_CLIENT_DESCRIPTOR("read-gatt-client-descriptor", "rgcd", "<mac> <service uuid> <characteristic uuid> <descriptor uuid>\n\nDescription: Will read a value from a descriptor hosted on the peripheral's gatt server for a given service and characteristic"),
+        READ_GATT_CLIENT_RSSI("read-gatt-client-rssi", "rgcr", "<mac>\n\nDescription: Will read the RSSI value from the peripheral with the given mac"),
         READ_GATT_CLIENT_PHY("read-gatt-client-phy", "rgcp", "<mac>\n\nDescription: Will read the gatt client phy"),
-        REQUEST_GATT_CLIENT_PHY("request-gatt-client-phy","rqgcp","<mac> <txPhy> <rxPhy> <phyOptions>\n\nDescription: Will request a different PHY from the mobile, can be 1, 2, or 3, please see BluetoothDevice#PHY*"),
-        REMOVE_GATT_SERVER_SERVICE("remove-gatt-server-service","rgss","<service uuid>\n\nDescription: Will remove a service from the local gatt server on the mobile device"),
-        REQUEST_GATT_CLIENT_CONNECTION_INTERVAL("request-gatt-client-connection-interval","rgcci","<mac> <low|medium|high>\n\nDescription: Will request a new connection interval mapping to one of the values hard-coded into Android from the mobile device"),
+        REQUEST_GATT_CLIENT_PHY("request-gatt-client-phy", "rqgcp", "<mac> <txPhy> <rxPhy> <phyOptions>\n\nDescription: Will request a different PHY from the mobile, can be 1, 2, or 3, please see BluetoothDevice#PHY*"),
+        REMOVE_GATT_SERVER_SERVICE("remove-gatt-server-service", "rgss", "<service uuid>\n\nDescription: Will remove a service from the local gatt server on the mobile device"),
+        REQUEST_GATT_CLIENT_CONNECTION_INTERVAL("request-gatt-client-connection-interval", "rgcci", "<mac> <low|medium|high>\n\nDescription: Will request a new connection interval mapping to one of the values hard-coded into Android from the mobile device"),
         REQUEST_GATT_CLIENT_MTU("request-gatt-client-mtu", "rgcm", "<mac> <mtu> ( must be between 23 and 512 )\n\nDescription: Will request a different MTU size from a peripheral with the given mac address"),
-        WRITE_GATT_SERVER_RESPONSE("write-gatt-server-response", "wgsr","<mac> <request id> <status-int> <offset-int> <data char[]>\n\nDescription: Will send the gatt server response to the peripheral for a read or write request"),
-        SUBSCRIBE_TO_GATT_CLIENT_CHARACTERISTIC("subscribe-to-gatt-client-characteristic","stgcc","<mac> <service uuid> <characteristic uuid>\n\nDescription: Will subscribe to a particular gatt client characteristic, please remember that you must write to the notification descriptor on the given characteristic to truly have notifications enabled, this command will just route the notifications to this android process"),
-        UNSUBSCRIBE_FROM_GATT_CLIENT_CHARACTERISTIC("unsubscribe-from-gatt-client-characteristic","ufgcc","<mac> <characteristic uuid>\n\nDescription: Will unsubscribe from a particular gatt client characteristic.  Please remember that you must write the unsubscribe value to the subscription descriptor on the given characteristic to truly unsubscribe from notifications"),
-        WRITE_GATT_CHARACTERISTIC("write-gatt-characteristic","wgc","<mac>  <service uuid> <characteristic uuid> <data>\n\nDescription: Will write to a remote gatt characteristic hosted on the peripheral with the given service"),
-        WRITE_GATT_DESCRIPTOR("write-gatt-descriptor","wgd","<mac>  <service uuid> <characteristic uuid> <descriptor uuid> <data>\n\nDescription: Will write to a remote gatt descriptor hosted on the peripheral's gatt server with the given service and characteristic"),
+        WRITE_GATT_SERVER_RESPONSE("write-gatt-server-response", "wgsr", "<mac> <request id> <status-int> <offset-int> <data char[]>\n\nDescription: Will send the gatt server response to the peripheral for a read or write request"),
+        SUBSCRIBE_TO_GATT_CLIENT_CHARACTERISTIC("subscribe-to-gatt-client-characteristic", "stgcc", "<mac> <service uuid> <characteristic uuid>\n\nDescription: Will subscribe to a particular gatt client characteristic, please remember that you must write to the notification descriptor on the given characteristic to truly have notifications enabled, this command will just route the notifications to this android process"),
+        UNSUBSCRIBE_FROM_GATT_CLIENT_CHARACTERISTIC("unsubscribe-from-gatt-client-characteristic", "ufgcc", "<mac> <characteristic uuid>\n\nDescription: Will unsubscribe from a particular gatt client characteristic.  Please remember that you must write the unsubscribe value to the subscription descriptor on the given characteristic to truly unsubscribe from notifications"),
+        WRITE_GATT_CHARACTERISTIC("write-gatt-characteristic", "wgc", "<mac>  <service uuid> <characteristic uuid> <data>\n\nDescription: Will write to a remote gatt characteristic hosted on the peripheral with the given service"),
+        WRITE_GATT_DESCRIPTOR("write-gatt-descriptor", "wgd", "<mac>  <service uuid> <characteristic uuid> <descriptor uuid> <data>\n\nDescription: Will write to a remote gatt descriptor hosted on the peripheral's gatt server with the given service and characteristic"),
         SET_JSON_OUTPUT_FORMAT("set-json-output", "sjo", "on/off\n\nDescription: Will enable json command line output or disable it"),
-        REFRESH_GATT("refresh-gatt","rgt","<mac>\n\nDescription: Refresh the gatt on the phone"),
+        REFRESH_GATT("refresh-gatt", "rgt", "<mac>\n\nDescription: Refresh the gatt on the phone"),
         SHOW_REMOTE_SERVICES("show-remote-services", "srs", "<mac>\n\nDescription: Will show remote services, characteristics, and descriptors available post discovery"),
         READ_AMBIENT_TEMP("read-ambient-temperature", "rat", "Description: Displays ambient temperature in degrees Celsius"),
-        READ_GATT_LIB_VERSION("read-gatt-lib-version","rglv","Description: Print version of the GATT library in use");
+        READ_GATT_LIB_VERSION("read-gatt-lib-version", "rglv", "Description: Print version of the GATT library in use"),
+        READ_NUM_GATT_ACTIVE_CONNECTIONS("read-num-gatt-active-connections", "rngac", "Description: Read number of active connetions on GATT");
 
         private String fullName;
         private String shortName;
@@ -206,26 +210,26 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             this.description = description;
         }
 
-        public String getFullName(){
+        public String getFullName() {
             return fullName;
         }
 
-        public String getShortName(){
+        public String getShortName() {
             return shortName;
         }
 
-        public String getDescription(){
+        public String getDescription() {
             return description;
         }
 
         public static @Nullable
         GattCommand getEnum(@Nullable String value) {
-            if(value == null) {
+            if (value == null) {
                 return null;
             } else {
                 GattCommand[] commands = GattCommand.values();
-                for(GattCommand command : commands) {
-                    if(command.getFullName().equals(value) || command.getShortName().equals(value)) {
+                for (GattCommand command : commands) {
+                    if (command.getFullName().equals(value) || command.getShortName().equals(value)) {
                         return command;
                     }
                 }
@@ -234,7 +238,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         }
     }
 
-    public GattPlugin(Context context){
+    public GattPlugin(Context context) {
         this.context = context;
         this.fitbitGatt = FitbitGatt.getInstance();
         this.fitbitGatt.registerGattEventListener(this);
@@ -249,17 +253,21 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     @Override
     public void dump(DumperContext dumpContext) throws DumpException {
         this.dumperContext = dumpContext;
+        if(!BuildConfig.DEBUG) {
+            logError(dumpContext, new IllegalStateException("Nope."));
+            return;
+        }
         List<String> argsList = dumpContext.getArgsAsList();
         Iterator<String> args = argsList.iterator();
         String command = ArgsHelper.nextOptionalArg(args, null);
 
         GattCommand commandEnum = GattCommand.getEnum(command);
-        if(commandEnum == null) {
+        if (commandEnum == null) {
             logError(dumpContext, new IllegalArgumentException("Provided command does not match"));
             return;
         }
-        try{
-            switch(commandEnum) {
+        try {
+            switch (commandEnum) {
                 case HELP:
                     printAvailableCommands(dumpContext);
                     break;
@@ -380,10 +388,13 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 case READ_GATT_CLIENT_PHY:
                     readGattClientPhy(dumpContext, args);
                     break;
+                case READ_NUM_GATT_ACTIVE_CONNECTIONS:
+                    readNumGattActiveConnections(dumpContext);
+                    break;
                 default:
                     log(dumpContext, "Illegal command provided");
             }
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             logError(dumpContext, t);
         }
     }
@@ -406,7 +417,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             logError(dumperContext, new IllegalArgumentException("No connection available for provided mac"));
             return;
         }
-        if(conn.getGatt() == null) {
+        if (conn.getGatt() == null) {
             logError(dumperContext, new IllegalStateException("No Gatt client established, you have to at least have connected once"));
             return;
         }
@@ -414,7 +425,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         GattClientRefreshGattTransaction refresh = new GattClientRefreshGattTransaction(conn, GattState.REFRESH_GATT_SUCCESS);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(refresh, result -> {
-            logSuccessOrFailure(result, dumperContext, "Successfully refreshed on "+ conn.getDevice(), "Failed refreshing on "+ conn.getDevice());
+            logSuccessOrFailure(result, dumperContext, "Successfully refreshed on " + conn.getDevice(), "Failed refreshing on " + conn.getDevice());
             cdl.countDown();
             conn.getDevice().removeDevicePropertiesChangedListener(this);
         });
@@ -444,10 +455,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             }
             log(dumpContext, builder.toString());
             format(dumpContext, "| %1$36s | %2$36s | %3$36s | %4$32s | %5$32s | %6$32s\n",
-                    "Service UUID", "Characteristic UUID", "Descriptor UUID",
-                    "Permissions",
-                    "Properties",
-                    "Value");
+                "Service UUID", "Characteristic UUID", "Descriptor UUID",
+                "Permissions",
+                "Properties",
+                "Value");
         }
         GattConnection conn = FitbitGatt.getInstance().getConnectionForBluetoothAddress(FitbitGatt.getInstance().getAppContext(), mac);
         if (conn == null) {
@@ -481,8 +492,8 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                     String descriptorPermission = getStringRepresentationOfPermissionsForDescriptor(descriptor);
                     if (!isJsonFormat) {
                         format(dumpContext, "| %1$36s | %2$36s | %3$36s | %4$32s | %5$32s | %6$32s\n", remoteService.getUuid(),
-                                characteristic.getUuid().toString(), descriptor.getUuid().toString(),
-                                descriptorPermission, "N/A", Bytes.byteArrayToHexString(descriptor.getValue()));
+                            characteristic.getUuid().toString(), descriptor.getUuid().toString(),
+                            descriptorPermission, "N/A", Bytes.byteArrayToHexString(descriptor.getValue()));
                     } else {
                         Map<String, Object> map = new LinkedHashMap<String, Object>() {{
                             put(RESULT_SERVICE_UUID_KEY, remoteService.getUuid().toString());
@@ -499,7 +510,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             }
         }
 
-        if(!isJsonFormat) {
+        if (!isJsonFormat) {
             builder = new StringBuilder();
             for (int i = 0; i < n; i++) {
                 builder.append("=");
@@ -513,17 +524,16 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     private void readAmbientTemp(DumperContext dumpContext) {
         float fAmbientTemp = 0; // Here replace with the correct API
-        String sAmbientTemp = String.format ("%.2f", fAmbientTemp);
+        String sAmbientTemp = String.format(ENGLISH, "%.2f", fAmbientTemp);
 
-        if(isJsonFormat) {
+        if (isJsonFormat) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put(COMMAND_KEY, "read-ambient-temperature");
             map.put(STATUS_KEY, PASS_STATUS);
             map.put(RESULT_KEY, sAmbientTemp);
             JSONObject jsonObject = makeJsonObject(map);
             log(dumpContext, jsonObject.toString());
-        }
-        else {
+        } else {
             log(dumpContext, sAmbientTemp);
         }
     }
@@ -531,15 +541,14 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     private void readGattLibVersion(DumperContext dumpContext) {
         String glversion = "0.0.0"; // For Irvin: Here replace with the correct API
 
-        if(isJsonFormat) {
+        if (isJsonFormat) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put(COMMAND_KEY, "read-gatt-lib-version");
             map.put(STATUS_KEY, PASS_STATUS);
             map.put(RESULT_KEY, glversion);
             JSONObject jsonObject = makeJsonObject(map);
             log(dumpContext, jsonObject.toString());
-        }
-        else {
+        } else {
             log(dumpContext, glversion);
         }
     }
@@ -549,31 +558,31 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder permissionBuilder = new StringBuilder();
         ArrayList<Integer> permissions = new ArrayList<>(8);
         int descriptorPermissions = descriptor.getPermissions();
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_READ) == BluetoothGattDescriptor.PERMISSION_READ) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_READ) == BluetoothGattDescriptor.PERMISSION_READ) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_READ);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED) == BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED) == BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED_MITM) == BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED_MITM) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED_MITM) == BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED_MITM) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_READ_ENCRYPTED_MITM);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE) == BluetoothGattDescriptor.PERMISSION_WRITE) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE) == BluetoothGattDescriptor.PERMISSION_WRITE) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_WRITE);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED) == BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED) == BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED_MITM) == BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED_MITM) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED_MITM) == BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED_MITM) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_WRITE_ENCRYPTED_MITM);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED) == BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED) == BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED);
         }
-        if((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED_MITM) == BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED_MITM) {
+        if ((descriptorPermissions & BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED_MITM) == BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED_MITM) {
             permissions.add(BluetoothGattDescriptor.PERMISSION_WRITE_SIGNED_MITM);
         }
-        for(int i=0; i < permissions.size(); i++) {
+        for (int i = 0; i < permissions.size(); i++) {
             int permission = permissions.get(i);
             switch (permission) {
                 case BluetoothGattDescriptor.PERMISSION_READ:
@@ -603,7 +612,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 default:
                     permissionBuilder.append("unknown");
             }
-            if(i < permissions.size() - 1) {
+            if (i < permissions.size() - 1) {
                 permissionBuilder.append(", ");
             }
         }
@@ -615,31 +624,31 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder propertyBuilder = new StringBuilder();
         ArrayList<Integer> properties = new ArrayList<>(8);
         int characteristicProperties = characteristic.getProperties();
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_READ) == BluetoothGattCharacteristic.PROPERTY_READ) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_READ) == BluetoothGattCharacteristic.PROPERTY_READ) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_READ);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_WRITE) == BluetoothGattCharacteristic.PROPERTY_WRITE) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_WRITE) == BluetoothGattCharacteristic.PROPERTY_WRITE) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_WRITE);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_BROADCAST) == BluetoothGattCharacteristic.PROPERTY_BROADCAST) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_BROADCAST) == BluetoothGattCharacteristic.PROPERTY_BROADCAST) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_BROADCAST);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) == BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) == BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_INDICATE) == BluetoothGattCharacteristic.PROPERTY_INDICATE) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_INDICATE) == BluetoothGattCharacteristic.PROPERTY_INDICATE) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_INDICATE);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_NOTIFY) == BluetoothGattCharacteristic.PROPERTY_NOTIFY) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_NOTIFY) == BluetoothGattCharacteristic.PROPERTY_NOTIFY) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_NOTIFY);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) == BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) == BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE);
         }
-        if((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) == BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) {
+        if ((characteristicProperties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) == BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) {
             properties.add(BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE);
         }
-        for(int i=0; i < properties.size(); i++) {
+        for (int i = 0; i < properties.size(); i++) {
             int property = properties.get(i);
             switch (property) {
                 case BluetoothGattCharacteristic.PROPERTY_READ:
@@ -669,7 +678,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 default:
                     propertyBuilder.append("unknown");
             }
-            if(i < properties.size() - 1) {
+            if (i < properties.size() - 1) {
                 propertyBuilder.append(", ");
             }
         }
@@ -681,31 +690,31 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder permissionBuilder = new StringBuilder();
         ArrayList<Integer> permissions = new ArrayList<>(8);
         int characteristicPermissions = characteristic.getPermissions();
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_READ) == BluetoothGattCharacteristic.PERMISSION_READ) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_READ) == BluetoothGattCharacteristic.PERMISSION_READ) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_READ);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED) == BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED) == BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED_MITM) == BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED_MITM) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED_MITM) == BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED_MITM) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED_MITM);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE) == BluetoothGattCharacteristic.PERMISSION_WRITE) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE) == BluetoothGattCharacteristic.PERMISSION_WRITE) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_WRITE);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED) == BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED) == BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_READ_ENCRYPTED);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM) == BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM) == BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_WRITE_ENCRYPTED_MITM);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED) == BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED) == BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED);
         }
-        if((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED_MITM) == BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED_MITM) {
+        if ((characteristicPermissions & BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED_MITM) == BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED_MITM) {
             permissions.add(BluetoothGattCharacteristic.PERMISSION_WRITE_SIGNED_MITM);
         }
-        for(int i=0; i < permissions.size(); i++) {
+        for (int i = 0; i < permissions.size(); i++) {
             int permission = permissions.get(i);
             switch (permission) {
                 case BluetoothGattCharacteristic.PERMISSION_READ:
@@ -735,7 +744,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 default:
                     permissionBuilder.append("unknown");
             }
-            if(i < permissions.size() - 1) {
+            if (i < permissions.size() - 1) {
                 permissionBuilder.append(", ");
             }
         }
@@ -747,50 +756,50 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String serviceString = null;
         String characteristicString = null;
         String descriptorString = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 serviceString = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 characteristicString = args.next();
-            } else if(index == 2) {
+            } else if (index == 2) {
                 descriptorString = args.next();
             }
             index++;
         }
-        if(serviceString == null) {
+        if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        } else if(descriptorString == null) {
+        } else if (descriptorString == null) {
             logError(dumpContext, new IllegalArgumentException("No descriptor uuid provided"));
             return;
         }
         GattServerConnection conn = fitbitGatt.getServer();
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid gatt server available"));
             return;
         }
         BluetoothGattService localService = conn.getServer().getService(UUID.fromString(serviceString));
-        if(localService == null) {
+        if (localService == null) {
             logError(dumpContext, new IllegalStateException("No service for the uuid " + serviceString + " found"));
             return;
         }
         BluetoothGattCharacteristic localCharacteristic = localService.getCharacteristic(UUID.fromString(characteristicString));
-        if(localCharacteristic == null) {
+        if (localCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid " + characteristicString + " found"));
             return;
         }
         BluetoothGattDescriptor localDescriptor = localCharacteristic.getDescriptor(UUID.fromString(descriptorString));
-        if(localDescriptor == null) {
+        if (localDescriptor == null) {
             logError(dumpContext, new IllegalStateException("No descriptor for the uuid " + descriptorString + " found"));
             return;
         }
         ReadGattServerCharacteristicDescriptorValueTransaction tx = new ReadGattServerCharacteristicDescriptorValueTransaction(conn, GattState.READ_DESCRIPTOR_SUCCESS, localService, localCharacteristic, localDescriptor);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localDescriptor.getUuid().toString() + " on "+ localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString(), "Failed writing to " + localDescriptor.getUuid().toString() + " on "+ localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString());
+            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localDescriptor.getUuid().toString() + " on " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString(), "Failed writing to " + localDescriptor.getUuid().toString() + " on " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString());
             cdl.countDown();
         });
         cdl.await();
@@ -800,40 +809,40 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         int index = 0;
         String serviceString = null;
         String characteristicString = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 serviceString = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 characteristicString = args.next();
             }
             index++;
         }
-        if(serviceString == null) {
+        if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
         }
         GattServerConnection conn = fitbitGatt.getServer();
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid gatt server available"));
             return;
         }
         BluetoothGattService localService = conn.getServer().getService(UUID.fromString(serviceString));
-        if(localService == null) {
+        if (localService == null) {
             logError(dumpContext, new IllegalStateException("No service for the uuid " + serviceString + " found"));
             return;
         }
         BluetoothGattCharacteristic localCharacteristic = localService.getCharacteristic(UUID.fromString(characteristicString));
-        if(localCharacteristic == null) {
+        if (localCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid " + characteristicString + " found"));
             return;
         }
         ReadGattServerCharacteristicValueTransaction tx = new ReadGattServerCharacteristicValueTransaction(conn, GattState.READ_CHARACTERISTIC_SUCCESS, localService, localCharacteristic);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString(), "Failed writing to " + localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString());
+            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString(), "Failed writing to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString());
             cdl.countDown();
         });
         cdl.await();
@@ -845,48 +854,48 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String characteristicString = null;
         String descriptorString = null;
         String data = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 serviceString = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 characteristicString = args.next();
-            } else if(index == 2) {
+            } else if (index == 2) {
                 descriptorString = args.next();
-            } else if(index == 3) {
+            } else if (index == 3) {
                 data = args.next();
             }
             index++;
         }
-        if(serviceString == null) {
+        if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        } else if(descriptorString == null) {
+        } else if (descriptorString == null) {
             logError(dumpContext, new IllegalArgumentException("No descriptor uuid provided"));
             return;
-        } else if(data == null) {
+        } else if (data == null) {
             logError(dumpContext, new IllegalArgumentException("No data provided"));
             return;
         }
         GattServerConnection conn = fitbitGatt.getServer();
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid gatt server available"));
             return;
         }
         BluetoothGattService localService = conn.getServer().getService(UUID.fromString(serviceString));
-        if(localService == null) {
+        if (localService == null) {
             logError(dumpContext, new IllegalStateException("No service for the uuid " + serviceString + " found"));
             return;
         }
         BluetoothGattCharacteristic localCharacteristic = localService.getCharacteristic(UUID.fromString(characteristicString));
-        if(localCharacteristic == null) {
+        if (localCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid " + characteristicString + " found"));
             return;
         }
         BluetoothGattDescriptor localDescriptor = localCharacteristic.getDescriptor(UUID.fromString(descriptorString));
-        if(localDescriptor == null) {
+        if (localDescriptor == null) {
             logError(dumpContext, new IllegalStateException("No descriptor for the uuid " + descriptorString + " found"));
             return;
         }
@@ -894,7 +903,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         WriteGattServerCharacteristicDescriptorValueTransaction tx = new WriteGattServerCharacteristicDescriptorValueTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, localService, localCharacteristic, localDescriptor, data.getBytes());
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localDescriptor.getUuid().toString() + " on "+ localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString(), "Failed writing to " + localDescriptor.getUuid().toString() + " on "+ localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString());
+            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localDescriptor.getUuid().toString() + " on " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString(), "Failed writing to " + localDescriptor.getUuid().toString() + " on " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString());
             cdl.countDown();
         });
         cdl.await();
@@ -905,38 +914,38 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String serviceString = null;
         String characteristicString = null;
         String data = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 serviceString = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 characteristicString = args.next();
-            } else if(index == 2) {
+            } else if (index == 2) {
                 data = args.next();
             }
             index++;
         }
-        if(serviceString == null) {
+        if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        } else if(data == null) {
+        } else if (data == null) {
             logError(dumpContext, new IllegalArgumentException("No data provided"));
             return;
         }
         GattServerConnection conn = fitbitGatt.getServer();
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid gatt server available"));
             return;
         }
         BluetoothGattService localService = conn.getServer().getService(UUID.fromString(serviceString));
-        if(localService == null) {
+        if (localService == null) {
             logError(dumpContext, new IllegalStateException("No service for the uuid " + serviceString + " found"));
             return;
         }
         BluetoothGattCharacteristic localCharacteristic = localService.getCharacteristic(UUID.fromString(characteristicString));
-        if(localCharacteristic == null) {
+        if (localCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid " + characteristicString + " found"));
             return;
         }
@@ -944,7 +953,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         WriteGattServerCharacteristicValueTransaction tx = new WriteGattServerCharacteristicValueTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, localService, localCharacteristic, data.getBytes());
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString(), "Failed writing to " + localCharacteristic.getUuid().toString() + " on "+ localService.getUuid().toString());
+            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString(), "Failed writing to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString());
             cdl.countDown();
         });
         cdl.await();
@@ -956,49 +965,49 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String characteristicUuid = null;
         String descriptorUuid = null;
         int permissions = -1;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 localServiceUuid = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 characteristicUuid = args.next();
-            }else if(index == 2) {
+            } else if (index == 2) {
                 descriptorUuid = args.next();
-            } else if(index == 3) {
+            } else if (index == 3) {
                 permissions = Integer.parseInt(args.next());
             }
             index++;
         }
-        if(localServiceUuid == null) {
+        if (localServiceUuid == null) {
             logError(dumpContext, new IllegalArgumentException("No local server service uuid provided"));
             return;
-        } else if(characteristicUuid == null) {
+        } else if (characteristicUuid == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        }else if(descriptorUuid == null) {
+        } else if (descriptorUuid == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic descriptor uuid provided"));
             return;
-        } else if(permissions == -1) {
+        } else if (permissions == -1) {
             logError(dumpContext, new IllegalArgumentException("No characteristic permissions provided"));
             return;
         }
         GattServerConnection conn = fitbitGatt.getServer();
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid connection for provided mac"));
             return;
         }
         BluetoothGattService localService = conn.getServer().getService(UUID.fromString(localServiceUuid));
-        if(localService == null) {
+        if (localService == null) {
             logError(dumpContext, new IllegalStateException("No local service for the uuid" + localServiceUuid + "found"));
             return;
         }
         BluetoothGattCharacteristic localCharacteristic =
-                localService.getCharacteristic(UUID.fromString(characteristicUuid));
-        if(!localService.addCharacteristic(localCharacteristic)) {
+            localService.getCharacteristic(UUID.fromString(characteristicUuid));
+        if (!localService.addCharacteristic(localCharacteristic)) {
             logError(dumpContext, new IllegalStateException("Couldn't get characteristic from service"));
             return;
         }
         BluetoothGattDescriptor localDescriptor = new BluetoothGattDescriptor(UUID.fromString(descriptorUuid), permissions);
-        if(!localCharacteristic.addDescriptor(localDescriptor)) {
+        if (!localCharacteristic.addDescriptor(localDescriptor)) {
             logError(dumpContext, new IllegalStateException("Couldn't add descriptor " + descriptorUuid + " to the local characteristic " + characteristicUuid + " on the service " + localServiceUuid));
             return;
         }
@@ -1010,57 +1019,57 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         AddGattServerServiceCharacteristicDescriptorTransaction tx = new AddGattServerServiceCharacteristicDescriptorTransaction(conn, GattState.ADD_SERVICE_CHARACTERISTIC_DESCRIPTOR_SUCCESS, localService, localCharacteristic, localDescriptor);
         conn.runTx(tx, result -> {
             logSuccessOrFailure(result, dumpContext,
-                    "Successfully added " + localDescriptor.getUuid().toString() + " to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString(),
-                    "Failed to add " + localDescriptor.getUuid().toString() + " to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString());
+                "Successfully added " + localDescriptor.getUuid().toString() + " to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString(),
+                "Failed to add " + localDescriptor.getUuid().toString() + " to " + localCharacteristic.getUuid().toString() + " on " + localService.getUuid().toString());
             cdl.countDown();
         });
         cdl.await();
     }
 
-    private void addLocalGattServerCharacteristic(DumperContext dumpContext, Iterator<String> args) throws InterruptedException{
+    private void addLocalGattServerCharacteristic(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
         int index = 0;
         String localServiceUuid = null;
         String characteristicUuid = null;
         int permissions = -1;
         int properties = -1;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 localServiceUuid = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 characteristicUuid = args.next();
-            }else if(index == 2) {
+            } else if (index == 2) {
                 properties = Integer.parseInt(args.next());
-            } else if(index == 3) {
+            } else if (index == 3) {
                 permissions = Integer.parseInt(args.next());
             }
             index++;
         }
-        if(localServiceUuid == null) {
+        if (localServiceUuid == null) {
             logError(dumpContext, new IllegalArgumentException("No local server service uuid provided"));
             return;
-        } else if(characteristicUuid == null) {
+        } else if (characteristicUuid == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        } else if(permissions == -1) {
+        } else if (permissions == -1) {
             logError(dumpContext, new IllegalArgumentException("No characteristic permissions provided"));
             return;
-        } else if(properties == -1) {
+        } else if (properties == -1) {
             logError(dumpContext, new IllegalArgumentException("No characteristic properties provided"));
             return;
         }
         GattServerConnection conn = fitbitGatt.getServer();
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid connection for provided mac"));
             return;
         }
         BluetoothGattService localService = conn.getServer().getService(UUID.fromString(localServiceUuid));
-        if(localService == null) {
+        if (localService == null) {
             logError(dumpContext, new IllegalStateException("No local service for the uuid" + localServiceUuid + "found"));
             return;
         }
         BluetoothGattCharacteristic localCharacteristic =
-                new BluetoothGattCharacteristic(UUID.fromString(characteristicUuid), properties, permissions);
-        if(!localService.addCharacteristic(localCharacteristic)) {
+            new BluetoothGattCharacteristic(UUID.fromString(characteristicUuid), properties, permissions);
+        if (!localService.addCharacteristic(localCharacteristic)) {
             logError(dumpContext, new IllegalStateException("Couldn't add characteristic to service"));
             return;
         }
@@ -1072,8 +1081,8 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         AddGattServerServiceCharacteristicTransaction tx = new AddGattServerServiceCharacteristicTransaction(conn, GattState.ADD_SERVICE_CHARACTERISTIC_SUCCESS, localService, localCharacteristic);
         conn.runTx(tx, result -> {
             logSuccessOrFailure(result, dumpContext,
-                    "Successfully added " + localCharacteristic.getUuid().toString() + " to " + localService.getUuid().toString(),
-                    "Failed to add " + localCharacteristic.getUuid().toString() + " to " + localService.getUuid().toString());
+                "Successfully added " + localCharacteristic.getUuid().toString() + " to " + localService.getUuid().toString(),
+                "Failed to add " + localCharacteristic.getUuid().toString() + " to " + localService.getUuid().toString());
             cdl.countDown();
         });
         cdl.await();
@@ -1084,33 +1093,33 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String serviceString = null;
         String characteristicString = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid connection for provided mac"));
             return;
         }
         BluetoothGattCharacteristic remoteCharacteristic = conn.getRemoteGattServiceCharacteristic(UUID.fromString(serviceString), UUID.fromString(characteristicString));
-        if(remoteCharacteristic == null) {
+        if (remoteCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid" + characteristicString + "found"));
             return;
         }
@@ -1119,7 +1128,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         CountDownLatch cdl = new CountDownLatch(1);
         UnSubscribeToGattCharacteristicNotificationsTransaction tx = new UnSubscribeToGattCharacteristicNotificationsTransaction(conn, GattState.DISABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, remoteCharacteristic);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully unsubscribed from " + remoteCharacteristic.getUuid().toString() + " on "+ conn.getDevice(), "Failed unsubscribing to " + remoteCharacteristic.getUuid().toString() + " on "+ conn.getDevice());
+            logSuccessOrFailure(result, dumpContext, "Successfully unsubscribed from " + remoteCharacteristic.getUuid().toString() + " on " + conn.getDevice(), "Failed unsubscribing to " + remoteCharacteristic.getUuid().toString() + " on " + conn.getDevice());
             cdl.countDown();
             conn.getDevice().removeDevicePropertiesChangedListener(this);
         });
@@ -1133,51 +1142,51 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String descriptorString = null;
         String mac = null;
         String data = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
-            } else if(index == 4) {
+            } else if (index == 4) {
                 data = args.next();
-            } else if(index == 3) {
+            } else if (index == 3) {
                 descriptorString = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        } else if(data == null) {
+        } else if (data == null) {
             logError(dumpContext, new IllegalArgumentException("No data provided"));
             return;
-        } else if(descriptorString == null) {
+        } else if (descriptorString == null) {
             logError(dumpContext, new IllegalArgumentException("No descriptor uuid provided"));
             return;
-        } else if(!Bytes.isValidHexString(data)) {
+        } else if (!Bytes.isValidHexString(data)) {
             logError(dumpContext, new IllegalArgumentException("Invalid hex value; e.g. 01, AA00, bb5577 observing complete octets"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid connection for provided mac"));
             return;
         }
         BluetoothGattCharacteristic remoteCharacteristic = conn.getRemoteGattServiceCharacteristic(UUID.fromString(serviceString), UUID.fromString(characteristicString));
-        if(remoteCharacteristic == null) {
+        if (remoteCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid" + characteristicString + "found"));
             return;
         }
         BluetoothGattDescriptor remoteDescriptor = remoteCharacteristic.getDescriptor(UUID.fromString(descriptorString));
-        if(remoteDescriptor == null) {
+        if (remoteDescriptor == null) {
             logError(dumpContext, new IllegalStateException("No descriptor for the uuid" + descriptorString + "found"));
             return;
         }
@@ -1186,7 +1195,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         WriteGattDescriptorTransaction tx = new WriteGattDescriptorTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, remoteDescriptor);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + remoteDescriptor.getUuid().toString() + " on "+ conn.getDevice(), "Failed writing to " + remoteDescriptor.getUuid().toString() + " on "+ conn.getDevice());
+            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + remoteDescriptor.getUuid().toString() + " on " + conn.getDevice(), "Failed writing to " + remoteDescriptor.getUuid().toString() + " on " + conn.getDevice());
             cdl.countDown();
             conn.getDevice().removeDevicePropertiesChangedListener(this);
         });
@@ -1199,41 +1208,41 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String characteristicString = null;
         String mac = null;
         String data = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
-            } else if(index == 3) {
+            } else if (index == 3) {
                 data = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
-        } else if(data == null) {
+        } else if (data == null) {
             logError(dumpContext, new IllegalArgumentException("No data provided"));
             return;
-        } else if(!Bytes.isValidHexString(data)) {
+        } else if (!Bytes.isValidHexString(data)) {
             logError(dumpContext, new IllegalArgumentException("Invalid hex value; e.g. 01, AA00, bb5577 observing complete octets"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid connection for provided mac"));
             return;
         }
         BluetoothGattCharacteristic remoteCharacteristic = conn.getRemoteGattServiceCharacteristic(UUID.fromString(serviceString), UUID.fromString(characteristicString));
-        if(remoteCharacteristic == null) {
+        if (remoteCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid" + characteristicString + "found"));
             return;
         }
@@ -1242,7 +1251,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         WriteGattCharacteristicTransaction tx = new WriteGattCharacteristicTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, remoteCharacteristic);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + remoteCharacteristic.getUuid().toString() + " on "+ conn.getDevice(), "Failed writing to " + remoteCharacteristic.getUuid().toString() + " on "+ conn.getDevice());
+            logSuccessOrFailure(result, dumpContext, "Successfully wrote to " + remoteCharacteristic.getUuid().toString() + " on " + conn.getDevice(), "Failed writing to " + remoteCharacteristic.getUuid().toString() + " on " + conn.getDevice());
             cdl.countDown();
             conn.getDevice().removeDevicePropertiesChangedListener(this);
         });
@@ -1254,33 +1263,33 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String serviceString = null;
         String characteristicString = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No valid connection for provided mac"));
             return;
         }
         BluetoothGattCharacteristic remoteCharacteristic = conn.getRemoteGattServiceCharacteristic(UUID.fromString(serviceString), UUID.fromString(characteristicString));
-        if(remoteCharacteristic == null) {
+        if (remoteCharacteristic == null) {
             logError(dumpContext, new IllegalStateException("No characteristic for the uuid" + characteristicString + "found"));
             return;
         }
@@ -1289,7 +1298,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         SubscribeToCharacteristicNotificationsTransaction tx = new SubscribeToCharacteristicNotificationsTransaction(conn, GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, remoteCharacteristic);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(tx, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully subscribed to " + remoteCharacteristic.getUuid().toString() + " on "+ conn.getDevice(), "Failed subscribing to " + remoteCharacteristic.getUuid().toString() + " on "+ conn.getDevice());
+            logSuccessOrFailure(result, dumpContext, "Successfully subscribed to " + remoteCharacteristic.getUuid().toString() + " on " + conn.getDevice(), "Failed subscribing to " + remoteCharacteristic.getUuid().toString() + " on " + conn.getDevice());
             cdl.countDown();
             conn.getDevice().removeDevicePropertiesChangedListener(this);
         });
@@ -1303,50 +1312,50 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String status = null;
         String offset = null;
         String data = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 requestId = args.next();
-            }else if(index == 2) {
+            } else if (index == 2) {
                 status = args.next();
-            } else if(index == 3) {
+            } else if (index == 3) {
                 offset = args.next();
-            } else if(index == 4) {
+            } else if (index == 4) {
                 data = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
         }
-        if(requestId == null) {
+        if (requestId == null) {
             logError(dumpContext, new IllegalArgumentException("No requestId provided"));
             return;
         }
-        if(status == null) {
+        if (status == null) {
             logError(dumpContext, new IllegalArgumentException("No status provided"));
             return;
         }
-        if(offset == null) {
+        if (offset == null) {
             logError(dumpContext, new IllegalArgumentException("No offset provided"));
             return;
         }
-        if(data == null) {
+        if (data == null) {
             logError(dumpContext, new IllegalArgumentException("No data provided"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("Bluetooth connection for mac " + mac + " not found."));
             return;
         }
         FitbitBluetoothDevice fitbitBluetoothDevice = conn.getDevice();
         SendGattServerResponseTransaction tx = new SendGattServerResponseTransaction(fitbitGatt.getServer(),
-                GattState.SEND_SERVER_RESPONSE_SUCCESS, fitbitBluetoothDevice,
-                Integer.parseInt(requestId), Integer.parseInt(status), Integer.parseInt(offset),
-                data.getBytes());
+            GattState.SEND_SERVER_RESPONSE_SUCCESS, fitbitBluetoothDevice,
+            Integer.parseInt(requestId), Integer.parseInt(status), Integer.parseInt(offset),
+            data.getBytes());
         CountDownLatch cdl = new CountDownLatch(1);
         fitbitGatt.getServer().runTx(tx, result -> {
             logSuccessOrFailure(result, dumpContext, "Successfully wrote response to " + conn.getDevice(), "Failed writing response to " + conn.getDevice());
@@ -1359,23 +1368,23 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         int index = 0;
         String mtu = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 mtu = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
         }
-        if(mtu == null) {
+        if (mtu == null) {
             logError(dumpContext, new IllegalArgumentException("No mtu"));
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
             return;
         }
@@ -1391,29 +1400,77 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     private void readGattClientPhy(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
         int index = 0;
         String mac = null;
-        while(args.hasNext()) {
+        while (args.hasNext()) {
             if (index == 0) {
                 mac = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
             return;
         }
         ReadGattClientPhyTransaction readGattClientPhyTransaction = new ReadGattClientPhyTransaction(conn, GattState.READ_CURRENT_PHY_SUCCESS);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(readGattClientPhyTransaction, result -> {
-            logSuccessOrFailure(result, dumpContext, "Successfully read physical layer to tx: "+ result.getTxPhy() + ", rx:  " + result.getRxPhy(),
-                    "Failed in reading physical layer to tx: " + result.getTxPhy() + ", rx: " + result.getRxPhy());
+            logSuccessOrFailure(result, dumpContext, "Successfully read physical layer to tx: " + result.getTxPhy() + ", rx:  " + result.getRxPhy(),
+                "Failed in reading physical layer to tx: " + result.getTxPhy() + ", rx: " + result.getRxPhy());
             cdl.countDown();
         });
         cdl.await();
+    }
+
+    private void readNumGattActiveConnections(DumperContext dumpContext) {
+        String sNum = "";
+        BluetoothManager btMan = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        if(btMan == null) {
+            return;
+        }
+        List<BluetoothDevice> deviceList = btMan.getConnectedDevices(BluetoothProfile.GATT);
+        sNum = Integer.toString(deviceList.size());
+
+        if (isJsonFormat) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put(COMMAND_KEY, "read-num-gatt-active-connections");
+            map.put(STATUS_KEY, PASS_STATUS);
+            map.put(RESULT_KEY, sNum);
+            JSONObject jsonObject = makeJsonObject(map);
+            log(dumpContext, jsonObject.toString());
+        } else {
+            log(dumpContext, String.format(ENGLISH, "num-gatt-active-connections=%s",sNum));
+        }
+
+        // Log devices info --> Logcat
+        Timber.v("num-gatt-active-connections=%s", sNum);
+        if (deviceList.size() > 0) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            GattUtils gattutil = new GattUtils();
+            int i = 0;
+            for (BluetoothDevice dev : deviceList) {
+                if (dev != null) {
+                    map.put(COMMAND_KEY, "rngac");
+                    map.put("deviceid", i);
+                    map.put("addr", dev.getAddress());
+                    if (dev.getName() != null) {
+                        map.put("name", dev.getName());
+                    } else {
+                        map.put("name", "Unknown");
+                    }
+                    map.put("type", gattutil.getDevTypeDescription(dev.getType()));
+                    map.put("bond", gattutil.getBondStateDescription(dev.getBondState()));
+                    map.put("class", gattutil.getDevClassDescription(dev.getBluetoothClass().getDeviceClass()));
+                    // will print a separate JSON for each active connection
+                    JSONObject jsonObject = makeJsonObject(map);
+                    Timber.v(jsonObject.toString());
+                    i++;
+                }
+            }
+        }
     }
 
     private void requestGattClientPhy(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
@@ -1422,33 +1479,33 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         int rxPhy = -1;
         int phyOptions = -1;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 txPhy = Integer.parseInt(args.next());
-            } else if(index == 2) {
+            } else if (index == 2) {
                 rxPhy = Integer.parseInt(args.next());
-            } else if(index == 3) {
+            } else if (index == 3) {
                 phyOptions = Integer.parseInt(args.next());
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
         }
-        if(txPhy == -1) {
+        if (txPhy == -1) {
             logError(dumpContext, new IllegalArgumentException("No tx PHY"));
         }
-        if(rxPhy == -1) {
+        if (rxPhy == -1) {
             logError(dumpContext, new IllegalArgumentException("No rx PHY"));
         }
-        if(phyOptions == -1) {
+        if (phyOptions == -1) {
             logError(dumpContext, new IllegalArgumentException("No phy options"));
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
             return;
         }
@@ -1457,8 +1514,8 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         int finalTxPhy = txPhy;
         int finalRxPhy = rxPhy;
         conn.runTx(gattClientPhyChangeTransaction, response -> {
-            logSuccessOrFailure(response, dumpContext, "Successfully changed physical layer to tx: "+ finalTxPhy + ", rx:  " + finalRxPhy,
-                    "Failed in changing physical layer to tx: " + finalTxPhy + ", rx: " + finalRxPhy);
+            logSuccessOrFailure(response, dumpContext, "Successfully changed physical layer to tx: " + finalTxPhy + ", rx:  " + finalRxPhy,
+                "Failed in changing physical layer to tx: " + finalTxPhy + ", rx: " + finalRxPhy);
             cdl.countDown();
         });
         cdl.await();
@@ -1468,18 +1525,18 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         int index = 0;
         String connectionInterval = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 0) {
+        while (args.hasNext()) {
+            if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 connectionInterval = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(connectionInterval == null || (!connectionInterval.equals("low") && !connectionInterval.equals("medium") && !connectionInterval.equals("high"))) {
+        } else if (connectionInterval == null || (!connectionInterval.equals("low") && !connectionInterval.equals("medium") && !connectionInterval.equals("high"))) {
             logError(dumpContext, new IllegalArgumentException("No valid connection interval provided, must be low|medium|high"));
             return;
         }
@@ -1496,7 +1553,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 break;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
             return;
         }
@@ -1512,7 +1569,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void removeGattServerService(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String serviceUuid = args.next();
             BluetoothGattService gattService = new BluetoothGattService(UUID.fromString(serviceUuid), BluetoothGattService.SERVICE_TYPE_PRIMARY);
             RemoveGattServerServicesTransaction tx = new RemoveGattServerServicesTransaction(fitbitGatt.getServer(), GattState.ADD_SERVICE_SUCCESS, gattService);
@@ -1523,19 +1580,19 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             });
             cdl.await();
         } else {
-            logError(dumpContext,new IllegalArgumentException("No viable service UUID provided"));
+            logError(dumpContext, new IllegalArgumentException("No viable service UUID provided"));
         }
     }
 
     private void readGattClientRssi(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             FitbitBluetoothDevice device = null;
             GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-            if(conn != null) {
+            if (conn != null) {
                 device = conn.getDevice();
             }
-            if(device == null) {
+            if (device == null) {
                 logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
                 return;
             }
@@ -1543,7 +1600,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             ReadRssiTransaction readRssiTransaction = new ReadRssiTransaction(conn, GattState.READ_RSSI_SUCCESS);
             CountDownLatch cdl = new CountDownLatch(1);
             conn.runTx(readRssiTransaction, result -> {
-                if(!isJsonFormat) {
+                if (!isJsonFormat) {
                     log(dumpContext, result.toString());
                     if (result.getResultStatus().equals(TransactionResult.TransactionResultStatus.SUCCESS)) {
                         format(dumpContext, "%d db for device with mac : %s", result.getRssi(), mac);
@@ -1571,45 +1628,45 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String characteristicString = null;
         String descriptorString = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
-            } else if(index == 3) {
+            } else if (index == 3) {
                 descriptorString = args.next();
             }
             index++;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("Bluetooth connection for mac " + mac + " not found."));
             return;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
         }
         BluetoothGattService service = conn.getGatt().getService(UUID.fromString(serviceString));
-        if(service == null) {
+        if (service == null) {
             logError(dumpContext, new IllegalArgumentException("Remote gatt service not found"));
             return;
         }
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(characteristicString));
-        if(characteristic == null) {
+        if (characteristic == null) {
             logError(dumpContext, new IllegalArgumentException("Remote gatt characteristic not found"));
             return;
         }
         BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(descriptorString));
-        if(descriptor == null) {
+        if (descriptor == null) {
             logError(dumpContext, new IllegalArgumentException("Remote gatt descriptor not found"));
             return;
         }
@@ -1641,38 +1698,38 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String serviceString = null;
         String characteristicString = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
             }
             index++;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("Bluetooth connection for mac " + mac + " not found."));
             return;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
         }
         BluetoothGattService service = conn.getGatt().getService(UUID.fromString(serviceString));
-        if(service == null) {
+        if (service == null) {
             logError(dumpContext, new IllegalArgumentException("Server gatt service not found"));
             return;
         }
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(characteristicString));
-        if(characteristic == null) {
+        if (characteristic == null) {
             logError(dumpContext, new IllegalArgumentException("Server gatt characteristic not found"));
             return;
         }
@@ -1704,38 +1761,38 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String serviceString = null;
         String characteristicString = null;
         String mac = null;
-        while(args.hasNext()) {
-            if(index == 2) {
+        while (args.hasNext()) {
+            if (index == 2) {
                 characteristicString = args.next();
-            } else if(index == 0) {
+            } else if (index == 0) {
                 mac = args.next();
-            } else if(index == 1) {
+            } else if (index == 1) {
                 serviceString = args.next();
             }
             index++;
         }
-        if(mac == null) {
+        if (mac == null) {
             logError(dumpContext, new IllegalArgumentException("No bluetooth mac provided"));
             return;
-        } else if(serviceString == null) {
+        } else if (serviceString == null) {
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
             return;
-        } else if(characteristicString == null) {
+        } else if (characteristicString == null) {
             logError(dumpContext, new IllegalArgumentException("No characteristic uuid provided"));
             return;
         }
         BluetoothGattService service = fitbitGatt.getServer().getServer().getService(UUID.fromString(serviceString));
-        if(service == null) {
+        if (service == null) {
             logError(dumpContext, new IllegalArgumentException("Server gatt service not found"));
             return;
         }
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(characteristicString));
-        if(characteristic == null) {
+        if (characteristic == null) {
             logError(dumpContext, new IllegalArgumentException("Server gatt characteristic not found"));
             return;
         }
         GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-        if(conn == null) {
+        if (conn == null) {
             logError(dumpContext, new IllegalArgumentException("Bluetooth connection for mac " + mac + " not found."));
             return;
         }
@@ -1756,27 +1813,27 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder builder = new StringBuilder();
         String status = PASS_STATUS;
         String error = "";
-        if(!isJsonFormat) {
+        if (!isJsonFormat) {
             for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
             format(dumpContext, "| %1$32s | %2$32s | %3$32s | %4$32s |\n",
-                    "Characteristic UUID",
-                    "Permissions",
-                    "Properties",
-                    "Value");
+                "Characteristic UUID",
+                "Permissions",
+                "Properties",
+                "Value");
         }
         JSONArray jsonArray = new JSONArray();
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             try {
                 String serviceName = args.next();
                 BluetoothGattService service = fitbitGatt.getServer().getServer().getService(UUID.fromString(serviceName));
                 List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
-                for(BluetoothGattCharacteristic characteristic : characteristics) {
+                for (BluetoothGattCharacteristic characteristic : characteristics) {
                     String permission;
                     String properties;
-                    switch(characteristic.getPermissions()) {
+                    switch (characteristic.getPermissions()) {
                         case BluetoothGattCharacteristic.PERMISSION_READ:
                             permission = "read";
                             break;
@@ -1798,7 +1855,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                         default:
                             permission = "unknown";
                     }
-                    switch(characteristic.getProperties()) {
+                    switch (characteristic.getProperties()) {
                         case BluetoothGattCharacteristic.PROPERTY_BROADCAST:
                             properties = "broadcast";
                             break;
@@ -1826,10 +1883,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                         default:
                             properties = "unknown";
                     }
-                    if(!isJsonFormat) {
+                    if (!isJsonFormat) {
                         format(dumpContext, "| %1$32s | %2$32s | %3$32s | %4$32s |\n", characteristic.getUuid().toString(), permission, properties, Bytes.byteArrayToHexString(characteristic.getValue()));
                     } else {
-                        Map<String, Object> map = new LinkedHashMap<String, Object>(){{
+                        Map<String, Object> map = new LinkedHashMap<String, Object>() {{
                             put(RESULT_CHARACTERISTIC_UUID_KEY, characteristic.getUuid().toString());
                             put(RESULT_PERMISSIONS_KEY, permission);
                             put(RESULT_PROPERTIES_KEY, properties);
@@ -1847,7 +1904,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             logError(dumpContext, new IllegalArgumentException("No service uuid provided"));
         }
 
-        if(!isJsonFormat) {
+        if (!isJsonFormat) {
             builder = new StringBuilder();
             for (int i = 0; i < n; i++) {
                 builder.append("=");
@@ -1863,14 +1920,14 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder builder = new StringBuilder();
         String status = PASS_STATUS;
         String error = "";
-        if(!isJsonFormat) {
+        if (!isJsonFormat) {
             for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
             format(dumpContext, "| %1$32s | %2$32s |\n",
-                    "Service UUID",
-                    "Type");
+                "Service UUID",
+                "Type");
         }
         String serviceUuid;
         String type;
@@ -1906,8 +1963,8 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         }
 
         builder = new StringBuilder();
-        if(!isJsonFormat) {
-            for(int i=0;i<n;i++) {
+        if (!isJsonFormat) {
+            for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
@@ -1917,14 +1974,14 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void gattServerDisconnect(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             FitbitBluetoothDevice device = null;
             GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-            if(conn != null) {
+            if (conn != null) {
                 device = conn.getDevice();
             }
-            if(device == null) {
+            if (device == null) {
                 logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
                 return;
             }
@@ -1943,14 +2000,14 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void gattServerConnect(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             FitbitBluetoothDevice device = null;
             GattConnection conn = fitbitGatt.getConnectionForBluetoothAddress(context, mac);
-            if(conn != null) {
+            if (conn != null) {
                 device = conn.getDevice();
             }
-            if(device == null) {
+            if (device == null) {
                 logError(dumpContext, new IllegalArgumentException("No device for mac address provided"));
                 return;
             }
@@ -1967,10 +2024,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void gattClientDisconnect(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             GattConnection conn = clientConnections.get(mac);
-            if(conn == null) {
+            if (conn == null) {
                 logError(dumpContext, new IllegalStateException("No connected client for mac " + mac));
             } else {
                 conn.getDevice().addDevicePropertiesChangedListener(this);
@@ -1990,10 +2047,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void gattClientConnect(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             GattConnection conn = clientConnections.get(mac);
-            if(conn == null) {
+            if (conn == null) {
                 logError(dumpContext, new IllegalStateException("No connected client for mac " + mac));
             } else {
                 conn.registerConnectionEventListener(this);
@@ -2013,10 +2070,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void gattClientDiscoverServices(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             GattConnection conn = clientConnections.get(mac);
-            if(conn == null) {
+            if (conn == null) {
                 logError(dumpContext, new IllegalStateException("No connected client for mac " + mac));
             } else {
                 conn.getDevice().addDevicePropertiesChangedListener(this);
@@ -2044,26 +2101,26 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder builder = new StringBuilder();
         String status = PASS_STATUS;
         String error = "";
-        if(!isJsonFormat) {
-            for(int i=0;i<n;i++) {
+        if (!isJsonFormat) {
+            for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
-            format(dumpContext,"| %1$32s | %2$32s | %3$32s | %4$32s | %5$32s\n",
-                    "Name",
-                    "Address",
-                    "BtName", "Origin", "RSSI");
+            format(dumpContext, "| %1$32s | %2$32s | %3$32s | %4$32s | %5$32s\n",
+                "Name",
+                "Address",
+                "BtName", "Origin", "RSSI");
         }
         JSONArray jsonArray = new JSONArray();
         Iterable<String> iterable = clientConnections.keySet();
         try {
-            for(String mac : iterable) {
+            for (String mac : iterable) {
                 BluetoothDevice device = fitbitGatt.getBluetoothDevice(mac);
-                if(device == null) {
+                if (device == null) {
                     continue;
                 }
                 String type;
-                switch(device.getType()) {
+                switch (device.getType()) {
                     case DEVICE_TYPE_CLASSIC:
                         type = "classic";
                         break;
@@ -2080,7 +2137,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 String deviceAddress = device.getAddress();
                 String origin = clientConnections.get(mac).getDevice().getOrigin().name();
                 String rssi = String.valueOf(clientConnections.get(mac).getDevice().getRssi());
-                Map<String, Object> map = new LinkedHashMap<String, Object>(){{
+                Map<String, Object> map = new LinkedHashMap<String, Object>() {{
                     put("name", deviceName);
                     put("address", deviceAddress);
                     put("btname", type);
@@ -2089,9 +2146,9 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 }};
                 JSONObject jsonObject = makeJsonObject(map);
                 jsonArray.put(jsonObject);
-                if(!isJsonFormat){
+                if (!isJsonFormat) {
                     format(dumpContext, "| %1$32s | %2$32s | %3$32s | %4$32s | %5$32s\n",
-                            deviceName, deviceAddress, type, origin, rssi);
+                        deviceName, deviceAddress, type, origin, rssi);
                 }
             }
         } catch (Exception e) {
@@ -2099,9 +2156,9 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             error = Arrays.toString(e.getStackTrace());
         }
 
-        if(!isJsonFormat) {
+        if (!isJsonFormat) {
             builder = new StringBuilder();
-            for(int i=0;i<n;i++) {
+            for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
@@ -2120,26 +2177,26 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         StringBuilder builder = new StringBuilder();
         String status = PASS_STATUS;
         String error = "";
-        if(!isJsonFormat) {
-            for(int i=0;i<n;i++) {
+        if (!isJsonFormat) {
+            for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
-            format(dumpContext,"| %1$32s | %2$32s | %3$32s | %4$32s | %5$32s\n",
-                    "Name",
-                    "Address",
-                    "BtName", "Origin", "RSSI");
+            format(dumpContext, "| %1$32s | %2$32s | %3$32s | %4$32s | %5$32s\n",
+                "Name",
+                "Address",
+                "BtName", "Origin", "RSSI");
         }
         JSONArray jsonArray = new JSONArray();
         Iterable<String> iterable = clientConnections.keySet();
         try {
-            for(String mac : iterable) {
+            for (String mac : iterable) {
                 BluetoothDevice device = fitbitGatt.getBluetoothDevice(mac);
-                if(device == null) {
+                if (device == null) {
                     continue;
                 }
                 String type;
-                switch(device.getType()) {
+                switch (device.getType()) {
                     case DEVICE_TYPE_CLASSIC:
                         type = "classic";
                         break;
@@ -2156,7 +2213,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 String deviceAddress = device.getAddress();
                 String origin = clientConnections.get(mac).getDevice().getOrigin().name();
                 String rssi = String.valueOf(clientConnections.get(mac).getDevice().getRssi());
-                Map<String, Object> map = new LinkedHashMap<String, Object>(){{
+                Map<String, Object> map = new LinkedHashMap<String, Object>() {{
                     put("name", deviceName);
                     put("address", deviceAddress);
                     put("btname", type);
@@ -2165,9 +2222,9 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 }};
                 JSONObject jsonObject = makeJsonObject(map);
                 jsonArray.put(jsonObject);
-                if(!isJsonFormat){
+                if (!isJsonFormat) {
                     format(dumpContext, "| %1$32s | %2$32s | %3$32s | %4$32s | %5$32s\n",
-                            deviceName, deviceAddress, type, origin, rssi);
+                        deviceName, deviceAddress, type, origin, rssi);
                 }
             }
         } catch (Exception e) {
@@ -2175,9 +2232,9 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             error = Arrays.toString(e.getStackTrace());
         }
 
-        if(!isJsonFormat) {
+        if (!isJsonFormat) {
             builder = new StringBuilder();
-            for(int i=0;i<n;i++) {
+            for (int i = 0; i < n; i++) {
                 builder.append("=");
             }
             log(dumpContext, builder.toString());
@@ -2188,10 +2245,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void closeGattClient(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String mac = args.next();
             GattConnection conn = clientConnections.get(mac);
-            if(conn == null) {
+            if (conn == null) {
                 logError(dumpContext, new IllegalStateException("No connected client for mac " + mac));
             } else {
                 conn.getDevice().addDevicePropertiesChangedListener(this);
@@ -2220,19 +2277,19 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     private void addLocalGattServerService(DumperContext dumpContext, Iterator<String> args) throws InterruptedException {
-        if(args.hasNext()) {
+        if (args.hasNext()) {
             String serviceUuid = args.next();
             BluetoothGattServer server = fitbitGatt.getServer().getServer();
             boolean isDuplicate = false;
-            for(BluetoothGattService service : server.getServices()){
+            for (BluetoothGattService service : server.getServices()) {
                 String currentUuid = service.getUuid().toString();
-                if(currentUuid.equals(serviceUuid)){
+                if (currentUuid.equals(serviceUuid)) {
                     isDuplicate = true;
                     break;
                 }
             }
 
-            if(!isDuplicate) {
+            if (!isDuplicate) {
                 BluetoothGattService gattService = new BluetoothGattService(UUID.fromString(serviceUuid), BluetoothGattService.SERVICE_TYPE_PRIMARY);
                 AddGattServerServiceTransaction tx = new AddGattServerServiceTransaction(fitbitGatt.getServer(), GattState.ADD_SERVICE_SUCCESS, gattService);
                 CountDownLatch cdl = new CountDownLatch(1);
@@ -2242,18 +2299,18 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 });
                 cdl.await();
             } else {
-                logSuccess(dumpContext,"Duplicate service by UUID ");
+                logSuccess(dumpContext, "Duplicate service by UUID ");
             }
 
         } else {
-            logError(dumpContext,new IllegalArgumentException("No viable service UUID provided"));
+            logError(dumpContext, new IllegalArgumentException("No viable service UUID provided"));
         }
     }
 
     private void startGatt(DumperContext dumpContext) {
         String status;
         String error = "";
-        try{
+        try {
             fitbitGatt.start(context);
             List<ParcelUuid> serviceUuids = new ArrayList<>(1);
             serviceUuids.add(ParcelUuid.fromString("ADABFB00-6E7D-4601-BDA2-BFFAA68956BA"));
@@ -2270,11 +2327,11 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     private void logResult(String command, String status, String result, String error,
                            DumperContext dumpContext) {
-        if(isJsonFormat) {
+        if (isJsonFormat) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put(COMMAND_KEY, command);
             map.put(STATUS_KEY, status);
-            if(PASS_STATUS.equalsIgnoreCase(status)) {
+            if (PASS_STATUS.equalsIgnoreCase(status)) {
                 map.put(RESULT_KEY, result);
             } else {
                 map.put(ERROR_KEY, error);
@@ -2290,7 +2347,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         Map<String, Object> map = new LinkedHashMap<>();
         map.put(COMMAND_KEY, getCommand(dumpContext));
         map.put(STATUS_KEY, status);
-        if(PASS_STATUS.equalsIgnoreCase(status)) {
+        if (PASS_STATUS.equalsIgnoreCase(status)) {
             map.put(RESULT_KEY, result);
         } else {
             map.put(ERROR_KEY, error);
@@ -2305,7 +2362,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         Map<String, Object> map = new LinkedHashMap<>();
         map.put(COMMAND_KEY, getCommand(dumpContext));
         map.put(STATUS_KEY, status);
-        if(PASS_STATUS.equalsIgnoreCase(status)) {
+        if (PASS_STATUS.equalsIgnoreCase(status)) {
             map.put(RESULT_KEY, makeJsonObject(resultMap));
         } else {
             map.put(ERROR_KEY, error);
@@ -2317,7 +2374,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     private JSONObject makeJsonObject(Map<String, Object> map) {
         JSONObject jsonObject = new JSONObject();
         try {
-            for(Map.Entry<String, Object> entry : map.entrySet()) {
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
                 String key = entry.getKey();
                 Object value = entry.getValue();
                 jsonObject.put(key, value);
@@ -2330,7 +2387,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     private void setJsonFormat(DumperContext dumperContext, Iterator<String> args) {
         String isJsonString = ArgsHelper.nextOptionalArg(args, null);
-        if("on".equalsIgnoreCase(isJsonString)) {
+        if ("on".equalsIgnoreCase(isJsonString)) {
             isJsonFormat = true;
             Map<String, Object> map = new LinkedHashMap<>();
             map.put(COMMAND_KEY, "set-json-format");
@@ -2349,9 +2406,9 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     private void printAvailableCommands(DumperContext dumpContext) {
         log(dumpContext, "Available commands:");
         GattCommand[] commands = GattCommand.values();
-        for(GattCommand command: commands) {
+        for (GattCommand command : commands) {
             dumpContext.getStdout().print(command.getFullName());
-            if(command.getShortName() != null && !command.getShortName().equals("")){
+            if (command.getShortName() != null && !command.getShortName().equals("")) {
                 dumpContext.getStdout().print(", " + command.getShortName());
             }
             dumpContext.getStdout().print(", " + command.getDescription());
@@ -2378,8 +2435,8 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     private void logSuccessOrFailure(TransactionResult result, DumperContext dumpContext, String successStr, String failureStr) {
         boolean success = result.getResultStatus().equals(TransactionResult.TransactionResultStatus.SUCCESS);
-        if(isJsonFormat) {
-            logResult(getCommand(dumpContext), success? PASS_STATUS: FAIL_STATUS, result.toString(), result.toString(), dumpContext);
+        if (isJsonFormat) {
+            logResult(getCommand(dumpContext), success ? PASS_STATUS : FAIL_STATUS, result.toString(), result.toString(), dumpContext);
         } else {
             log(dumpContext, result.toString());
             if (success) {
@@ -2417,7 +2474,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         t.printStackTrace(new PrintWriter(sw));
         String exceptionAsString = sw.toString();
         String error = "\u001B[31m " + exceptionAsString + " \u001B[0m";
-        if(isJsonFormat) {
+        if (isJsonFormat) {
             logResult(getCommand(dumpContext), FAIL_STATUS, "", error, dumpContext);
         } else {
             dumpContext.getStderr().println(error);
@@ -2432,7 +2489,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     @Override
     public void onBluetoothPeripheralDiscovered(@NonNull GattConnection connection) {
-        if(connection != null) {
+        if (connection != null) {
             this.clientConnections.put(connection.getDevice().getAddress(), connection);
             Timber.d("Discovered device %s", connection.getDevice());
             onBluetoothPeripheralDevicePropertiesChanged(connection.getDevice());
@@ -2441,7 +2498,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     @Override
     public void onBluetoothPeripheralDisconnected(GattConnection connection) {
-        if(connection != null) {
+        if (connection != null) {
             this.clientConnections.remove(connection.getDevice().getAddress());
         }
     }
@@ -2623,10 +2680,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         logJson(map, GATT_CLIENT_CHANGED_PHY);
     }
 
-    private void logJson(Map<String, Object> map, String key){
+    private void logJson(Map<String, Object> map, String key) {
         map.put(COMMAND_KEY, key);
         JSONObject jsonRoot = makeJsonObject(map);
-        if(dumperContext != null) {
+        if (dumperContext != null) {
             asyncLog(jsonRoot.toString());
         }
     }
@@ -2634,11 +2691,11 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     class ServerConnectionListener implements ServerConnectionEventListener {
         /**
          * private static final String GATT_SERVER_CHARACTERISTIC_READ_REQUEST_VALUE = "server_characteristic_read_request";
-         private static final String GATT_SERVER_CHARACTERISTIC_WRITE_REQUEST_VALUE = "server_characteristic_write_request";
-         private static final String GATT_SERVER_DESCRIPTOR_READ_REQUEST_VALUE = "server_descriptor_read_request";
-         private static final String GATT_SERVER_DESCRIPTOR_WRITE_REQUEST_VALUE = "server_descriptor_write_request";
-         private static final String GATT_SERVER_CONNECTION_STATE_CHANGE_VALUE = "server_connection_state_change";
-         private static final String GATT_SERVER_MTU_CHANGE_VALUE = "server_mtu_change_value";
+         * private static final String GATT_SERVER_CHARACTERISTIC_WRITE_REQUEST_VALUE = "server_characteristic_write_request";
+         * private static final String GATT_SERVER_DESCRIPTOR_READ_REQUEST_VALUE = "server_descriptor_read_request";
+         * private static final String GATT_SERVER_DESCRIPTOR_WRITE_REQUEST_VALUE = "server_descriptor_write_request";
+         * private static final String GATT_SERVER_CONNECTION_STATE_CHANGE_VALUE = "server_connection_state_change";
+         * private static final String GATT_SERVER_MTU_CHANGE_VALUE = "server_mtu_change_value";
          */
         private DumperContext context;
 
@@ -2646,7 +2703,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             this.context = context;
         }
 
-        private void logJson(Map<String, Object> map, String key){
+        private void logJson(Map<String, Object> map, String key) {
             map.put(COMMAND_KEY, key);
             JSONObject jsonRoot = makeJsonObject(map);
             asyncLog(jsonRoot.toString());

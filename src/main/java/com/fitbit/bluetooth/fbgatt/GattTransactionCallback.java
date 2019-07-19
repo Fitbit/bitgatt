@@ -8,8 +8,8 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
 
 /**
  * The callback via which we deliver the result of the gatt transaction, must always be delivered

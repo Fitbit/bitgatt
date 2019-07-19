@@ -8,6 +8,11 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattService;
@@ -15,15 +20,6 @@ import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
-
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
-import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -32,6 +28,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**

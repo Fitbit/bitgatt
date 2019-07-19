@@ -19,21 +19,19 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.ParcelUuid;
-import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 
 import junit.framework.Assert;
 
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import androidx.annotation.NonNull;
 
 public class AddGattServerCharacteristicDescriptorTransactionTest {
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
