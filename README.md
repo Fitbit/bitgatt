@@ -14,10 +14,11 @@
 10. [Gatt Server](#gatt-server)
 11. [Sample Code](#sample-code)
 12. [Bitgatt Scanner](#bitgatt-scanner)
-13. [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
-14. [Runtime Mocking](#runtime-mocking)
-15. [Bitgatt Transaction Manual](#bitgatt-transaction-manual)
-16. [License](#license)
+13. [Always Connected Scanner](#always-connected-scanner)
+14. [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
+15. [Runtime Mocking](#runtime-mocking)
+16. [Bitgatt Transaction Manual](#bitgatt-transaction-manual)
+17. [License](#license)
 
 ### [Original Contributors](#original-contributors)
 
@@ -231,16 +232,23 @@ with the FitbitGattCallback.
 
 Pre-Commit ( Deprecated )
 ```java
-WriteGattDescriptorMockTransaction writeGattDescriptorMockTransaction = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
+class Test {
+    public void doTx(){
+        WriteGattDescriptorMockTransaction writeGattDescriptorMockTransaction = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
         WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
         writeGattCharacteristicMockTransaction.addPreCommitHook(writeGattDescriptorMockTransaction);
         conn.runTx(writeGattCharacteristicMockTransaction, result -> {
             Timber.v("Result provided %s", result);
         });
+    }
+}
+
 ```
 Post-Commit ( Deprecated )
 ```java
-WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
+class Test {
+    public void doTx(){
+        WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
         SubscribeToCharacteristicNotificationsMockTransaction subscribe = new SubscribeToCharacteristicNotificationsMockTransaction(conn, GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, characteristic, fakeData, false);
         WriteGattDescriptorMockTransaction writeDescriptor = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
         writeGattCharacteristicMockTransaction.addPostCommitHook(subscribe);
@@ -248,58 +256,100 @@ WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = 
         conn.runTx(writeGattCharacteristicMockTransaction, result -> {
             Timber.v("Result provided %s", result);
         });
+    }
+}
 ```
 Composite Transaction
 ```java
-WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
-SubscribeToCharacteristicNotificationsMockTransaction subscribe = new SubscribeToCharacteristicNotificationsMockTransaction(conn, GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, characteristic, fakeData, false);
-WriteGattDescriptorMockTransaction writeDescriptor = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
-ArrayList<GattTransaction> transactions = new ArrayList<>();
-transactions.add(writeGattCharacteristicMockTransaction);
-transactions.add(subscribe);
-transactions.add(writeDescriptor);
-CompositeClientTransaction composite = new CompositeClientTransaction(conn, transactions);
-conn.runTx(composite, result -> {
-    Timber.v("Result provided %s", result);        
-});
+class Test {
+    public void doTx(){
+        WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
+        SubscribeToCharacteristicNotificationsMockTransaction subscribe = new SubscribeToCharacteristicNotificationsMockTransaction(conn, GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, characteristic, fakeData, false);
+        WriteGattDescriptorMockTransaction writeDescriptor = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
+        ArrayList<GattTransaction> transactions = new ArrayList<>();
+        transactions.add(writeGattCharacteristicMockTransaction);
+        transactions.add(subscribe);
+        transactions.add(writeDescriptor);
+        CompositeClientTransaction composite = new CompositeClientTransaction(conn, transactions);
+        conn.runTx(composite, result -> {
+            Timber.v("Result provided %s", result);        
+        });
+    }
+}
+```
+Chained connect and discover services
+```java
+class Test {
+    public void doTx(){
+        // obtain the connection
+        GattConnection conn = FitbitGatt.getInstance().getConnection(myBluetoothDevice);
+        GattConnectTransaction connTx = new GattConnectTransaction(conn, GattState.CONNECTED);
+        conn.runTx(connTx, (result) -> {
+            if (result.getResultStatus().equals(TransactionResult.TransactionResultStatus.SUCCESS)) {
+                GattClientDiscoverServicesTransaction discoverTx = new GattClientDiscoverServicesTransaction(conn, GattState.DISCOVERY_SUCCESS);
+                conn.runTx(discoverTx, (result1) -> {
+                    if (result1.getResultStatus().equals(TransactionResult.TransactionResultStatus.SUCCESS)) {
+                        // yay, connection is ready to use
+                    } else {
+                        Log.d("test", "something bad happened during discovery %s", result1);
+                    }
+                });
+            } else {
+                Log.d("test", "Failed to connect successfully %s", result); // will print out all details
+            }
+        });
+    }
+}
 ```
 Scanning (periodical scan) ... remember the idea behind the scanner is that it should be treated
 as a system resource, there should be a single periodical scan, and / or intent scan that occurs
 with multiple filters.  There can be multiple listeners to scan results.
 ```java
-FitbitGatt gatt = FitbitGatt.getInstance();
-gatt.start(this); // start is idempotent
-gatt.registerGattEventListener(mylistener);  // also idempotent for adding instances
-gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
-boolean success = gatt.startPeriodicScan(this);
-if(!success) {
-    Timber.v("The scan didn't start, oh noes!!!!");
+class Test {
+    public void doScan(){
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.start(this); // start is idempotent
+        gatt.registerGattEventListener(mylistener);  // also idempotent for adding instances
+        gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
+        boolean success = gatt.startPeriodicScan(this);
+        if(!success) {
+            Timber.v("The scan didn't start, oh noes!!!!");
+        }
+    }
 }
 ```
 Scanning (high priority scan) ... will stop a scan if in progress and deliver the onScanStopped
 callback
 ```java
-FitbitGatt gatt = FitbitGatt.getInstance();
-gatt.start(this); // start is idempotent
-gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
-gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
-boolean success = gatt.startHighPriorityScan(this);
-if(!success) {
-    Timber.v("The scan didn't start, oh noes!!!!");
+class Test {
+    public void doScan(){
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.start(this); // start is idempotent
+        gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
+        gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
+        boolean success = gatt.startHighPriorityScan(this);
+        if(!success) {
+            Timber.v("The scan didn't start, oh noes!!!!");
+        }
+    }
 }
 ```
 Scanning (pending intent scan) ... will deliver callbacks for devices discovered by the system scan
 the backoff, and scan intervals are managed by the Android system
 ```java
-FitbitGatt gatt = FitbitGatt.getInstance();
-gatt.start(this); // start is idempotent
-gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
-gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
-ArrayList<ScanFilter> scanFilters = new ArrayList<>();
-scanFilters.add(new ScanFilter.Builder().setDeviceName("Flex").build())
-boolean success = gatt.startSystemManagedPendingIntentScan(this, scanFilters);
-if(!success) {
-    Timber.v("The scan didn't start, oh noes!!!!");
+class Test {
+    public void doScan(){
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.start(this); // start is idempotent
+        gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
+        gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
+        ArrayList<ScanFilter> scanFilters = new ArrayList<>();
+        scanFilters.add(new ScanFilter.Builder().setDeviceName("Flex").build());
+        boolean success = gatt.startSystemManagedPendingIntentScan(this, scanFilters);
+        if(!success) {
+            Timber.v("The scan didn't start, oh noes!!!!");
+        }
+    }
 }
 ```
 
@@ -312,6 +362,149 @@ object will keep the scan result with it so that it can be used even if the devi
 The scanner will call a callback if the data changes on a subsequent scan, and will callback when
 started or stopped.  There is a pending intent scan available on Oreo and higher that may be used
 in addition to the low-duty periodical scanner, or with the high-duty scanner.
+
+## [Always Connected Scanner](#always-connected-scanner)
+
+Scanning on Android is quite complex, in many cases however the developer has a peripheral which
+they want to remain connected whenever the mobile device is within range.  This could be accomplished
+naiively either by starting a low/high-latency scan for a given duration by setting a cancel scan
+call as a pending message via the many future wrappers available to modern Android developers.
+
+There are dozens of hidden complexities within this.  What if the user turns BT on / off during
+this time, how do you ensure that your scan state matches? What if the Android power manager decides
+that your application is now scanning too much and you end up with silent scan-start failures?
+
+To make this easier, bitgatt features a simple always connected scanner that will attempt to protect
+the developer from the various problems with Android scanning as well as making it straightforward
+to always connect when within range.  To prevent obvious problems, ad-hoc scanning using the bitgatt
+peripheral scanner API is prevented while the always connected scanner is in use.  It is expected
+that one always connected scanner will be enabled per application.
+
+It is critical to remember that not all OEMs on all Android versions implement all features of
+the filter API, you could set a MAC address filter that is ineffective on the HTC M8 running 5.0.2
+for example.  Make sure to test thoroughly if you are concerned with Android versions before 9.
+
+### Usage
+Simplest case, no scanning in effect and, we want to stay connected all peripherals with a given name,
+ also that we do not want to keep scanning after we have found any device that matches the name filter
+ 
+ ### Find one device matching a name filter and keep it connected
+```java
+class Test {
+    
+    AlwaysConnectedScanner alwaysConnectedScanner = FitbitGatt.getInstance().getAlwaysConnectedScanner();
+    
+    public void startAlwaysConnectedScanner(){
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.start(this); // start is idempotent
+        ScanFilter filter = new ScanFilter.Builder().setDeviceName("MyCoolIOTThing").build();
+        // the always connected scanner will default to discovering 1 device matching the filter and that
+        // once it finds a single match it should stop scanning until a device disconnects
+        alwaysConnectedScanner.setNumberOfExpectedDevices(1);
+        alwaysConnectedScanner.setShouldKeepLooking(false);
+        alwaysConnectedScanner.addScanFilter(mockContext, filter);
+        boolean didStart = alwaysConnectedScanner.start(mockContext);
+        if(!didStart) {
+            android.util.Log.DEBUG("There was a problem starting the scanner!");
+            return;
+        }
+        alwaysConnectedScanner.registerAlwaysConnectedScannerListener(this);
+    }
+    
+    public void stopAlwaysConnectedScanner(Context context){
+        alwaysConnectedScanner.unregisterAlwaysConnectedScannerListener(this);
+        alwaysConnectedScanner.stop(context);
+    }
+}
+```
+
+Slightly more complex case, find one device, but keep looking even after it is connected
+### Find one device, but keep scanning even after it is connected
+```java
+class Test {
+    
+    AlwaysConnectedScanner alwaysConnectedScanner = FitbitGatt.getInstance().getAlwaysConnectedScanner();
+    
+    public void startAlwaysConnectedScanner(){
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.start(this); // start is idempotent
+        ScanFilter filter = new ScanFilter.Builder().setDeviceName("MyCoolIOTThing").build();
+        // the always connected scanner will default to discovering 1 device matching the filter and that
+        // once it finds a single match it should stop scanning until a device disconnects
+        alwaysConnectedScanner.setNumberOfExpectedDevices(1);
+        // if expected devices is zero, then the value of should keep looking is not relevant
+        // the scanner will just keep going
+        alwaysConnectedScanner.setShouldKeepLooking(true);
+        alwaysConnectedScanner.addScanFilter(mockContext, filter);
+        boolean didStart = alwaysConnectedScanner.start(mockContext);
+        if(!didStart) {
+            android.util.Log.DEBUG("There was a problem starting the scanner!");
+            return;
+        }
+        alwaysConnectedScanner.registerAlwaysConnectedScannerListener(this);
+    }
+    
+    public void stopAlwaysConnectedScanner(Context context){
+        alwaysConnectedScanner.unregisterAlwaysConnectedScannerListener(this);
+        alwaysConnectedScanner.stop(context);
+    }
+}
+```
+
+Filter more complex with a SRV data mask maybe matching some kind of encrypted user id for several
+devices, should stop when all devices are found
+### Find a few devices via some sort of SRV data
+```java
+class Test {
+    
+    AlwaysConnectedScanner alwaysConnectedScanner = FitbitGatt.getInstance().getAlwaysConnectedScanner();
+    
+    public void startAlwaysConnectedScanner(){
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.start(this); // start is idempotent
+        // device srvdata
+        ParcelUuid srvUuid = new ParcelUuid(UUID.fromString("620CC755-613A-430C-BA60-17258CD6B078"));
+        // device one service data
+        byte[] serviceDataDeviceOne = new byte[]{ 0x00, 0x18, 0x1A, 0x00, 0x00, 0x00};
+        byte[] serviceDataDeviceTwo = new byte[]{0x00, 0x1D, 0xBB, 0x00, 0x00, 0x00};
+        byte[] serviceDataDeviceThree = new byte[]{0x00, 0x01, 0x02, 0x00, 0x00, 0x00};
+        byte[] userIdServiceDataMask = new byte[] {0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00};
+        ScanFilter filterOne = new ScanFilter.Builder()
+        .setServiceData(srvUuid, serviceDataDeviceOne, userIdServiceDataMask)
+        .build();
+        ScanFilter filterTwo = new ScanFilter.Builder()
+        .setServiceData(srvUuid, serviceDataDeviceTwo, userIdServiceDataMask)
+        .build();
+        ScanFilter filterThree = new ScanFilter.Builder()
+        .setServiceData(srvUuid, serviceDataDeviceThree, userIdServiceDataMask)
+        .build();
+        ArrayList<ScanFilter> filters = new ArrayList<>(3);
+        filters.add(filterOne);
+        filters.add(filterTwo);
+        filters.add(filterThree);
+        // will remove all filters currently being used and replace them with the given
+        // filters, will take effect on the next scan
+        alwaysConnectedScanner.setScanFilters(filters);
+        // the always connected scanner will default to discovering 1 device matching the filter and that
+        // once it finds a single match it should stop scanning until a device disconnects
+        alwaysConnectedScanner.setNumberOfExpectedDevices(3);
+        // will only take effect when the next device disconnects or connects
+        alwaysConnectedScanner.setShouldKeepLooking(false);
+        alwaysConnectedScanner.addScanFilter(mockContext, filter);
+        boolean didStart = alwaysConnectedScanner.start(mockContext);
+        if(!didStart) {
+            android.util.Log.DEBUG("There was a problem starting the scanner!");
+            return;
+        }
+        alwaysConnectedScanner.registerAlwaysConnectedScannerListener(this);
+    }
+    
+    public void stopAlwaysConnectedScanner(Context context){
+        alwaysConnectedScanner.unregisterAlwaysConnectedScannerListener(this);
+        alwaysConnectedScanner.stop(context);
+    }
+}
+```
 
 ## [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
 

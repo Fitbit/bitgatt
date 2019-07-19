@@ -27,12 +27,12 @@ def buildNumber = System.getenv("BUILD_NUMBER") != null ? System.getenv("BUILD_N
 def libraryVersionName = sprintf("0.8.0", buildNumber)
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion "28.0.3"
+    compileSdkVersion 29
+    buildToolsVersion "29.0.1"
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode buildNumber
         versionName libraryVersionName
         multiDexEnabled true
@@ -71,13 +71,13 @@ allprojects {
 }
 
 ext {
-    MULTIDEX_VERSION = '1.0.3'
-    APP_COMPAT_VERSION = '28.0.0'
+    MULTIDEX_VERSION = '2.0.1'
+    APP_COMPAT_VERSION = '1.0.2'
     TIMBER_VERSION = '4.7.1'
     JUNIT_VERSION = '4.12'
-    TEST_RUNNER_VERSION = '1.0.2'
+    TEST_RUNNER_VERSION = '1.1.0'
     MOCKITO_VERSION = '2.19.1'
-    STETHO_VERSION = '1.5.0'
+    STETHO_VERSION = '1.5.1'
 }
 
 dependencies {
@@ -85,18 +85,18 @@ dependencies {
     androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1", {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    implementation "com.android.support:multidex:$MULTIDEX_VERSION"
-    implementation "com.android.support:appcompat-v7:$APP_COMPAT_VERSION"
+    implementation "androidx.multidex:multidex:$MULTIDEX_VERSION"
+    implementation "androidx.appcompat:appcompat:$APP_COMPAT_VERSION"
     implementation "com.jakewharton.timber:timber:$TIMBER_VERSION"
-    debugImplementation "com.facebook.stetho:stetho:$STETHO_VERSION"
+    implementation "com.facebook.stetho:stetho:$STETHO_VERSION"
     testImplementation "junit:junit:$JUNIT_VERSION"
-    testImplementation "com.android.support.test:runner:$TEST_RUNNER_VERSION"
-    testImplementation "com.android.support.test:rules:$TEST_RUNNER_VERSION"
+    testImplementation "androidx.test:runner:$TEST_RUNNER_VERSION"
+    testImplementation "androidx.test:rules:$TEST_RUNNER_VERSION"
     testImplementation "org.mockito:mockito-inline:$MOCKITO_VERSION"
     testImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
     androidTestImplementation "junit:junit:$JUNIT_VERSION"
-    androidTestImplementation "com.android.support.test:runner:$TEST_RUNNER_VERSION"
-    androidTestImplementation "com.android.support.test:rules:$TEST_RUNNER_VERSION"
+    androidTestImplementation "androidx.test:runner:$TEST_RUNNER_VERSION"
+    androidTestImplementation "androidx.test:rules:$TEST_RUNNER_VERSION"
     androidTestImplementation "org.mockito:mockito-inline:$MOCKITO_VERSION"
     androidTestImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
     androidTestImplementation("org.mockito:mockito-android:$MOCKITO_VERSION") {
@@ -111,14 +111,39 @@ task sourceJar(type: Jar) {
 
 publishing {
     publications {
-        aar(MavenPublication) {
+        libraryAar(MavenPublication) {
+            groupId packageName
+            version = libraryVersionName
+            artifactId project.getName()
+            artifact sourceJar { classifier 'library' }
+            artifact("$buildDir/outputs/aar/${project.getName()}-library.aar") {classifier 'library' }
+        }
+        releaseAar(MavenPublication) {
+            groupId packageName
             groupId packageName
             version = libraryVersionName
             artifactId project.getName()
 
-            artifact(sourceJar)
-            artifact("$buildDir/outputs/aar/${project.getName()}-library.aar")
+            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar") { classifier 'release' }
+            artifact sourceJar { classifier 'release' }
+        }
+        debugAar(MavenPublication) {
+            groupId packageName
+            groupId packageName
+            version = libraryVersionName
+            artifactId project.getName()
+
+            artifact("$buildDir/outputs/aar/${project.getName()}-debug.aar") { classifier 'debug' }
+            artifact sourceJar { classifier 'debug' }
+        }
+        testAar(MavenPublication) {
+            groupId packageName
+            groupId packageName
+            version = libraryVersionName
+            artifactId project.getName()
+
+            artifact("$buildDir/outputs/aar/${project.getName()}-batteryDataTest.aar") { classifier 'test' }
+            artifact sourceJar { classifier 'test' }
         }
     }
 }
-

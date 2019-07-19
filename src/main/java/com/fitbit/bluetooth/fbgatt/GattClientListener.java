@@ -14,7 +14,7 @@ import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Interface for subscribers who want to listen directly to gatt client events.  These callbacks are

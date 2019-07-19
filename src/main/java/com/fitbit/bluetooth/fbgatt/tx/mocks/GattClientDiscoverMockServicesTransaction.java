@@ -10,7 +10,7 @@ package com.fitbit.bluetooth.fbgatt.tx.mocks;
 
 import android.bluetooth.BluetoothGattService;
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;

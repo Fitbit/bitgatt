@@ -15,6 +15,7 @@ import android.bluetooth.le.ScanResult;
 import android.os.ParcelUuid;
 
 import org.junit.Assert;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,16 +47,16 @@ public class MockScanResultProvider {
         rnd.nextBytes(randomData);
         serviceDataMap.put(new ParcelUuid(UUID.fromString("adabfb00-6e7d-4601-bda2-bffaa68956ba")), randomData);
         for(int i=0; i < numberOfMockResults; i++) {
-            ScanResult result = mock(ScanResult.class);
-            BluetoothDevice device = mock(BluetoothDevice.class);
-            ScanRecord record = mock(ScanRecord.class);
-            when(device.getAddress()).thenReturn(randomMACAddress());
-            when(device.getName()).thenReturn("foobar-" + String.valueOf(i));
-            when(result.getDevice()).thenReturn(device);
-            when(result.getRssi()).thenReturn(-1 * (rnd.nextInt(Math.abs(minRssi) + 1 - Math.abs(maxRssi)) + Math.abs(maxRssi)));
+            ScanResult result = Mockito.mock(ScanResult.class);
+            BluetoothDevice device = Mockito.mock(BluetoothDevice.class);
+            ScanRecord record = Mockito.mock(ScanRecord.class);
+            Mockito.when(device.getAddress()).thenReturn(randomMACAddress());
+            Mockito.when(device.getName()).thenReturn("foobar-" + String.valueOf(i));
+            Mockito.when(result.getDevice()).thenReturn(device);
+            Mockito.when(result.getRssi()).thenReturn(-1 * (rnd.nextInt(Math.abs(minRssi) + 1 - Math.abs(maxRssi)) + Math.abs(maxRssi)));
             Assert.assertTrue("Rssi is less than zero", result.getRssi() < 0);
-            when(record.getDeviceName()).thenReturn("foobar-" + String.valueOf(i));
-            when(record.getServiceData()).thenReturn(serviceDataMap);
+            Mockito.when(record.getDeviceName()).thenReturn("foobar-" + String.valueOf(i));
+            Mockito.when(record.getServiceData()).thenReturn(serviceDataMap);
             scanResults.add(result);
         }
     }

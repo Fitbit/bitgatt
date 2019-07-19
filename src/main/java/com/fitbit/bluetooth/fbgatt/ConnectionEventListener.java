@@ -8,7 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 /**
  * Will allow a connection user to establish a listener for asynchronous events

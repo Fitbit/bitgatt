@@ -16,7 +16,7 @@ import com.fitbit.bluetooth.fbgatt.tx.UnSubscribeToGattCharacteristicNotificatio
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * A mock unsubscribe transaction

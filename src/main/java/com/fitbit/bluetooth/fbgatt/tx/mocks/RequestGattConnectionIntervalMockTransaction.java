@@ -16,7 +16,7 @@ import com.fitbit.bluetooth.fbgatt.tx.RequestGattConnectionIntervalTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import timber.log.Timber;
 

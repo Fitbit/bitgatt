@@ -20,8 +20,8 @@ import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.os.Handler;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import timber.log.Timber;
 

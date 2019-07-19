@@ -15,7 +15,7 @@ import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.tx.ReadRssiTransaction;
 
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import java.util.Random;
 

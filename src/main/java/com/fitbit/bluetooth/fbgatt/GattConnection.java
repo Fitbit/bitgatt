@@ -18,9 +18,9 @@ import android.bluetooth.BluetoothProfile;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -312,10 +312,6 @@ public class GattConnection implements Closeable {
     @VisibleForTesting
     public void setMockMode(boolean mockMode) {
         this.mockMode = mockMode;
-        // if any device goes into mock mode, let's put the scanner into mock mode
-        if (FitbitGatt.getInstance().isStarted() && FitbitGatt.getInstance().getPeripheralScanner() != null) {
-            FitbitGatt.getInstance().getPeripheralScanner().setMockMode(mockMode);
-        }
     }
 
     /* ------------------------------- dispatch ----------------------------------------------- */

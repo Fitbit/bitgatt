@@ -15,11 +15,9 @@ import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 
-import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.os.ParcelUuid;
-import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 
 import junit.framework.Assert;
@@ -30,6 +28,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import androidx.annotation.NonNull;
 
 public class AddGattServerServiceTransactionTest {
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";

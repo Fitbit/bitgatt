@@ -15,7 +15,7 @@ import com.fitbit.bluetooth.fbgatt.tx.RequestMtuGattTransaction;
 
 import android.bluetooth.BluetoothGatt;
 import android.os.Handler;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Mock class for requesting an MTU change

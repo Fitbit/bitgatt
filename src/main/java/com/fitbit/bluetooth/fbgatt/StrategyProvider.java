@@ -9,8 +9,8 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import android.os.Build;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.fitbit.bluetooth.fbgatt.strategies.DelaySubscriptionResultStrategy;
 import com.fitbit.bluetooth.fbgatt.strategies.HandleTrackerVanishingUnderGattOperationStrategy;

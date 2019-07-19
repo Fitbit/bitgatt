@@ -8,11 +8,9 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import java.util.HashMap;
-
-import timber.log.Timber;
 
 /**
  * An android device, which is an encapsulation of the build variables in a simple comparable

@@ -16,8 +16,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
 import android.os.Looper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;

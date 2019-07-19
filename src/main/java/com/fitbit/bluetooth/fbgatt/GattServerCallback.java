@@ -20,8 +20,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;

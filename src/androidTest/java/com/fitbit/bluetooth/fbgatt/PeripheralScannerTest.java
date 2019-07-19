@@ -10,19 +10,16 @@ package com.fitbit.bluetooth.fbgatt;
 
 import android.bluetooth.le.ScanFilter;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.os.SystemClock;
-import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
 
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,11 +35,11 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.NonNull;
 import timber.log.Timber;
 
 import static junit.framework.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class PeripheralScannerTest {
@@ -66,7 +63,6 @@ public class PeripheralScannerTest {
         // limit
         SystemClock.sleep(3000);
         FitbitGatt.getInstance().start(appContext);
-        FitbitGatt.getInstance().getPeripheralScanner().setMockMode(false);
         FitbitGatt.getInstance().getPeripheralScanner().setInstrumentationTestMode(true);
         FitbitGatt.getInstance().getPeripheralScanner().cancelScan(this.appContext);
         FitbitGatt.getInstance().getPeripheralScanner().cancelPeriodicalScan(this.appContext);

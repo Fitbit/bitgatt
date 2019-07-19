@@ -15,14 +15,13 @@ import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.Situation;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import timber.log.Timber;
 
