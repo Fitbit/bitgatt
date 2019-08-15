@@ -16,6 +16,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**
@@ -28,6 +32,16 @@ import timber.log.Timber;
  */
 
 public class LowEnergyAclListener extends BroadcastReceiver {
+
+    /**
+     * To ensure that we remove any registered instances for anyone using this listener because
+     * there is a limit of 1000 global listeners per Android process, looping could end up
+     * hitting this.
+     */
+    private static AtomicBoolean aclListenerRegistered = new AtomicBoolean(false);
+    @VisibleForTesting
+    static AtomicInteger timesRegistered = new AtomicInteger(0);
+
     private IntentFilter[] filters = {
         new IntentFilter(BluetoothDevice.ACTION_FOUND),
         new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED),
@@ -35,15 +49,29 @@ public class LowEnergyAclListener extends BroadcastReceiver {
         new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
     };
 
-    void register(Context context) {
+    synchronized void register(Context context) {
+        // we want to ensure that we are only registered once for this
+        if(aclListenerRegistered.get()) {
+            Timber.d("Already registered this receiver");
+            return;
+        }
+
         for (IntentFilter f : filters) {
             context.registerReceiver(this, f);
         }
+        int newValue = timesRegistered.incrementAndGet();
+        // just to help someone debug if this is happening too much
+        Timber.d("Acl listener registered, %d times", newValue);
+        aclListenerRegistered.set(true);
     }
 
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        // if we are receiving, then we are registered, can happen when added from manifest
+        if(!aclListenerRegistered.getAndSet(true)) {
+            timesRegistered.incrementAndGet();
+        }
         String action = intent.getAction();
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
         Timber.i("BT change received !");
@@ -88,6 +116,19 @@ public class LowEnergyAclListener extends BroadcastReceiver {
                     FitbitGatt.getInstance().notifyListenersOfConnectionDisconnected(gattConnection);
                 });
             }
+        }
+    }
+
+    synchronized void unregister(Context context) {
+        if(aclListenerRegistered.get()) {
+            int newValue = timesRegistered.decrementAndGet();
+            Timber.d("Unregistered receiver, new times registered value, %d", newValue);
+            try {
+                context.unregisterReceiver(this);
+            }catch(IllegalArgumentException ex) {
+                Timber.d(ex,"It's telling us we didn't register this");
+            }
+            aclListenerRegistered.set(false);
         }
     }
 }
