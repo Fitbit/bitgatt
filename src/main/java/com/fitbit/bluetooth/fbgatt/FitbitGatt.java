@@ -54,6 +54,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import androidx.annotation.WorkerThread;
 import timber.log.Timber;
 
 import static com.fitbit.bluetooth.fbgatt.PeripheralScanner.BACKGROUND_SCAN_REQUEST_CODE;
@@ -601,6 +602,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param filters  The filters desired
      * @param callback The {@link FitbitGattCallback} instance to be called when ready
      */
+    @WorkerThread
     @SuppressWarnings("WeakerAccess") // API Method
     public synchronized void startWithServicesAndScanFilters(Context context, @Nullable List<BluetoothGattService> services, @Nullable List<ScanFilter> filters, FitbitGattCallback callback) {
         if (!isStarted()) {
@@ -657,6 +659,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param services The services to be added
      * @param callback The {@link FitbitGattCallback} to be called when ready
      */
+    @WorkerThread
     @SuppressWarnings("WeakerAccess") // API Method
     public synchronized void startWithServices(Context context, List<BluetoothGattService> services, FitbitGattCallback callback) {
         startWithServicesAndScanFilters(context, services, null, callback);
@@ -668,6 +671,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param context     The android context
      * @param scanFilters {@link ScanFilter} list to be used for the background and subsequent scans
      */
+    @WorkerThread
     @SuppressWarnings("unused") // API Method
     public synchronized void startWithScanFilters(Context context, List<ScanFilter> scanFilters, FitbitGattCallback callback) {
         startWithServicesAndScanFilters(context, null, scanFilters, callback);
@@ -678,7 +682,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      *
      * @param context The Android context
      */
-
+    @WorkerThread
     public synchronized void start(Context context) {
         if (!isStarted()) {
             if (!startSimple(context)) {
