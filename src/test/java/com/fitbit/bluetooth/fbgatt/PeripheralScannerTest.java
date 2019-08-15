@@ -301,7 +301,7 @@ public class PeripheralScannerTest {
             fail("Couldn't start high priority scan");
         }
         try {
-            boolean result = cdl.await(5, TimeUnit.SECONDS);
+            boolean result = cdl.await(8, TimeUnit.SECONDS);
             if(!result) {
                 TestCase.fail("Test Timeout");
             }
@@ -350,7 +350,7 @@ public class PeripheralScannerTest {
             fail("The high priority scan never started");
         }
         try {
-            boolean result = cdl.await(5, TimeUnit.SECONDS);
+            boolean result = cdl.await(8, TimeUnit.SECONDS);
             if(!result) {
                 TestCase.fail("Test Timeout");
             }
