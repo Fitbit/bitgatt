@@ -50,6 +50,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -100,7 +101,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     private @Nullable
     PeripheralScanner peripheralScanner;
     private @NonNull AlwaysConnectedScanner alwaysConnectedScanner;
-    private LowEnergyAclListener aclListener;
+    @VisibleForTesting
+    LowEnergyAclListener aclListener;
     private @Nullable
     Context appContext;
     @VisibleForTesting
@@ -600,8 +602,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param callback The {@link FitbitGattCallback} instance to be called when ready
      */
     @SuppressWarnings("WeakerAccess") // API Method
-    public void startWithServicesAndScanFilters(Context context, @Nullable List<BluetoothGattService> services, @Nullable List<ScanFilter> filters, FitbitGattCallback callback) {
-        if (!isStarted.get()) {
+    public synchronized void startWithServicesAndScanFilters(Context context, @Nullable List<BluetoothGattService> services, @Nullable List<ScanFilter> filters, FitbitGattCallback callback) {
+        if (!isStarted()) {
             if (!startSimple(context)) {
                 Timber.w("Couldn't start because BT was off");
                 return;
@@ -656,7 +658,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param callback The {@link FitbitGattCallback} to be called when ready
      */
     @SuppressWarnings("WeakerAccess") // API Method
-    public void startWithServices(Context context, List<BluetoothGattService> services, FitbitGattCallback callback) {
+    public synchronized void startWithServices(Context context, List<BluetoothGattService> services, FitbitGattCallback callback) {
         startWithServicesAndScanFilters(context, services, null, callback);
     }
 
@@ -667,7 +669,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param scanFilters {@link ScanFilter} list to be used for the background and subsequent scans
      */
     @SuppressWarnings("unused") // API Method
-    public void startWithScanFilters(Context context, List<ScanFilter> scanFilters, FitbitGattCallback callback) {
+    public synchronized void startWithScanFilters(Context context, List<ScanFilter> scanFilters, FitbitGattCallback callback) {
         startWithServicesAndScanFilters(context, null, scanFilters, callback);
     }
 
@@ -677,8 +679,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param context The Android context
      */
 
-    public void start(Context context) {
-        if (!isStarted.get()) {
+    public synchronized void start(Context context) {
+        if (!isStarted()) {
             if (!startSimple(context)) {
                 Timber.w("Couldn't start because BT was off");
                 return;
@@ -696,7 +698,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         }
     }
 
-    private boolean startSimple(Context context) {
+    private synchronized boolean startSimple(Context context) {
         Timber.v("Starting fitbit gatt");
         powerAggregator = new BatteryDataStatsAggregator(context);
         this.appContext = context.getApplicationContext();
@@ -721,6 +723,10 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         radioStatusListener.setListener(this);
         // we must be under test here, or this is a horribly broken device and my life doesn't
         // matter
+        // We have found that the start server call can block in the gatt_if registration step
+        // this has a timeout of 10 seconds, but the ANR timeout is 5 ..., so we'll latch here
+        // for 5 seconds and wait for the return value, if it can't register in 5 seconds then
+        // it's probably broken and startSimple should return false.
         if (this.appContext == null) {
             startServer(context);
             return true;
@@ -763,10 +769,15 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             this.peripheralScanner.onDestroy(FitbitGatt.getInstance().getAppContext());
         }
         this.peripheralScanner = null;
+        if(this.aclListener != null) {
+            this.aclListener.unregister(FitbitGatt.getInstance().getAppContext());
+        }
         this.aclListener = null;
         connectionCleanup = null;
-        this.getServer().getServerTransactionQueueController().stop();
-        this.getServer().getServer().close();
+        if(this.getServer() != null && this.getServer().getServerTransactionQueueController() != null) {
+            this.getServer().getServerTransactionQueueController().stop();
+            this.getServer().getServer().close();
+        }
         gattServer = null;
         this.isStarted.set(false);
         if (radioStatusListener != null) {
@@ -780,7 +791,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         this.radioStatusListener = listener;
     }
 
-    public boolean isStarted() {
+    public synchronized boolean isStarted() {
         return isStarted.get();
     }
 
@@ -1099,7 +1110,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         if (appContext != null) {
             return getConnectionForBluetoothAddress(appContext, bluetoothAddress);
         } else {
-            Timber.w("Error getting connection FitbitGatt start state %s", isStarted.get());
+            Timber.w("Error getting connection FitbitGatt start state %s", isStarted());
             return null;
         }
     }
@@ -1143,14 +1154,34 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         boolean isStarted;
         BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         if (manager != null && manager.getAdapter() != null) {
-            gattServer = manager.openGattServer(context, serverCallback);
-            // make sure there are no hidden services, we don't want duplicates for the phones who
-            // carry services across BT toggle.
-            gattServer.clearServices();
+            /*
+             * We've observed that the registration of the callback inside of the android
+             * source for the gatt_if can lead to a hang for up to 10 seconds, but the
+             * ANR time is 5 seconds currently (Summer 2019)
+             */
+            CountDownLatch cdl = new CountDownLatch(1);
+            boolean didNotTimeout = false;
+            this.getServerCallback().getServerCallbackHandler().post(() -> {
+                gattServer = manager.openGattServer(context, serverCallback);
+                cdl.countDown();
+            });
+            try {
+                didNotTimeout = cdl.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Timber.e(e, "The gatt server couldn't be started because the thread was interrupted");
+            }
             isStarted = true;
             if (gattServer == null) {
-                Timber.w("The manager could not open the gatt server!!! are you sure BT is on!");
+                if(!didNotTimeout) {
+                    Timber.w("The manager could not open the gatt server!!! are you sure BT is on!");
+                } else {
+                    Timber.w("The openGattServer call timed out, the phone should probably be restarted");
+                }
                 isStarted = false;
+            } else {
+                // make sure there are no hidden services, we don't want duplicates for the phones who
+                // carry services across BT toggle.
+                gattServer.clearServices();
             }
         } else {
             Timber.w("No bluetooth manager, we must be simulating, or BT is off!!!");

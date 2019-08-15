@@ -143,8 +143,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     private static final String GATT_CLIENT_CHANGED_MTU = "gatt_client_changed_mtu";
     private DumperContext dumperContext;
 
-    enum GattCommand {
-
+    public enum GattCommand {
         HELP("help", "h", "Description: Will print this help"),
         ADD_LOCAL_GATT_SERVER_SERVICE("add-local-gatt-server-service", "algss", "<uuid>\n\nDescription: Will add a local gatt server service to the mobile device"),
         ADD_LOCAL_GATT_SERVER_CHARACTERISTIC("add-local-gatt-server-characteristic", "algsc",

@@ -20,6 +20,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
@@ -44,7 +46,7 @@ import timber.log.Timber;
 
 class GattServerCallback extends BluetoothGattServerCallback {
 
-    private final Handler handler;
+    private final @NonNull Handler handler;
 
     private final List<GattServerListener> listeners;
     private GattUtils gattUtils = new GattUtils();
@@ -91,6 +93,10 @@ class GattServerCallback extends BluetoothGattServerCallback {
 
     private String getDeviceMacFromDevice(BluetoothDevice device) {
         return gattUtils.safeGetBtDeviceName(device);
+    }
+
+    @NonNull Handler getServerCallbackHandler(){
+        return this.handler;
     }
 
     @Override
