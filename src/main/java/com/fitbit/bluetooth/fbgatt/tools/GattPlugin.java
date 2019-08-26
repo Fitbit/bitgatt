@@ -2168,7 +2168,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         ScanFilter filter = new ScanFilter.Builder().build();
         ArrayList<ScanFilter> scanFilters = new ArrayList<>(1);
         scanFilters.add(filter);
-        fitbitGatt.startSystemManagedPendingIntentScan(fitbitGatt.getAppContext(), scanFilters);
+        boolean didStart = fitbitGatt.startSystemManagedPendingIntentScan(fitbitGatt.getAppContext(), scanFilters);
+        if(!didStart) {
+            log(dumpContext, "Scanner couldn't be started");
+        }
     }
 
     private void findNearbyDevices(DumperContext dumpContext) {
@@ -2505,6 +2508,11 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     @Override
     public void onFitbitGattReady() {
         Timber.v("The gatt system is ready to rock!");
+    }
+
+    @Override
+    public void onFitbitGattStartFailed() {
+        Timber.w("Couldn't start the FitbitGatt, probably a gatt server problem");
     }
 
     @Override

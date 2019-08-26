@@ -380,6 +380,11 @@ public class PeripheralScannerTest {
         }
 
         @Override
+        public void onFitbitGattStartFailed() {
+
+        }
+
+        @Override
         public void onScanStarted() {
 
         }

@@ -114,6 +114,11 @@ public class GattServerTests {
             }
 
             @Override
+            public void onFitbitGattStartFailed() {
+
+            }
+
+            @Override
             public void onScanStarted() {
 
             }
@@ -246,6 +251,11 @@ public class GattServerTests {
 
             @Override
             public void onFitbitGattReady() {
+
+            }
+
+            @Override
+            public void onFitbitGattStartFailed() {
 
             }
 

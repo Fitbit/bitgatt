@@ -375,6 +375,11 @@ public class AlwaysConnectedScannerTest {
         }
 
         @Override
+        public void onFitbitGattStartFailed() {
+
+        }
+
+        @Override
         public void onScanStarted() {
 
         }
