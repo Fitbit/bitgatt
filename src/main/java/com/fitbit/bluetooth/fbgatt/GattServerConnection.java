@@ -242,6 +242,10 @@ public class GattServerConnection {
             // it always prevents adding services on the GS9+ ( Exynos ) and on the Pixel 2 ( Q )
             server.close();
             setState(GattState.CLOSE_GATT_SERVER_SUCCESS);
+            if(serverQueue != null) {
+                serverQueue.clearQueue();
+                serverQueue.stop();
+            }
         }
     }
 

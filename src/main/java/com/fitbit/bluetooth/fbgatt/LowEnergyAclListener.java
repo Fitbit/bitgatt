@@ -81,12 +81,12 @@ public class LowEnergyAclListener extends BroadcastReceiver {
         }
         FitbitBluetoothDevice fbDevice = new FitbitBluetoothDevice(device);
         if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-            Timber.i("%s Device found", device.getName());
+            Timber.i("%s Device found", fbDevice.getName());
             // device was discovered in scan but we don't necessarily want to just add it unless
             // it's connected to the phone
         }
         if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-            Timber.i("%s Device is now connected", device.getName());
+            Timber.i("%s Device is now connected", fbDevice.getName());
             // device was connected to the phone, does not mean device is connected to the
             // app, this can create a new connection because we are certain that the connection
             // is not in the cache already
@@ -95,7 +95,7 @@ public class LowEnergyAclListener extends BroadcastReceiver {
             }
         }
         if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-            Timber.i("%s Device is disconnected", device.getName());
+            Timber.i("%s Device is disconnected", fbDevice.getName());
             GattConnection gattConnection = FitbitGatt.getInstance().getConnection(fbDevice);
             if (gattConnection != null) {
                 // we must use the transaction because if we do not the connection will not be
@@ -109,7 +109,7 @@ public class LowEnergyAclListener extends BroadcastReceiver {
                     } else {
                         Timber.w("Failed to disconnect");
                     }
-                    Timber.i("%s Notifying listeners of connection disconnected", device.getName());
+                    Timber.i("%s Notifying listeners of connection disconnected", fbDevice.getName());
                     if (FitbitGatt.getInstance().getPeripheralScanner() != null) {
                         FitbitGatt.getInstance().getPeripheralScanner().onDeviceDisconnected(device);
                     }

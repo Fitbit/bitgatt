@@ -116,6 +116,11 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
                                     }
 
                                     @Override
+                                    public void onFitbitGattStartFailed() {
+                                        // sad, but what can we do from here
+                                    }
+
+                                    @Override
                                     public void onScanStarted() {
 
                                     }

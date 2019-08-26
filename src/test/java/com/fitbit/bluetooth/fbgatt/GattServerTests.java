@@ -174,7 +174,7 @@ public class GattServerTests {
         GattServerConnection mockServerConnection = mock(GattServerConnection.class);
         when(mockServer.sendResponse(any(BluetoothDevice.class), any(Integer.class), any(Integer.class), any(Integer.class), any(byte[].class))).thenThrow(new NullPointerException("Parcel read exception"));
         when(mockServerConnection.getServer()).thenReturn(mockServer);
-        GattServerCallback serverCallback = new GattServerCallback(mockContext);
+        GattServerCallback serverCallback = new GattServerCallback();
         NullPointerException exception = null;
         try {
             serverCallback.returnErrorToRemoteClient(mockServerConnection, mockDevice, 0, 1);

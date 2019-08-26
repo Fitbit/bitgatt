@@ -591,6 +591,11 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
     }
 
     @Override
+    public void onFitbitGattStartFailed() {
+        // this is sad, but nothing we can do from this class
+    }
+
+    @Override
     public void onScanStarted() {
         // that's cool
     }

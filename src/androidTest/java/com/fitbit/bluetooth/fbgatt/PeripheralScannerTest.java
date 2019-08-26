@@ -167,6 +167,11 @@ public class PeripheralScannerTest {
             }
 
             @Override
+            public void onFitbitGattStartFailed() {
+
+            }
+
+            @Override
             public void onScanStarted() {
                 if(!hasHPScanStarted[0]) {
                     hasHPScanStarted[0] = true;
@@ -408,6 +413,11 @@ public class PeripheralScannerTest {
             }
 
             @Override
+            public void onFitbitGattStartFailed() {
+
+            }
+
+            @Override
             public void onScanStarted() {
 
             }
@@ -480,6 +490,11 @@ public class PeripheralScannerTest {
 
                 @Override
                 public void onFitbitGattReady() {
+
+                }
+
+                @Override
+                public void onFitbitGattStartFailed() {
 
                 }
 

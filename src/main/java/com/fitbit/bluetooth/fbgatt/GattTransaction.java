@@ -96,7 +96,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
     }
 
     public GattTransaction(@Nullable GattConnection connection, GattState successEndState) {
-        super(FitbitGatt.getInstance().getAppContext());
+        super();
         this.appContext = FitbitGatt.getInstance().getAppContext();
         if(this.appContext == null) {
             Timber.w("[%s] Bitgatt must not have been started, please start Bitgatt", (connection != null ) ? connection.getDevice() : "Unknown Device");

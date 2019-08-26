@@ -134,6 +134,11 @@ public class BluetoothAdapterStatusTests {
             }
 
             @Override
+            public void onFitbitGattStartFailed() {
+
+            }
+
+            @Override
             public void onScanStarted() {
 
             }
@@ -177,8 +182,9 @@ public class BluetoothAdapterStatusTests {
         GattServerConnection oldConn = FitbitGatt.getInstance().getServer();
         mockStatusListener.listener.bluetoothOn();
         Assert.assertTrue(FitbitGatt.getInstance().isBluetoothOn);
-        // yes I want to compare instance IDs ... they should be different
-        Assert.assertNotEquals(oldConn, FitbitGatt.getInstance().getServer());
+        // server should be null
+        Assert.assertNull(oldConn);
+        Assert.assertNull(FitbitGatt.getInstance().getServer());
         verify(cb, atLeastOnce()).onBluetoothOn();
     }
 
@@ -202,6 +208,11 @@ public class BluetoothAdapterStatusTests {
 
             @Override
             public void onFitbitGattReady() {
+
+            }
+
+            @Override
+            public void onFitbitGattStartFailed() {
 
             }
 
