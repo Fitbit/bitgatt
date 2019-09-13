@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
@@ -271,6 +272,7 @@ public class PeripheralScannerTest {
     }
 
     @Test
+    @Ignore("Test is somewhat flaky, and needs to be refactored")
     public void testPeripheralScannerStartLowLatencyScanTimeoutPeriodicShouldNotBeRunning() {
         CountDownLatch cdl = new CountDownLatch(2);
         // we want to do this so that we don't end up with a super long wait
@@ -316,6 +318,7 @@ public class PeripheralScannerTest {
     }
 
     @Test
+    @Ignore("Test is somewhat flaky, and needs to be refactored")
     public void testPeripheralScannerStartHighAndLowLatencyScanTimeoutPeriodicShouldBeRunning() {
         CountDownLatch cdl = new CountDownLatch(2);
         // we want to do this so that we don't end up with a super long wait
