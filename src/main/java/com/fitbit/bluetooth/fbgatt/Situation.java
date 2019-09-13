@@ -11,5 +11,6 @@ package com.fitbit.bluetooth.fbgatt;
 public enum Situation {
     TRACKER_WENT_AWAY_DURING_GATT_OPERATION,
     DELAY_ANDROID_SUBSCRIPTION_EVENT,
+    CLEAR_GATT_SERVER_SERVICES_DEVICE_FUNKY_BT_IMPL,
     DEFAULT
 }

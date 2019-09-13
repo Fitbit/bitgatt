@@ -11,6 +11,8 @@ package com.fitbit.bluetooth.fbgatt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +28,7 @@ import timber.log.Timber;
  * Created by iowens on 04/25/19.
  */
 
-public class CompositeServerTransaction extends GattTransaction {
+public class CompositeServerTransaction extends GattTransaction implements Closeable {
     public static final String NAME = "CompositeServerTransaction";
     private List<GattTransaction> transactionList;
     private GattTransactionCallback finalCallback;
@@ -41,10 +43,6 @@ public class CompositeServerTransaction extends GattTransaction {
         if (!transactionList.isEmpty()) {
             setTimeout(DEFAULT_GATT_TRANSACTION_TIMEOUT * transactionList.size());
         }
-        // The composite server transaction will need it's own queue controller to run
-        // child transactions while still blocking the main connection queue controller
-        compositeServerQueueController = new TransactionQueueController(NAME);
-        compositeServerQueueController.start();
     }
 
     @Override
@@ -52,6 +50,10 @@ public class CompositeServerTransaction extends GattTransaction {
         super.transaction(callback);
         this.finalCallback = callback;
         // at this point the CDL for the transaction has already been latched
+        // The composite server transaction will need it's own queue controller to run
+        // child transactions while still blocking the main connection queue controller
+        compositeServerQueueController = new TransactionQueueController(NAME);
+        compositeServerQueueController.start();
         executeTransaction();
     }
 
@@ -79,8 +81,6 @@ public class CompositeServerTransaction extends GattTransaction {
                         builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
                         builder.transactionName(NAME);
                         callCallbackWithTransactionResultAndRelease(finalCallback, builder.addTransactionResults(results).build());
-                        compositeServerQueueController.stop();
-                        compositeServerQueueController = null;
                     }
                 } else {
                     Timber.w("[%s] Transaction %s failed with result: %s, aborting chain", getDevice(), result.getTransactionName(), result);
@@ -88,8 +88,6 @@ public class CompositeServerTransaction extends GattTransaction {
                     builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
                     builder.transactionName(NAME).addTransactionResults(results);
                     callCallbackWithTransactionResultAndRelease(finalCallback, builder.build());
-                    compositeServerQueueController.stop();
-                    compositeServerQueueController = null;
                 }
             });
         } else {
@@ -98,13 +96,35 @@ public class CompositeServerTransaction extends GattTransaction {
             builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
             builder.transactionName(NAME).addTransactionResults(results);
             callCallbackWithTransactionResultAndRelease(finalCallback, builder.build());
-            compositeServerQueueController.stop();
-            compositeServerQueueController = null;
         }
+    }
+
+    @Override
+    public void callCallbackWithTransactionResultAndRelease(GattTransactionCallback callback, TransactionResult result) {
+        try {
+            super.callCallbackWithTransactionResultAndRelease(callback, result);
+        } finally {
+            close();
+        }
+    }
+
+    @Override
+    protected void onGattServerTransactionTimeout(GattServerConnection connection) {
+        super.onGattServerTransactionTimeout(connection);
+        // let's be extra sure to close out here
+        close();
     }
 
     @Override
     public String getName() {
         return NAME;
+    }
+
+    @Override
+    public void close() {
+        if (this.compositeServerQueueController != null) {
+            this.compositeServerQueueController.stop();
+            this.compositeServerQueueController = null;
+        }
     }
 }

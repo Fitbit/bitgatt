@@ -12,6 +12,7 @@ import android.os.Build;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import com.fitbit.bluetooth.fbgatt.strategies.BluetoothOffClearGattServerStrategy;
 import com.fitbit.bluetooth.fbgatt.strategies.DelaySubscriptionResultStrategy;
 import com.fitbit.bluetooth.fbgatt.strategies.HandleTrackerVanishingUnderGattOperationStrategy;
 import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
@@ -52,7 +53,7 @@ public class StrategyProvider {
      * @return The strategy or null if there is no match
      */
     public @Nullable
-    Strategy getStrategyForPhoneAndGattConnection(@Nullable AndroidDevice strategyDevice, GattConnection conn, Situation situation) {
+    Strategy getStrategyForPhoneAndGattConnection(@Nullable AndroidDevice strategyDevice, @Nullable GattConnection conn, Situation situation) {
         AndroidDevice currentDevice = new AndroidDevice.Builder().
                 device(Build.DEVICE).
                 deviceModel(Build.MODEL).
@@ -73,24 +74,31 @@ public class StrategyProvider {
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
-    Strategy getStrategyForPhoneAndGattConnection(AndroidDevice currentDevice, @Nullable AndroidDevice strategyDevice, GattConnection conn, Situation situation) {
+    Strategy getStrategyForPhoneAndGattConnection(AndroidDevice currentDevice, @Nullable AndroidDevice strategyDevice, @Nullable GattConnection conn, Situation situation) {
         if (currentDeviceHasEqualDefinedProperties(currentDevice, strategyDevice)) {
             switch (situation) {
                 case TRACKER_WENT_AWAY_DURING_GATT_OPERATION:
                     return new HandleTrackerVanishingUnderGattOperationStrategy(conn, currentDevice);
                 case DELAY_ANDROID_SUBSCRIPTION_EVENT:
                     return new DelaySubscriptionResultStrategy(conn, currentDevice);
+                case CLEAR_GATT_SERVER_SERVICES_DEVICE_FUNKY_BT_IMPL:
+                    return new BluetoothOffClearGattServerStrategy(conn, currentDevice);
                 default:
                     return null;
             }
         } else {
-            Timber.d("[%s] Target android device does not match, no need for strategy", conn.getDevice());
+            if(conn != null) {
+                Timber.d("[%s] Target android device does not match, no need for strategy", conn.getDevice());
+            } else {
+                Timber.d("[%s] Target android device does not match, no need for gatt server strategy", currentDevice);
+            }
             return null;
         }
     }
 
     @VisibleForTesting
     boolean currentDeviceHasEqualDefinedProperties(AndroidDevice currentDevice, @Nullable AndroidDevice strategyDevice) {
+        Timber.v("The current device has properties: %s", currentDevice);
         if(strategyDevice == null) {
             return true;
         }
@@ -99,7 +107,12 @@ public class StrategyProvider {
             Object property = strategyDevice.getAndroidProperties().get(key);
             Object currentProperty = currentDevice.getAndroidProperties().get(key);
             if (property != null && currentProperty != null) {
-                match = currentProperty.equals(property);
+                if(currentProperty instanceof String) {
+                    // we'd prefer to be case insensitive
+                    match = ((String)currentProperty).toLowerCase().equals(((String)property).toLowerCase());
+                } else {
+                    match = currentProperty.equals(property);
+                }
             }
         }
         return match;

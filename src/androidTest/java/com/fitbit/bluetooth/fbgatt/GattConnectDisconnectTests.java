@@ -10,6 +10,7 @@ package com.fitbit.bluetooth.fbgatt;
 
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
+import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
@@ -181,7 +182,7 @@ public class GattConnectDisconnectTests {
         FitbitGatt.getInstance().start(mockContext);
         Assert.assertTrue(FitbitGatt.getInstance().isStarted());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
-        GattServerConnection connection = FitbitGatt.getInstance().getServer();
+        GattServerConnection connection = new GattServerConnection(null, Looper.getMainLooper());
         connection.setMockMode(true);
         connection.setState(GattState.DISCONNECTED);
         CountDownLatch cdl = new CountDownLatch(1);

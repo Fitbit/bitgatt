@@ -18,6 +18,8 @@ import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 
+import androidx.annotation.Nullable;
+
 /**
  * This will need to be delayed in its response because if a developer chains a descriptor
  * write to this operation at least on the Pixel 3 with Antares, it can lead to a 133
@@ -37,7 +39,7 @@ public class DelaySubscriptionResultStrategy extends Strategy {
      * @param currentAndroidDevice The current Android device
      */
 
-    public DelaySubscriptionResultStrategy(GattConnection connection, AndroidDevice currentAndroidDevice) {
+    public DelaySubscriptionResultStrategy(@Nullable GattConnection connection, AndroidDevice currentAndroidDevice) {
         super(connection, currentAndroidDevice);
         mainThreadHandler = new Handler(Looper.getMainLooper());
     }

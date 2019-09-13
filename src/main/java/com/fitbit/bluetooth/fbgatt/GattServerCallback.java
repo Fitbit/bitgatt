@@ -15,10 +15,8 @@ import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
-import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
@@ -54,7 +52,7 @@ class GattServerCallback extends BluetoothGattServerCallback {
     GattServerCallback() {
         super();
         this.listeners = Collections.synchronizedList(new ArrayList<>(4));
-        Looper looper = FitbitGatt.getInstance().gattServerCallbackHandlerThread.getLooper();
+        Looper looper = FitbitGatt.getInstance().getGattServerCallbackHandlerThread().getLooper();
         this.handler = new Handler(looper);
     }
 

@@ -8,9 +8,11 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.HashMap;
+import java.util.Locale;
 
 /**
  * An android device, which is an encapsulation of the build variables in a simple comparable
@@ -224,6 +226,12 @@ public class AndroidDevice {
         } else {
             return super.equals(obj);
         }
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return String.format(Locale.ENGLISH, "AndroidDevice[%s, %s, %s, %s, %s, %s]", getManufacturerName(), getDeviceModel(), getApiLevel(), getHardware(), getBrand(), getBoard());
     }
 
     /**

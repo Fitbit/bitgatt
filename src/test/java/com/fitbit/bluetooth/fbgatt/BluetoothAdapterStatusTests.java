@@ -179,7 +179,6 @@ public class BluetoothAdapterStatusTests {
         });
         FitbitGatt.getInstance().registerGattEventListener(cb);
         mockStatusListener.listener = FitbitGatt.getInstance();
-        GattServerConnection oldConn = FitbitGatt.getInstance().getServer();
         mockStatusListener.listener.bluetoothOn();
         Assert.assertTrue(FitbitGatt.getInstance().isBluetoothOn);
         verify(cb, atLeastOnce()).onBluetoothOn();

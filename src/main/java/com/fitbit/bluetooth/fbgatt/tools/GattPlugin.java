@@ -102,21 +102,21 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     private final FitbitGatt fitbitGatt;
     private final Map<String, GattConnection> clientConnections = new HashMap<>();
     protected final Context context;
-    private boolean isJsonFormat = false;
+    protected boolean isJsonFormat = false;
     private ServerConnectionListener serverConnectionListener;
 
     // Constants
     // Indicates a command passed
-    private static final String PASS_STATUS = "pass";
+    protected static final String PASS_STATUS = "pass";
 
     // Indicates a command failed
-    private static final String FAIL_STATUS = "fail";
+    protected static final String FAIL_STATUS = "fail";
 
     // JSON Keys
-    private static final String COMMAND_KEY = "command";
-    private static final String STATUS_KEY = "status";
-    private static final String RESULT_KEY = "result";
-    private static final String ERROR_KEY = "error";
+    protected static final String COMMAND_KEY = "command";
+    protected static final String STATUS_KEY = "status";
+    protected static final String RESULT_KEY = "result";
+    protected static final String ERROR_KEY = "error";
 
     // JSON Result object keys
     private static final String RESULT_RSSI_KEY = "rssi";
@@ -195,7 +195,6 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         SET_JSON_OUTPUT_FORMAT("set-json-output", "sjo", "on/off\n\nDescription: Will enable json command line output or disable it"),
         REFRESH_GATT("refresh-gatt", "rgt", "<mac>\n\nDescription: Refresh the gatt on the phone"),
         SHOW_REMOTE_SERVICES("show-remote-services", "srs", "<mac>\n\nDescription: Will show remote services, characteristics, and descriptors available post discovery"),
-        READ_AMBIENT_TEMP("read-ambient-temperature", "rat", "Description: Displays ambient temperature in degrees Celsius"),
         READ_GATT_LIB_VERSION("read-gatt-lib-version", "rglv", "Description: Print version of the GATT library in use"),
         READ_NUM_GATT_ACTIVE_CONNECTIONS("read-num-gatt-active-connections", "rngac", "Description: Read number of active connetions on GATT");
 
@@ -372,9 +371,6 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                 case SHOW_REMOTE_SERVICES:
                     showRemoteServices(dumpContext, args);
                     break;
-                case READ_AMBIENT_TEMP:
-                    readAmbientTemp(dumpContext);
-                    break;
                 case READ_GATT_LIB_VERSION:
                     readGattLibVersion(dumpContext);
                     break;
@@ -519,22 +515,6 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
             logJsonResult(dumpContext, status, error, jsonArray);
         }
         conn.getDevice().removeDevicePropertiesChangedListener(this);
-    }
-
-    private void readAmbientTemp(DumperContext dumpContext) {
-        float fAmbientTemp = 0; // Here replace with the correct API
-        String sAmbientTemp = String.format(ENGLISH, "%.2f", fAmbientTemp);
-
-        if (isJsonFormat) {
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put(COMMAND_KEY, "read-ambient-temperature");
-            map.put(STATUS_KEY, PASS_STATUS);
-            map.put(RESULT_KEY, sAmbientTemp);
-            JSONObject jsonObject = makeJsonObject(map);
-            log(dumpContext, jsonObject.toString());
-        } else {
-            log(dumpContext, sAmbientTemp);
-        }
     }
 
     private void readGattLibVersion(DumperContext dumpContext) {
@@ -2373,7 +2353,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         log(dumpContext, jsonRoot.toString());
     }
 
-    private JSONObject makeJsonObject(Map<String, Object> map) {
+    protected JSONObject makeJsonObject(Map<String, Object> map) {
         JSONObject jsonObject = new JSONObject();
         try {
             for (Map.Entry<String, Object> entry : map.entrySet()) {

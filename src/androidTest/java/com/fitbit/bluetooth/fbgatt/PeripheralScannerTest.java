@@ -224,6 +224,7 @@ public class PeripheralScannerTest {
         FitbitGatt.getInstance().registerGattEventListener(callback);
         FitbitGatt.getInstance().getPeripheralScanner().startPeriodicScan(appContext);
         cdl.await(2, TimeUnit.SECONDS);
+        FitbitGatt.getInstance().unregisterGattEventListener(callback);
     }
 
     @Test
@@ -461,6 +462,7 @@ public class PeripheralScannerTest {
         FitbitGatt.getInstance().registerGattEventListener(callback);
         FitbitGatt.getInstance().startHighPriorityScan(appContext);
         cdl.await(5, TimeUnit.MINUTES);
+        FitbitGatt.getInstance().unregisterGattEventListener(callback);
     }
 
     @Test
@@ -556,6 +558,7 @@ public class PeripheralScannerTest {
                 FitbitGatt.getInstance().unregisterGattEventListener(callback);
                 Assert.fail("Didn't find a fitbit by the allotted time");
             }
+            FitbitGatt.getInstance().unregisterGattEventListener(callback);
         } else {
             Assert.assertTrue("Bluetooth was off, so we are just going to be winning", !FitbitGatt.getInstance().isBluetoothOn());
         }

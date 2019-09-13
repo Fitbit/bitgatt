@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -105,21 +106,32 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
     static final long MAX_TIME_FOR_TEST_MODE_HIGH_PRIORITY_SCAN = TimeUnit.SECONDS.toMillis(2);
 
     /**
+     * Only here for mocking purposes
+     */
+
+    @VisibleForTesting
+    AlwaysConnectedScanner(){
+
+    }
+
+    /**
      * Will set the initial expectation for how this scanner should operate when devices are found
      *
      * @param numberOfExpectedDevices The number of expected devices
      * @param shouldKeepLooking       Whether to keep looking after one of the devices is found
+     * @param looper                  The looper for scheduling events
      */
-    @SuppressWarnings("unused") // API Method
-    AlwaysConnectedScanner(int numberOfExpectedDevices, boolean shouldKeepLooking) {
-        this(numberOfExpectedDevices, shouldKeepLooking, false);
+    @SuppressWarnings("unused")
+    // API Method
+    AlwaysConnectedScanner(int numberOfExpectedDevices, boolean shouldKeepLooking, Looper looper) {
+        this(numberOfExpectedDevices, shouldKeepLooking, false, looper);
     }
 
-    private AlwaysConnectedScanner(int numberOfExpectedDevices, boolean shouldKeepLooking, boolean testMode) {
+    private AlwaysConnectedScanner(int numberOfExpectedDevices, boolean shouldKeepLooking, boolean testMode, Looper looper) {
         this.numberOfExpectedDevices = numberOfExpectedDevices;
         this.shouldKeepLooking = shouldKeepLooking;
         this.testMode = testMode;
-        mainHandlerForScheduling = new Handler(Looper.getMainLooper());
+        mainHandlerForScheduling = new Handler(looper);
     }
 
     @VisibleForTesting
@@ -131,7 +143,7 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
      * We need to be able to do this for testing
      */
     @VisibleForTesting
-    void restartCanStart(){
+    void restartCanStart() {
         canStartHighPriorityScan.set(true);
     }
 
@@ -255,6 +267,7 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
      * and will not clear the existing filter set.  This method will only change the current set of
      * filters once every 30s so if you call this method multiple times, the changes will be spread
      * over 30s x n calls.
+     *
      * @param context The android context
      * @param filters The list of filters
      */
@@ -274,11 +287,12 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
      * Will append a new scan filter to the set of scan filters, will restart the internal
      * background scanner to ensure that the new filter is picked up.  Since we want to always
      * avoid the scan-too-much no-op for our scanner, we will only change this once per 30s.
-     *
+     * <p>
      * This method will only change the current set of
      * filters once every 30s so if you call this method multiple times, the changes will be spread
      * over 30s x n calls.
-     * @param context The android context
+     *
+     * @param context    The android context
      * @param scanFilter The new scan filter to add
      */
 
@@ -298,11 +312,12 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
 
     /**
      * Will remove a scan filter from the set of scan filters.
-     *
+     * <p>
      * This method will only change the current set of
      * filters once every 30s so if you call this method multiple times, the changes will be spread
      * over 30s x n calls.
-     * @param context The android context
+     *
+     * @param context    The android context
      * @param scanFilter The scan filter to remove
      */
 
@@ -342,7 +357,7 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
             Timber.w("You can not start a scanner with no filters");
             return false;
         }
-        if(isScannerEnabled.get()) {
+        if (isScannerEnabled.get()) {
             Timber.w("The scanner was already enabled, no need to call this again");
             return false;
         }
@@ -434,7 +449,7 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
                 Timber.i("The power manager was null");
                 return false;
             }
-            if(pm.isInteractive()) {
+            if (pm.isInteractive()) {
                 return startScanIfPossible(context);
             } else {
                 Timber.d("The screen isn't on, can't perform a high priority scan");
@@ -443,9 +458,9 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
         }
     }
 
-    private boolean startScanIfPossible(@NonNull Context context){
+    private boolean startScanIfPossible(@NonNull Context context) {
         PeripheralScanner peripheralScanner = FitbitGatt.getInstance().getPeripheralScanner();
-        if(peripheralScanner == null) {
+        if (peripheralScanner == null) {
             Timber.w("The scanner isn't set up yet, did you call FitbitGatt#start(...)?");
             return false;
         }

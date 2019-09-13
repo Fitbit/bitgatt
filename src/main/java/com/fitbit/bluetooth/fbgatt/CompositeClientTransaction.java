@@ -8,13 +8,13 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**
@@ -26,7 +26,7 @@ import timber.log.Timber;
  * Created by iowens on 04/25/19.
  */
 
-public class CompositeClientTransaction extends GattTransaction {
+public class CompositeClientTransaction extends GattTransaction implements Closeable {
     public static final String NAME = "CompositeClientTransaction";
     private List<GattTransaction> transactionList;
     private GattTransactionCallback finalCallback;
@@ -41,16 +41,16 @@ public class CompositeClientTransaction extends GattTransaction {
         if(!transactionList.isEmpty()) {
             setTimeout(DEFAULT_GATT_TRANSACTION_TIMEOUT * transactionList.size());
         }
-        // The composite client transaction will need it's own queue controller to run
-        // child transactions while still blocking the main connection queue controller
-        compositeClientQueueController = new TransactionQueueController(NAME);
-        compositeClientQueueController.start();
     }
 
     @Override
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         this.finalCallback = callback;
+        // The composite client transaction will need it's own queue controller to run
+        // child transactions while still blocking the main connection queue controller
+        compositeClientQueueController = new TransactionQueueController(NAME);
+        compositeClientQueueController.start();
         // at this point the CDL for the transaction has already been latched
         compositeClientQueueController.queueTransaction(this::executeTransaction);
     }
@@ -98,19 +98,31 @@ public class CompositeClientTransaction extends GattTransaction {
     }
 
     @Override
+    protected void onGattClientTransactionTimeout(GattConnection connection) {
+        super.onGattClientTransactionTimeout(connection);
+        // let's be extra sure to close out here
+        close();
+    }
+
+    @Override
     public void callCallbackWithTransactionResultAndRelease(GattTransactionCallback callback, TransactionResult result) {
         try {
             super.callCallbackWithTransactionResultAndRelease(callback, result);
         } finally {
-            if(this.compositeClientQueueController != null) {
-                this.compositeClientQueueController.stop();
-                this.compositeClientQueueController = null;
-            }
+            close();
         }
     }
 
     @Override
     public String getName() {
         return NAME;
+    }
+
+    @Override
+    public void close() {
+        if (this.compositeClientQueueController != null) {
+            this.compositeClientQueueController.stop();
+            this.compositeClientQueueController = null;
+        }
     }
 }

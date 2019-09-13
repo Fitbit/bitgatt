@@ -539,7 +539,15 @@ class PeripheralScanner {
             broadcastIntent.setClass(context, HandleIntentBasedScanResult.class);
             backgroundIntentBasedScanIntent = PendingIntent.getBroadcast(context,
                 BACKGROUND_SCAN_REQUEST_CODE, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            int didStart = scanner.startScan(scanFilters, null, backgroundIntentBasedScanIntent);
+            int didStart;
+            try {
+                didStart = scanner.startScan(scanFilters, null, backgroundIntentBasedScanIntent);
+            } catch (NullPointerException e) {
+                //https://fabric.io/fitbit7/android/apps/com.fitbit.fitbitmobile/issues/2e9748f5333eaa38d7f7141f73139504?time=last-ninety-days
+                Timber.w(e, "Could not start scan, android internal stack NPE");
+                listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
+                return false;
+            }
             int count = scanCount.incrementAndGet();
             Timber.v("Starting scan, scan count in this 30s is %d", count);
             if (didStart == 0) {
@@ -636,7 +644,14 @@ class PeripheralScanner {
             if (!filters.isEmpty()) {
                 PendingIntent pending = PendingIntent.getBroadcast(context,
                     BACKGROUND_SCAN_REQUEST_CODE, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                int didStart = scanner.startScan(filters, null, pending);
+                int didStart;
+                try {
+                    didStart = scanner.startScan(filters, null, pending);
+                } catch (NullPointerException e) {
+                    Timber.w(e, "Could not start scan, android internal stack NPE");
+                    listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
+                    return null;
+                }
                 int count = scanCount.incrementAndGet();
                 Timber.v("Starting scan, scan count in this 30s is %d", count);
                 if (didStart == 0) {
@@ -743,7 +758,14 @@ class PeripheralScanner {
             // we can get here is scanner had previously been defined, but now the
             // adapter is turned off
             if (scanner.isBluetoothEnabled()) {
-                scanner.startScan(filters, settings, callback);
+                try {
+                    scanner.startScan(filters, settings, callback);
+                } catch (NullPointerException e) {
+                    Timber.w(e, "Couldn't start the scanner, android internal NPE");
+                    isScanning.set(false);
+                    listener.onScanStatusChanged(isScanning.get());
+                    return false;
+                }
                 int count = scanCount.incrementAndGet();
                 Timber.v("Starting scan, scan count in this 30s is %d", count);
                 scanStarted = true;
