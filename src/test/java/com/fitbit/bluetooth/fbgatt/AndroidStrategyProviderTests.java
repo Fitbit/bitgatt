@@ -125,7 +125,7 @@ public class AndroidStrategyProviderTests {
     }
 
     @Test
-    public void currentDeviceEqualsShouldReturnFalseWithSameApiLowercase(){
+    public void currentDeviceEqualsShouldReturnTrueWithSameApiLowercase(){
         AndroidDevice currentDevice = new AndroidDevice.Builder().
                 device("custom").
                 deviceModel("SGH-2000").
@@ -143,7 +143,7 @@ public class AndroidStrategyProviderTests {
                 radioVersion("B21W17N11").
                 type("Android").build();
         boolean match = new StrategyProvider().currentDeviceHasEqualDefinedProperties(currentDevice, new AndroidDevice.Builder().apiLevel(24).brand("samsung").build());
-        assertFalse("match should be false", match);
+        assertTrue("match should be true", match);
     }
 
     @Test

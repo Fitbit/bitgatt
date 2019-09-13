@@ -14,13 +14,14 @@ import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 public abstract class Strategy {
     final GattConnection connection;
     final AndroidDevice currentAndroidDevice;
 
-    Strategy(GattConnection connection, AndroidDevice currentAndroidDevice) {
+    Strategy(@Nullable GattConnection connection, AndroidDevice currentAndroidDevice) {
         this.connection = connection;
         this.currentAndroidDevice = currentAndroidDevice;
     }

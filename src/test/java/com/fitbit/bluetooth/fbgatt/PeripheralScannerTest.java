@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 
 import junit.framework.TestCase;
 
@@ -288,10 +287,12 @@ public class PeripheralScannerTest {
             @Override
             public void onScanStopped(){
                 if(didStart[0]) {
+                    // delayed 4 seconds because instrumentation test duration until timeout is
+                    // 2 seconds
                     mockHandler.postDelayed(() -> {
                         assertFalse(peripheralScanner.isPeriodicalScanEnabled());
                         cdl.countDown();
-                    }, 500);
+                    }, 4000);
                 }
             }
         };
@@ -335,8 +336,10 @@ public class PeripheralScannerTest {
             @Override
             public void onScanStopped(){
                 if(didStart[0]) {
-                    cdl.countDown();
-                    assertTrue(peripheralScanner.isPeriodicalScanEnabled());
+                    mockHandler.postDelayed(() -> {
+                        assertTrue(peripheralScanner.isPeriodicalScanEnabled());
+                        cdl.countDown();
+                    }, 1000);
                 }
             }
         };

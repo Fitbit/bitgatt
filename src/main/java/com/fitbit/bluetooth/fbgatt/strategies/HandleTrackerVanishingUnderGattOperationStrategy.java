@@ -17,6 +17,7 @@ import android.bluetooth.BluetoothGatt;
 
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**
@@ -29,7 +30,7 @@ public class HandleTrackerVanishingUnderGattOperationStrategy extends Strategy {
 
     private static final long WAIT_TIME_FOR_DISCONNECTION = TimeUnit.SECONDS.toMillis(1);
 
-    public HandleTrackerVanishingUnderGattOperationStrategy(GattConnection connection, AndroidDevice androidDevice) {
+    public HandleTrackerVanishingUnderGattOperationStrategy(@Nullable GattConnection connection, AndroidDevice androidDevice) {
         super(connection, androidDevice);
     }
 

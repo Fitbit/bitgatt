@@ -10,6 +10,8 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.logging.BitgattDebugTree;
 import com.fitbit.bluetooth.fbgatt.logging.BitgattReleaseTree;
+import com.fitbit.bluetooth.fbgatt.strategies.BluetoothOffClearGattServerStrategy;
+import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
@@ -32,6 +34,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.ParcelUuid;
 
 import java.util.ArrayList;
@@ -76,22 +79,23 @@ import static com.fitbit.bluetooth.fbgatt.PeripheralScanner.BACKGROUND_SCAN_REQU
 public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, BluetoothRadioStatusListener.BluetoothOnListener {
 
     static final long MAX_TTL = TimeUnit.HOURS.toMillis(1);
+    private static final long GATT_SERVER_START_FAILURE_RETRY_INTERVAL = 500;
     /*
      * The Fitbit gatt instance, this holds the context, lint is rightfully complaining about
      * leaking the context.
      */
     @SuppressLint("StaticFieldLeak")
-    private static final FitbitGatt ourInstance = new FitbitGatt();
+    private static volatile FitbitGatt ourInstance;
     private static final int OPEN_GATT_SERVER_RETRY_COUNT = 3;
 
     private final ConcurrentHashMap<FitbitBluetoothDevice, GattConnection> connectionMap = new ConcurrentHashMap<>();
     private static final long CLEANUP_INTERVAL = TimeUnit.MINUTES.toMillis(5);
     // this is only used on init
-    private final CopyOnWriteArrayList<FitbitGattCallback> overallGattEventListeners;
+    private CopyOnWriteArrayList<FitbitGattCallback> overallGattEventListeners;
 
     private BluetoothGattServer gattServer;
     // this is only used on init
-    private final CopyOnWriteArrayList<BluetoothGattService> servicesToAdd;
+    private final CopyOnWriteArrayList<BluetoothGattService> servicesToAdd = new CopyOnWriteArrayList<>();
     private @NonNull
     BatteryDataStatsAggregator powerAggregator;
     private GattServerConnection serverConnection;
@@ -108,14 +112,45 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @VisibleForTesting
     AtomicBoolean isStarted = new AtomicBoolean(false);
     private Handler connectionCleanup;
-    HandlerThread gattServerCallbackHandlerThread = new HandlerThread("FitbitGatt Async Operation Thread");
+    private HandlerThread gattServerCallbackHandlerThread = new HandlerThread("FitbitGatt Async Operation Thread");
     private Handler fitbitGattAsyncOperationHandler;
     private BluetoothRadioStatusListener radioStatusListener;
     @VisibleForTesting
     volatile boolean isBluetoothOn;
 
+    /**
+     * Will get the instance of the singleton FitbitGatt manager class
+     * @return The instance of FitbitGatt
+     */
+
     public static FitbitGatt getInstance() {
+        if(ourInstance == null) {
+            synchronized (FitbitGatt.class) {
+                if (ourInstance == null) {
+                    ourInstance = new FitbitGatt();
+                    ourInstance.setup();
+                }
+            }
+        }
         return ourInstance;
+    }
+
+    private void setup(){
+        // only add a custom logger if the implementer isn't using Timber, if they are using Timber
+        // let them deal with it, just make sure your variants set BuildConfig.DEBUG correctly
+        if (Timber.treeCount() == 0) {
+            if (BuildConfig.DEBUG) {
+                Timber.plant(new BitgattDebugTree());
+            } else {
+                Timber.plant(new BitgattReleaseTree());
+            }
+        }
+        ourInstance.overallGattEventListeners = new CopyOnWriteArrayList<>();
+        // we will default to one expected device and that it should not looking
+        ourInstance.alwaysConnectedScanner = new AlwaysConnectedScanner(1, false, Looper.getMainLooper());
+        ourInstance.powerAggregator = new BatteryDataStatsAggregator(null);
+        ourInstance.gattServerCallbackHandlerThread.start();
+        ourInstance.fitbitGattAsyncOperationHandler = new Handler(ourInstance.gattServerCallbackHandlerThread.getLooper());
     }
 
     @VisibleForTesting
@@ -153,6 +188,15 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         // internal API method
     void setPowerAggregator(@NonNull BatteryDataStatsAggregator powerAggregator) {
         this.powerAggregator = powerAggregator;
+    }
+
+    /**
+     * Will allow access to the gatt server callback handler thread
+     * @return The gatt server handler thread
+     */
+
+    public HandlerThread getGattServerCallbackHandlerThread() {
+        return gattServerCallbackHandlerThread;
     }
 
     /**
@@ -256,22 +300,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     @VisibleForTesting
     FitbitGatt() {
-        // only add a custom logger if the implementer isn't using Timber, if they are using Timber
-        // let them deal with it, just make sure your variants set BuildConfig.DEBUG correctly
-        if (Timber.treeCount() == 0) {
-            if (BuildConfig.DEBUG) {
-                Timber.plant(new BitgattDebugTree());
-            } else {
-                Timber.plant(new BitgattReleaseTree());
-            }
-        }
-        overallGattEventListeners = new CopyOnWriteArrayList<>();
-        servicesToAdd = new CopyOnWriteArrayList<>();
-        // we will default to one expected device and that it should not looking
-        this.alwaysConnectedScanner = new AlwaysConnectedScanner(1, false);
-        powerAggregator = new BatteryDataStatsAggregator(null);
-        gattServerCallbackHandlerThread.start();
-        fitbitGattAsyncOperationHandler = new Handler(gattServerCallbackHandlerThread.getLooper());
+        // empty so that this class can be mocked
+        // setup is done internal to getInstance
     }
 
     public void registerGattEventListener(FitbitGattCallback callback) {
@@ -734,13 +764,16 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      *
      * @param context The Android context
      */
-    @WorkerThread
     public synchronized void start(Context context) {
         if (!isStarted()) {
             if (!startSimple(context)) {
                 Timber.w("Couldn't start because BT was off");
                 return;
             }
+            // this is to prevent other initializations from trying to start bitgatt
+            // before we have a resolution for the gatt server ... in practice this is OK
+            // because the gatt client is up and usable after this, the server should be
+            // within milliseconds, but may not.  Do do not move this into the async callback.
             boolean success = isStarted.compareAndSet(false, true);
             if (!success) {
                 Timber.w("There was a problem updating the started state, are you starting from two threads?");
@@ -777,6 +810,11 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         // we can initialize this value here and guard the scanner and the gatt
         // server this way
         BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(context);
+        if (radioStatusListener == null) {
+            radioStatusListener = new BluetoothRadioStatusListener(getAppContext(), false);
+        }
+        radioStatusListener.startListening();
+        radioStatusListener.setListener(this);
         isBluetoothOn = adapter != null && adapter.isEnabled();
         if (!isBluetoothOn) {
             return false;
@@ -785,11 +823,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         addConnectedDevices(context);
         // will start the cleanup process
         decrementAndInvalidateClosedConnections();
-        if (radioStatusListener == null) {
-            radioStatusListener = new BluetoothRadioStatusListener(getAppContext(), false);
-        }
-        radioStatusListener.startListening();
-        radioStatusListener.setListener(this);
         return true;
     }
 
@@ -1018,8 +1051,14 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         decrementAndInvalidateClosedConnections();
     }
 
-    @VisibleForTesting
-    synchronized void addScannedDevice(FitbitBluetoothDevice device) {
+    /**
+     * Will allow a developer to use their own scanner instead of the bitgatt scanner.  In the
+     * scan result, you can construct the FitbitBluetoothDevice from it and add it to the connection
+     * map, the connection object will be created for you.
+     * @param device The FitbitBluetoothDevice to add from the scan result
+     */
+    @SuppressWarnings("WeakerAccess") // API method
+    public synchronized void addScannedDevice(FitbitBluetoothDevice device) {
         // we need to deal with the scenario where the peripheral was connected, but now
         // it is disconnected, then it is picked up in the background with the scan
         // the listener could potentially be called back twice for the same connection
@@ -1227,8 +1266,16 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
              * application's data in the application list with system apps shown.  The gatt
              * cache is probably corrupt
              */
-            fitbitGattAsyncOperationHandler.post(() -> {
+            fitbitGattAsyncOperationHandler.postDelayed(() -> {
                 for (int openServerRetryCount = 0; openServerRetryCount < OPEN_GATT_SERVER_RETRY_COUNT; openServerRetryCount++) {
+                    // the bluetooth team at Google recommended that we check to see if BT is off
+                    // here ... it could also be that the BluetoothService has crashed, either way
+                    // we should stop calling openGattServer in that case
+                    if(manager.getAdapter() == null || !manager.getAdapter().isEnabled()) {
+                        Timber.w("Bluetooth was turned off while attempting to start server");
+                        callback.onGattServerStatus(false);
+                        return;
+                    }
                     gattServer = manager.openGattServer(context, serverCallback);
                     if (gattServer != null) {
                         // make sure there are no hidden services, we don't want duplicates for the phones who
@@ -1245,7 +1292,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                 Timber.w("Exhausted retries to open gatt server, recommend that you tell your user to clear bluetooth share in the apps list, the GATT db is probably corrupt");
                 callback.onGattServerStatus(false);
 
-            });
+            }, GATT_SERVER_START_FAILURE_RETRY_INTERVAL);
         } else {
             Timber.w("No bluetooth manager, we must be simulating, or BT is off!!!");
             callback.onGattServerStatus(false);
@@ -1642,6 +1689,21 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @Override
     public void bluetoothTurningOff() {
         isBluetoothOn = false;
+        // let's try to clean up the gatt server on devices that are likely to duplicate or host
+        // no services after add on startup due to queueing issues, almost all Samsung devices
+        // seem to behave in this way
+        AndroidDevice strategyDevice = new AndroidDevice.Builder().manufacturerName("Samsung").build();
+        Strategy executableStrategy = new StrategyProvider()
+            .getStrategyForPhoneAndGattConnection(strategyDevice,
+                null,
+                Situation.CLEAR_GATT_SERVER_SERVICES_DEVICE_FUNKY_BT_IMPL);
+        if(executableStrategy != null) {
+            // we don't want to run any other strategies that may end up
+            // with this situation
+            if(executableStrategy instanceof BluetoothOffClearGattServerStrategy) {
+                executableStrategy.applyStrategy();
+            }
+        }
         Timber.v("Bluetooth is turning off");
         for (FitbitGattCallback callback : overallGattEventListeners) {
             callback.onBluetoothTurningOff();
