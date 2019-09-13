@@ -339,7 +339,7 @@ public class PeripheralScannerTest {
                     mockHandler.postDelayed(() -> {
                         assertTrue(peripheralScanner.isPeriodicalScanEnabled());
                         cdl.countDown();
-                    }, 1000);
+                    }, 4000);
                 }
             }
         };
