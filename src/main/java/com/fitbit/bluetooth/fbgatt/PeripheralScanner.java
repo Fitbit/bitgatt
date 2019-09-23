@@ -61,7 +61,8 @@ class PeripheralScanner {
     private static final int DEFAULT_SCAN_BACKOFF_MULTIPLIER = 1;
 
     Handler mHandler;
-    private final Runnable scanTimeoutRunnable = new ScanTimeoutRunnable();
+    @VisibleForTesting
+    final Runnable scanTimeoutRunnable = new ScanTimeoutRunnable();
     private final Runnable periodicRunnable = new PeriodicScanRunnable();
     private ScannerInterface scanner;
     private int scanMode = ScanSettings.SCAN_MODE_LOW_POWER;

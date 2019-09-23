@@ -272,81 +272,24 @@ public class PeripheralScannerTest {
     }
 
     @Test
-    @Ignore("Test is somewhat flaky, and needs to be refactored")
     public void testPeripheralScannerStartLowLatencyScanTimeoutPeriodicShouldNotBeRunning() {
-        CountDownLatch cdl = new CountDownLatch(2);
         // we want to do this so that we don't end up with a super long wait
         peripheralScanner.setInstrumentationTestMode(true);
         peripheralScanner.addRssiFilter(-10);
-        final boolean[] didStart = new boolean[] { false };
-        NoOpGattCallback cb = new NoOpGattCallback() {
-            @Override
-            public void onScanStarted() {
-                didStart[0] = true;
-                cdl.countDown();
-            }
-
-            @Override
-            public void onScanStopped(){
-                if(didStart[0]) {
-                    // delayed 4 seconds because instrumentation test duration until timeout is
-                    // 2 seconds
-                    mockHandler.postDelayed(() -> {
-                        assertFalse(peripheralScanner.isPeriodicalScanEnabled());
-                        cdl.countDown();
-                    }, 4000);
-                }
-            }
-        };
-        gatt.registerGattEventListener(cb);
         boolean didHighPriorityScanStart = peripheralScanner.startHighPriorityScan(mockContext);
         if(!didHighPriorityScanStart) {
             fail("Couldn't start high priority scan");
         }
-        try {
-            boolean result = cdl.await(8, TimeUnit.SECONDS);
-            if(!result) {
-                TestCase.fail("Test Timeout");
-            }
-        } catch (InterruptedException e) {
-            Timber.e(e, "Failed test");
-            fail();
-        } finally {
-            gatt.unregisterGattEventListener(cb);
-            peripheralScanner.setInstrumentationTestMode(false);
-        }
+        peripheralScanner.scanTimeoutRunnable.run();
+        assertFalse(peripheralScanner.isPeriodicalScanEnabled());
+        peripheralScanner.setInstrumentationTestMode(false);
     }
 
     @Test
-    @Ignore("Test is somewhat flaky, and needs to be refactored")
     public void testPeripheralScannerStartHighAndLowLatencyScanTimeoutPeriodicShouldBeRunning() {
-        CountDownLatch cdl = new CountDownLatch(2);
         // we want to do this so that we don't end up with a super long wait
         peripheralScanner.setInstrumentationTestMode(true);
         peripheralScanner.addRssiFilter(-10);
-        final boolean[] didStart = new boolean[] { false };
-        NoOpGattCallback cb = new NoOpGattCallback() {
-            @Override
-            public void onScanStarted() {
-                if(peripheralScanner.isPeriodicalScanEnabled()) {
-                    didStart[0] = true;
-                    cdl.countDown();
-                } else {
-                    fail("Start shouldn't be called until periodical scan is enabled");
-                }
-            }
-
-            @Override
-            public void onScanStopped(){
-                if(didStart[0]) {
-                    mockHandler.postDelayed(() -> {
-                        assertTrue(peripheralScanner.isPeriodicalScanEnabled());
-                        cdl.countDown();
-                    }, 4000);
-                }
-            }
-        };
-        gatt.registerGattEventListener(cb);
         boolean started = peripheralScanner.startPeriodicScan(mockContext);
         if(!started) {
             fail("The periodical scan never started");
@@ -355,17 +298,9 @@ public class PeripheralScannerTest {
         if(!started) {
             fail("The high priority scan never started");
         }
-        try {
-            boolean result = cdl.await(8, TimeUnit.SECONDS);
-            if(!result) {
-                TestCase.fail("Test Timeout");
-            }
-        } catch (InterruptedException e) {
-            fail("Failed test, interrupted exception");
-        } finally {
-            gatt.unregisterGattEventListener(cb);
-            peripheralScanner.setInstrumentationTestMode(false);
-        }
+        peripheralScanner.scanTimeoutRunnable.run();
+        assertTrue(peripheralScanner.isPeriodicalScanEnabled());
+        peripheralScanner.setInstrumentationTestMode(false);
     }
 
     public static class NoOpGattCallback implements FitbitGatt.FitbitGattCallback {
