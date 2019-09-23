@@ -15,16 +15,19 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class ThreadManagementTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
+    private final ExecutorService service = Executors.newFixedThreadPool(100);
+
 
     @Test
     public void testTransactionQueueControllerThreadStoppage() {
@@ -62,5 +65,109 @@ public class ThreadManagementTest {
         assertEquals(100000, total[0]);
         assertFalse(controller.isQueueThreadStopped());
         controller.stop();
+    }
+
+    /**
+     * Negative test for gatt start, worst case scenario, if synchronization isn't working
+     * will crash the bluetooth service and will start returning calling back that start isn't
+     * working
+     */
+    @Test
+    public void testHammeringStartFromOneHundredThreads(){
+        CountDownLatch cdl = new CountDownLatch(1001);
+        FitbitGatt.getInstance().registerGattEventListener(new NoOpGattCallback() {
+            @Override
+            public void onFitbitGattReady() {
+                // this should only happen once
+                cdl.countDown();
+            }
+
+            @Override
+            public void onFitbitGattStartFailed() {
+                fail("Gatt start should never fail");
+            }
+        });
+        for(int i=0; i < 1000; i++) {
+            service.execute(new Runnable() {
+                @Override
+                public void run() {
+                    FitbitGatt.getInstance().start(InstrumentationRegistry.getTargetContext());
+                    cdl.countDown();
+                }
+            });
+        }
+        try {
+            boolean timedout = !cdl.await(30, TimeUnit.SECONDS);
+            if(timedout) {
+                fail("test timed out waiting for start");
+            }
+        } catch (InterruptedException ex) {
+            fail("Thread was interrupted before all calls complete");
+        }
+        assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().unregisterAllGattEventListeners();
+    }
+
+    public class NoOpGattCallback implements FitbitGatt.FitbitGattCallback {
+
+        @Override
+        public void onBluetoothPeripheralDiscovered(GattConnection connection) {
+
+        }
+
+        @Override
+        public void onBluetoothPeripheralDisconnected(GattConnection connection) {
+
+        }
+
+        @Override
+        public void onFitbitGattReady() {
+
+        }
+
+        @Override
+        public void onFitbitGattStartFailed() {
+
+        }
+
+        @Override
+        public void onScanStarted() {
+
+        }
+
+        @Override
+        public void onScanStopped() {
+
+        }
+
+        @Override
+        public void onPendingIntentScanStopped() {
+
+        }
+
+        @Override
+        public void onPendingIntentScanStarted() {
+
+        }
+
+        @Override
+        public void onBluetoothOff() {
+
+        }
+
+        @Override
+        public void onBluetoothOn() {
+
+        }
+
+        @Override
+        public void onBluetoothTurningOn() {
+
+        }
+
+        @Override
+        public void onBluetoothTurningOff() {
+
+        }
     }
 }

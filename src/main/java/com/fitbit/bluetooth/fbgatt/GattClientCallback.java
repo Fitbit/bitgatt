@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Build;
@@ -291,6 +292,7 @@ public class GattClientCallback extends BluetoothGattCallback {
         }
         GattConnection conn = FitbitGatt.getInstance().getConnection(gatt.getDevice());
         if(conn != null) {
+            List<BluetoothGattService> discoveredServices = gatt.getServices();
             // since this is one of the events that could happen asynchronously, we will
             // need to iterate through our connection listeners
             handler.post(() -> {
@@ -304,7 +306,7 @@ public class GattClientCallback extends BluetoothGattCallback {
                     }
                     asyncConnListener.onServicesDiscovered(builder
                         .transactionName(GattClientDiscoverServicesTransaction.NAME)
-                        .serverServices(gatt.getServices())
+                        .serverServices(discoveredServices)
                         .gattState(conn.getGattState())
                         .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
                 }
