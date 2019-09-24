@@ -250,7 +250,7 @@ public class TxPreCommitTests {
         GattServerConnectMockTransaction connect1 = new GattServerConnectMockTransaction(conn, GattState.CONNECTED,  device, false);
         GattServerDisconnectMockTransaction connect2 = new GattServerDisconnectMockTransaction(conn, GattState.DISCONNECTED,  device, false);
         GattServerConnectMockTransaction connect3 = new GattServerConnectMockTransaction(conn, GattState.CONNECTED,  device, false);
-        ArrayList<GattTransaction> transactions = new ArrayList<>(3);
+        ArrayList<GattServerTransaction> transactions = new ArrayList<>(3);
         transactions.add(connect1);
         transactions.add(connect2);
         transactions.add(connect3);
@@ -274,7 +274,7 @@ public class TxPreCommitTests {
         GattServerConnectMockTransaction connect1 = new GattServerConnectMockTransaction(conn, GattState.CONNECTED,  device, false);
         GattServerDisconnectMockTransaction connect2 = new GattServerDisconnectMockTransaction(conn, GattState.DISCONNECTED,  device, true);
         GattServerConnectMockTransaction connect3 = new GattServerConnectMockTransaction(conn, GattState.CONNECTED,  device, false);
-        ArrayList<GattTransaction> transactions = new ArrayList<>(3);
+        ArrayList<GattServerTransaction> transactions = new ArrayList<>(3);
         transactions.add(connect1);
         transactions.add(connect2);
         transactions.add(connect3);

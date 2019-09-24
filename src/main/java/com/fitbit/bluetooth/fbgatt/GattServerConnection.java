@@ -18,6 +18,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,7 +33,7 @@ import timber.log.Timber;
  * Created by iowens on 11/17/17.
  */
 
-public class GattServerConnection {
+public class GattServerConnection implements Closeable {
     private BluetoothGattServer server;
     private TransactionQueueController serverQueue;
     private GattState state;
@@ -280,5 +282,17 @@ public class GattServerConnection {
 
     public Handler getMainHandler() {
         return mainHandler;
+    }
+
+    @Override
+    public void close() {
+        finish();
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
+    synchronized void finish() {
+        if(serverQueue != null && !serverQueue.isQueueThreadStopped()) {
+            serverQueue.stop();
+        }
     }
 }

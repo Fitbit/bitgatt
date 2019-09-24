@@ -26,6 +26,8 @@ import androidx.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import timber.log.Timber;
 
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class GattServerTests {
@@ -86,6 +89,11 @@ public class GattServerTests {
         dncs.addCharacteristic(flsChar);
     }
 
+    @AfterClass
+    public static void afterClass(){
+        gatt.getServer().getServer().clearServices();
+    }
+
     @Test
     public void initWithServices() throws InterruptedException {
         ArrayList<BluetoothGattService> services = new ArrayList<>();
@@ -109,6 +117,9 @@ public class GattServerTests {
             public void onFitbitGattReady() {
                 Timber.v("all services up");
                 Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+                assertNotNull(gatt.getServer().getServer().getService(main.getUuid()));
+                assertNotNull(gatt.getServer().getServer().getService(liveData.getUuid()));
+                assertNotNull(gatt.getServer().getServer().getService(dncs.getUuid()));
                 gatt.getServer().setState(GattState.IDLE);
                 cdl.countDown();
             }

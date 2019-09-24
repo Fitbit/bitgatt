@@ -13,6 +13,7 @@ import com.fitbit.bluetooth.fbgatt.logging.BitgattReleaseTree;
 import com.fitbit.bluetooth.fbgatt.strategies.BluetoothOffClearGattServerStrategy;
 import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.ClearServerServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -868,9 +870,13 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         }
         this.aclListener = null;
         connectionCleanup = null;
-        if (this.getServer() != null && this.getServer().getServerTransactionQueueController() != null) {
-            this.getServer().getServerTransactionQueueController().stop();
-            this.getServer().getServer().close();
+        if(serverConnection != null) {
+            List<ServerConnectionEventListener> serverConnectionEventListeners = serverConnection.getConnectionEventListeners();
+            for (ServerConnectionEventListener serverConnectionEventListener : serverConnectionEventListeners) {
+                serverConnection.unregisterConnectionEventListener(serverConnectionEventListener);
+            }
+            serverConnection.close();
+            serverConnection = null;
         }
         gattServer = null;
         this.isStarted.set(false);
@@ -1280,23 +1286,45 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                     if (gattServer != null) {
                         // make sure there are no hidden services, we don't want duplicates for the phones who
                         // carry services across BT toggle.
-                        gattServer.clearServices();
-                        serverConnection = new GattServerConnection(gattServer, context.getMainLooper());
-                        // we ready.
-                        serverConnection.setState(GattState.IDLE);
-                        callback.onGattServerStatus(true);
-                        Timber.v("Gatt server successfully opened");
-                        return;
+
+                        // it's possible that we have no server connection at this point, if this
+                        // is true, then there is no way that a add service tx could be happening
+                        // so the crash in clearing while adding couldn't occur
+                        if(serverConnection != null) {
+                            // let's try to run a clear tx since we already have a server connection
+                            ClearServerServicesTransaction clearServices = new ClearServerServicesTransaction(serverConnection,
+                                GattState.CLEAR_GATT_SERVER_SERVICES_SUCCESS);
+                            serverConnection.runTx(clearServices, result -> {
+                                // whether this succeeds or not, we want to proceed
+                                Timber.v("The gatt server services were cleared %s", result.resultStatus);
+                                replaceGattServerConnection(context, callback);
+                            });
+                            return;
+                        } else {
+                            gattServer.clearServices();
+                            replaceGattServerConnection(context, callback);
+                            return;
+                        }
                     }
                 }
                 Timber.w("Exhausted retries to open gatt server, recommend that you tell your user to clear bluetooth share in the apps list, the GATT db is probably corrupt");
                 callback.onGattServerStatus(false);
-
             }, GATT_SERVER_START_FAILURE_RETRY_INTERVAL);
         } else {
             Timber.w("No bluetooth manager, we must be simulating, or BT is off!!!");
             callback.onGattServerStatus(false);
         }
+    }
+
+    private void replaceGattServerConnection(Context context, OpenGattServerCallback callback){
+        if(serverConnection != null) {
+            serverConnection.close();
+        }
+        serverConnection = new GattServerConnection(gattServer, context.getMainLooper());
+        // we ready.
+        serverConnection.setState(GattState.IDLE);
+        callback.onGattServerStatus(true);
+        Timber.v("Gatt server successfully opened");
     }
 
     /**
@@ -1593,20 +1621,33 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         addScannedDevice(device);
     }
 
-    void removeServiceWithIdFromServicesToAdd(UUID serviceId) {
-        synchronized (servicesToAdd) {
-            for (BluetoothGattService service : servicesToAdd) {
-                if (service.getUuid().equals(serviceId)) {
-                    servicesToAdd.remove(service);
-                }
-            }
-        }
-    }
+    /**
+     * Fire and forget method to add gatt server services, on any failure, will return server service
+     * state to no services, this is to ensure that a connected periperhal will not expect to interact
+     * with said services but have nothing on the client application to respond to those messages.
+     *
+     * It should be clear to the peripheral that the client application is not ready as the services
+     * are un-hosted.
+     */
 
     void addServicesToGattServer() {
         synchronized (servicesToAdd) {
-            AddGattServerServiceTransaction transaction = new AddGattServerServiceTransaction(getServer(), GattState.ADD_SERVICE_SUCCESS, servicesToAdd.get(0));
-            getServer().runTx(transaction, result -> Timber.d("Gatt server init add service result: %s", result));
+            Iterator<BluetoothGattService> serviceIterator = servicesToAdd.listIterator();
+            ArrayList<GattServerTransaction> addGattServerServiceTransactions = new ArrayList<>(servicesToAdd.size());
+            while(serviceIterator.hasNext()) {
+                AddGattServerServiceTransaction transaction = new AddGattServerServiceTransaction(getServer(), GattState.ADD_SERVICE_SUCCESS, serviceIterator.next());
+                addGattServerServiceTransactions.add(transaction);
+                serviceIterator.remove();
+            }
+            CompositeServerTransaction compositeServerTransaction = new CompositeServerTransaction(serverConnection, addGattServerServiceTransactions);
+            getServer().runTx(compositeServerTransaction, result -> {
+                if(result.resultStatus.equals(TransactionResult.TransactionResultStatus.FAILURE)) {
+                    Timber.w("We failed in adding gatt server services, so we will clear to rollback our changes, the details were: %s", result);
+                    ClearServerServicesTransaction clearServerServices = new ClearServerServicesTransaction(serverConnection, GattState.CLEAR_GATT_SERVER_SERVICES_SUCCESS);
+                    serverConnection.runTx(clearServerServices, clearResult -> Timber.v("The clear services result after failure was %s", clearResult));
+                }
+                Timber.d("Gatt server init add service result: %s", result);
+            });
         }
     }
 
