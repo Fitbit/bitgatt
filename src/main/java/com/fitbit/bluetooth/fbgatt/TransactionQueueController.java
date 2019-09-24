@@ -70,6 +70,7 @@ class TransactionQueueController {
     synchronized void stop(){
         Timber.v("Stopping execution thread");
         stop.compareAndSet(false, true);
+        clearQueue();
         transactionThread.interrupt();
         transactionThread = null;
     }

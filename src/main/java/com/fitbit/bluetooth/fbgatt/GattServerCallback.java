@@ -8,6 +8,11 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
@@ -19,21 +24,15 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
-
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
-import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**
@@ -143,17 +142,6 @@ class GattServerCallback extends BluetoothGattServerCallback {
         for (GattServerListener listener : copy) {
             handler.post(() -> listener.onServerServiceAdded(status, service));
         }
-        // if we haven't started up yet, then we'll want to remove these from the services to start
-        handler.post(() -> {
-            if (!FitbitGatt.getInstance().isStarted()) {
-                FitbitGatt.getInstance().removeServiceWithIdFromServicesToAdd(service.getUuid());
-                if (FitbitGatt.getInstance().allServicesStarted()) {
-                    FitbitGatt.getInstance().setStarted();
-                } else {
-                    FitbitGatt.getInstance().addServicesToGattServer();
-                }
-            }
-        });
     }
     // for Characteristics and Descriptors, they are backed by c level objects and the references
     // are passed up to Java via JNI.  This means that the values can change, so we must copy through
