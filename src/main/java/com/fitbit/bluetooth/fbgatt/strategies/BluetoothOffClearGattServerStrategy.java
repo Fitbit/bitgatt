@@ -60,7 +60,7 @@ public class BluetoothOffClearGattServerStrategy extends Strategy {
         // crash in a stack NPE if the bluetooth service has crashed or is shut down, and we want
         // to make sure that this does not occur on the main thread since this probably transits
         // the JNI and could lead to a ANR
-        Handler strategyHandler = new Handler(FitbitGatt.getInstance().getGattServerCallbackHandlerThread().getLooper());
+        Handler strategyHandler = new Handler(FitbitGatt.getInstance().getFitbitGattAsyncOperationThread().getLooper());
         strategyHandler.post(() -> {
             GattServerConnection serverConn = FitbitGatt.getInstance().getServer();
             if(serverConn == null) {

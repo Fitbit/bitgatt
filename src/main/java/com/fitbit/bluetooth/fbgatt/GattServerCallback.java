@@ -51,7 +51,7 @@ class GattServerCallback extends BluetoothGattServerCallback {
     GattServerCallback() {
         super();
         this.listeners = Collections.synchronizedList(new ArrayList<>(4));
-        Looper looper = FitbitGatt.getInstance().getGattServerCallbackHandlerThread().getLooper();
+        Looper looper = FitbitGatt.getInstance().getFitbitGattAsyncOperationThread().getLooper();
         this.handler = new Handler(looper);
     }
 
