@@ -49,18 +49,10 @@ public class GattClientCallback extends BluetoothGattCallback {
     private final List<GattClientListener> listeners;
     private final GattUtils gattUtils = new GattUtils();
 
-    GattClientCallback(@Nullable Context context) {
+    GattClientCallback() {
         super();
         this.listeners = Collections.synchronizedList(new ArrayList<>(4));
-        Looper looper;
-        if(context == null || context.getMainLooper() == null) {
-            Timber.w("[%s] Um.... you really need to provide a non-null context here, things will work, but you'll have an extra thread running around", Build.DEVICE);
-            HandlerThread gattClientCallbackHandlerThread = new HandlerThread("Default Gatt Client Callback Handler Thread", Thread.NORM_PRIORITY);
-            gattClientCallbackHandlerThread.start();
-            looper = gattClientCallbackHandlerThread.getLooper();
-        } else {
-            looper = context.getMainLooper();
-        }
+        Looper looper = FitbitGatt.getInstance().getFitbitGattAsyncOperationThread().getLooper();
         this.handler = new Handler(looper);
     }
 
