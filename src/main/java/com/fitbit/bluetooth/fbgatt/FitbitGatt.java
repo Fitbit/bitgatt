@@ -115,6 +115,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @VisibleForTesting
     AtomicBoolean isStarted = new AtomicBoolean(false);
     private Handler connectionCleanup;
+    @Nullable
     private LooperWatchdog asyncOperationThreadWatchdog;
     // this should be max priority so as to not affect performance
     private HandlerThread fitbitGattAsyncOperationThread = new HandlerThread("FitbitGatt Async Operation Thread", Thread.MAX_PRIORITY);
@@ -831,7 +832,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         addConnectedDevices(context);
         // will start the cleanup process
         decrementAndInvalidateClosedConnections();
-        asyncOperationThreadWatchdog.startProbing();
+        if(asyncOperationThreadWatchdog != null) {
+            asyncOperationThreadWatchdog.startProbing();
+        }
         return true;
     }
 
@@ -891,7 +894,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             radioStatusListener.stopListening();
             radioStatusListener.removeListener();
         }
-        this.asyncOperationThreadWatchdog.stopProbing();
+        if(asyncOperationThreadWatchdog != null) {
+            this.asyncOperationThreadWatchdog.stopProbing();
+        }
     }
 
     @VisibleForTesting

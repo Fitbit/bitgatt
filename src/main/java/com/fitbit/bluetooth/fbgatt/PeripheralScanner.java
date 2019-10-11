@@ -466,12 +466,13 @@ class PeripheralScanner {
 
     synchronized void cancelPendingIntentBasedBackgroundScan() {
         if (atLeastSDK(Build.VERSION_CODES.O)) {
+            Context appContext = FitbitGatt.getInstance().getAppContext();
             if (!scanner.isBluetoothEnabled()) {
                 Timber.v("No scanners can be started while bluetooth is off");
                 // must release the scanner here so that the system can clean it up since
                 // we can't access it with bt off
                 synchronized (PeripheralScanner.class) {
-                    scanner = new BitgattLeScanner(FitbitGatt.getInstance().getAppContext());
+                    scanner = new BitgattLeScanner(appContext);
                 }
                 boolean oldValue = pendingIntentIsScanning.getAndSet(false);
                 Timber.v("Stopping scan, changing from %b to %b", oldValue, false);
@@ -480,6 +481,9 @@ class PeripheralScanner {
             }
             if (backgroundIntentBasedScanIntent != null) {
                 scanner.stopScan(backgroundIntentBasedScanIntent);
+            } else {
+                Timber.i("No existing pending intent, cancelling using system intent just in case ...");
+                scanner.stopScan(getSystemPendingIntent(appContext));
             }
             stopPeriodicalScan = false;
             backgroundIntentBasedScanIntent = null;
@@ -535,11 +539,7 @@ class PeripheralScanner {
                 listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return false;
             }
-            Intent broadcastIntent = new Intent(context, HandleIntentBasedScanResult.class);
-            broadcastIntent.setAction(SCANNED_DEVICE_ACTION);
-            broadcastIntent.setClass(context, HandleIntentBasedScanResult.class);
-            backgroundIntentBasedScanIntent = PendingIntent.getBroadcast(context,
-                BACKGROUND_SCAN_REQUEST_CODE, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            backgroundIntentBasedScanIntent = getSystemPendingIntent(context);
             int didStart;
             try {
                 didStart = scanner.startScan(scanFilters, null, backgroundIntentBasedScanIntent);
@@ -587,6 +587,14 @@ class PeripheralScanner {
         } else {
             return false;
         }
+    }
+
+    private PendingIntent getSystemPendingIntent(Context context){
+        Intent broadcastIntent = new Intent(context, HandleIntentBasedScanResult.class);
+        broadcastIntent.setAction(SCANNED_DEVICE_ACTION);
+        broadcastIntent.setClass(context, HandleIntentBasedScanResult.class);
+        return PendingIntent.getBroadcast(context,
+            BACKGROUND_SCAN_REQUEST_CODE, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
     /**
