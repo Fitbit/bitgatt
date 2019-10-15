@@ -512,7 +512,9 @@ class PeripheralScanner {
      * <p>
      * WARNING!!!! Using this with scan filters that are empty is extremely dangerous and is frowned upon
      * your application will potentially get hundreds of intent callbacks every second.  Please do
-     * not use this to get around the scanfilter empty check.
+     * not use this to get around the scanfilter empty check.  Also, this call will consume a gatt_if
+     * so Bitgatt will not let you have more than one scan running at a time, if you start a new scan
+     * it will stop the previous one.
      *
      * @param scanFilters The specific scan filters for which to be called back
      * @param context     The Android context for creating the pending intent
@@ -540,6 +542,11 @@ class PeripheralScanner {
                 return false;
             }
             backgroundIntentBasedScanIntent = getSystemPendingIntent(context);
+            // if a pending intent scan is underway we will clear it first as we now know that
+            // this consumes gatt_ifs we can not have more than one ever running at a time
+            // we can't rely on the boolean because we might have been killed between calls
+            // and need to cancel anyway so we will try to proactively cancel
+            stopBackgroundScan(backgroundIntentBasedScanIntent);
             int didStart;
             try {
                 didStart = scanner.startScan(scanFilters, null, backgroundIntentBasedScanIntent);
@@ -600,6 +607,10 @@ class PeripheralScanner {
     /**
      * Will start a background scan that will continue to run even if our process is killed.
      *
+     * this call will consume a gatt_if
+     * so Fitbitgatt will not let you have more than one scan running at a time, if you start a new scan
+     * it will stop the previous one.
+     *
      * @param macAddresses    The specific mac addresses for which to be called back
      * @param broadcastIntent The broadcast intent to be sent when the device is found.
      *                        Will wake up application if process is dead.
@@ -639,6 +650,13 @@ class PeripheralScanner {
                 listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return null;
             }
+            PendingIntent pending = PendingIntent.getBroadcast(context,
+                BACKGROUND_SCAN_REQUEST_CODE, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            // if a pending intent scan is underway we will clear it first as we now know that
+            // this consumes gatt_ifs we can not have more than one ever running at a time
+            // we can't rely on the boolean because we might have been killed between calls
+            // and need to cancel anyway so we will try to proactively cancel
+            stopBackgroundScan(pending);
             // in addition if there are mac addresses that we want to add we can do that
             for (String address : macAddresses) {
                 if (adapter.getRemoteDevice(address) != null) {
@@ -651,8 +669,6 @@ class PeripheralScanner {
                 }
             }
             if (!filters.isEmpty()) {
-                PendingIntent pending = PendingIntent.getBroadcast(context,
-                    BACKGROUND_SCAN_REQUEST_CODE, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
                 int didStart;
                 try {
                     didStart = scanner.startScan(filters, null, pending);
