@@ -1,4 +1,4 @@
-# Fitbit Gatt (Bitgatt) Documentation
+# Fitbit Gatt (Bitgatt) Documentation     [![Build Status](https://travis-ci.com/Fitbit/bitgatt.svg?branch=master)](https://travis-ci.com/Fitbit/bitgatt)
 
 ## Table of Contents
 
