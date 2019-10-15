@@ -363,6 +363,14 @@ The scanner will call a callback if the data changes on a subsequent scan, and w
 started or stopped.  There is a pending intent scan available on Oreo and higher that may be used
 in addition to the low-duty periodical scanner, or with the high-duty scanner.
 
+If you are going to use the pending intent scanner, it is important to ensure that you cancel the scan
+as soon as you can as it consumes an additional gatt_if.  These interfaces are limited in nature and if your application
+is using more than one of them you could inadvertently cause bluetooth to stop working properly on 
+your users' phone.  Bitgatt will prevent you from using more than one additional if, however it would be better
+if you only used a single gatt_if.
+
+If you do not know what a gatt_if is, it is advisable to use the periodical scanner instead.
+
 ## [Always Connected Scanner](#always-connected-scanner)
 
 Scanning on Android is quite complex, in many cases however the developer has a peripheral which
