@@ -76,7 +76,15 @@ public class AddGattServerServiceTransaction extends GattServerTransaction {
                 getGattServer().setState(GattState.IDLE);
                 return;
             }
-            boolean success = getGattServer().getServer().addService(service);
+            boolean success = false;
+            try {
+                success = getGattServer().getServer().addService(service);
+            } catch ( NullPointerException npe ) {
+                // this is likely due to several reasons, but mostly that the bluetooth service was gone while adding
+                // no reason to make a non-fatal here
+                Timber.i(npe, "There was an internal android stack null pointer exception adding the service, failing");
+                // success still false
+            }
             if(!success) {
                 TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
                 builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
