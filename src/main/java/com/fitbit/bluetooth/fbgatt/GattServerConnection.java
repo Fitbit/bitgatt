@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import timber.log.Timber;
@@ -39,7 +40,7 @@ public class GattServerConnection implements Closeable {
     private GattState state;
     private AtomicLong intraTransactionDelay = new AtomicLong(0);
     private GattStateTransitionValidator guard;
-    private ArrayList<ServerConnectionEventListener> asynchronousEventListeners;
+    private final ConcurrentHashMap<ServerConnectionEventListener, Boolean> asynchronousEventListeners = new ConcurrentHashMap<>();
     private HashSet<FitbitBluetoothDevice> connectedDevices = new HashSet<>();
     private Handler mainHandler;
     private boolean mockMode;
@@ -50,7 +51,6 @@ public class GattServerConnection implements Closeable {
         this.serverQueue.start();
         this.guard = new GattStateTransitionValidator();
         this.state = GattState.IDLE;
-        this.asynchronousEventListeners = new ArrayList<>(1);
         this.mainHandler = new Handler(looper);
     }
 
@@ -66,28 +66,24 @@ public class GattServerConnection implements Closeable {
         return guard.checkTransaction(getGattState(), tx);
     }
 
-    public void registerConnectionEventListener(ServerConnectionEventListener eventListener) {
-        if(!this.asynchronousEventListeners.contains(eventListener)) {
-            this.asynchronousEventListeners.add(eventListener);
-        } else {
+    public void registerConnectionEventListener(@NonNull ServerConnectionEventListener eventListener) {
+        if(this.asynchronousEventListeners.putIfAbsent(eventListener, true) != null) {
             Timber.v("[%s] This listener is already registered", Build.MODEL);
         }
     }
 
     @SuppressWarnings("WeakerAccess") // API Method
-    public void unregisterConnectionEventListener(ServerConnectionEventListener eventListener) {
-        if(this.asynchronousEventListeners.isEmpty()) {
+    public void unregisterConnectionEventListener(@NonNull ServerConnectionEventListener eventListener) {
+        Boolean previousValue = asynchronousEventListeners.remove(eventListener);
+        if(previousValue == null) { // null when returned from ConcurrentHashMap.remove() means the key was not present.
             Timber.v("[%s] There are no event listeners to remove", Build.MODEL);
-            return;
         }
-        this.asynchronousEventListeners.remove(eventListener);
     }
 
     @NonNull
     ArrayList<ServerConnectionEventListener> getConnectionEventListeners(){
-        ArrayList<ServerConnectionEventListener> copy = new ArrayList<>(asynchronousEventListeners.size());
-        copy.addAll(asynchronousEventListeners);
-        return copy;
+        //We want a copy of the listeners set, so that clients can't modify it.
+        return new ArrayList<>(asynchronousEventListeners.keySet());
     }
 
     public synchronized void setState(GattState state) {
@@ -231,9 +227,7 @@ public class GattServerConnection implements Closeable {
     @SuppressWarnings("unused") // API method and warning
     protected void closeGattServer(){
         Timber.v("Unregistering gatt server listeners");
-        for(ServerConnectionEventListener listener : asynchronousEventListeners) {
-            unregisterConnectionEventListener(listener);
-        }
+        asynchronousEventListeners.clear();
         BluetoothGattServer server = getServer();
         if(server != null) {
             setState(GattState.CLOSING_GATT_SERVER);

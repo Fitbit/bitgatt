@@ -9,7 +9,6 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -18,19 +17,17 @@ import android.bluetooth.BluetoothProfile;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
-
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
-
 import static com.fitbit.bluetooth.fbgatt.FitbitGatt.atLeastSDK;
 
 /**
@@ -47,7 +44,7 @@ public class GattConnection implements Closeable {
     private @Nullable volatile BluetoothGatt gatt;
     private GattState state;
     private GattStateTransitionValidator guard;
-    private List<ConnectionEventListener> asynchronousEventListeners;
+    private final ConcurrentHashMap<ConnectionEventListener, Boolean> asynchronousEventListeners = new ConcurrentHashMap<>();
     private boolean mockMode;
     private List<BluetoothGattService> mockServices;
     private TransactionQueueController clientQueue;
@@ -57,7 +54,6 @@ public class GattConnection implements Closeable {
     public GattConnection(FitbitBluetoothDevice device, Looper mainLooper) {
         this.device = device;
         this.guard = new GattStateTransitionValidator();
-        this.asynchronousEventListeners = new ArrayList<>(1);
         this.mockServices = new ArrayList<>(1);
         this.clientQueue = new TransactionQueueController(this);
         this.clientQueue.start();
@@ -118,10 +114,8 @@ public class GattConnection implements Closeable {
      * @param eventListener The {@link ConnectionEventListener} instance for connection events
      */
 
-    public void registerConnectionEventListener(ConnectionEventListener eventListener) {
-        if (!this.asynchronousEventListeners.contains(eventListener)) {
-            this.asynchronousEventListeners.add(eventListener);
-        } else {
+    public void registerConnectionEventListener(@NonNull ConnectionEventListener eventListener) {
+        if (this.asynchronousEventListeners.putIfAbsent(eventListener, true) != null) {
             Timber.v("[%s] This listener is already registered", getDevice());
         }
     }
@@ -134,19 +128,17 @@ public class GattConnection implements Closeable {
      * @param eventListener The {@link ConnectionEventListener} instance for connection events
      */
 
-    public void unregisterConnectionEventListener(ConnectionEventListener eventListener) {
-        if (this.asynchronousEventListeners.isEmpty()) {
-            Timber.v("[%s] There are no event listeners to remove", getDevice());
-            return;
+    public void unregisterConnectionEventListener(@NonNull ConnectionEventListener eventListener) {
+        Boolean previousValue = asynchronousEventListeners.remove(eventListener);
+        if(previousValue == null) { // null when returned from ConcurrentHashMap.remove() means the key was not present.
+            Timber.v("[%s] There are no event listeners to remove", Build.MODEL);
         }
-        this.asynchronousEventListeners.remove(eventListener);
     }
 
     @NonNull
     ArrayList<ConnectionEventListener> getConnectionEventListeners() {
-        ArrayList<ConnectionEventListener> copy = new ArrayList<>(asynchronousEventListeners.size());
-        copy.addAll(asynchronousEventListeners);
-        return copy;
+        //We want a copy of the listeners set, so that clients can't modify it.
+        return new ArrayList<>(asynchronousEventListeners.keySet());
     }
 
     /**
@@ -454,6 +446,7 @@ public class GattConnection implements Closeable {
             gatt = null;
         }
         clientQueue.stop();
+        asynchronousEventListeners.clear();
     }
 
     /**

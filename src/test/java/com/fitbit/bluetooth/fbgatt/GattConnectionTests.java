@@ -15,6 +15,7 @@ package com.fitbit.bluetooth.fbgatt;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
+import android.content.Context;
 import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,8 +28,11 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -42,7 +46,11 @@ public class GattConnectionTests {
     private static BluetoothGatt mockGatt;
 
     @BeforeClass
-    public static void beforeClass(){
+    public static void beforeClass() {
+        Context appContext = mock(Context.class);
+        when(appContext.getSystemService(any(String.class))).thenReturn(null);
+        when(appContext.getApplicationContext()).thenReturn(appContext);
+        FitbitGatt.getInstance().start(appContext);
         Looper mockLooper = mock(Looper.class);
         BluetoothDevice mockBluetoothDevice = mock(BluetoothDevice.class);
         when(mockBluetoothDevice.getAddress()).thenReturn(MOCK_ADDRESS);
@@ -292,5 +300,92 @@ public class GattConnectionTests {
         connection.unregisterGattClientListener(listener);
         listenerList = FitbitGatt.getInstance().getClientCallback().getGattClientListeners();
         Assert.assertEquals(0, listenerList.size());
+    }
+
+    @Test
+    public void testNullEventListenerCrashes() {
+        try {
+            connection.registerConnectionEventListener(null);
+            fail("A NullPointerException was expected");
+        } catch (NullPointerException npe) {
+            //This is expected.
+        }
+
+        try {
+            connection.unregisterConnectionEventListener(null);
+            fail("A NullPointerException was expected");
+        } catch (NullPointerException npe) {
+            //This is expected.
+        }
+
+        try {
+            serverConnection.registerConnectionEventListener(null);
+            fail("A NullPointerException was expected");
+        } catch (NullPointerException npe) {
+            //This is expected.
+        }
+
+        try {
+            serverConnection.unregisterConnectionEventListener(null);
+            fail("A NullPointerException was expected");
+        } catch (NullPointerException npe) {
+            //This is expected.
+        }
+    }
+
+    @Test
+    public void testHighlyConcurrentAccess() {
+        List<Thread> threadList = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            threadList.add(createRegisteringThread());
+        }
+        for (Thread thread : threadList) {
+            thread.start();
+        }
+        for (Thread thread : threadList) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                fail();
+            }
+        }
+        assertEquals(5000, connection.getConnectionEventListeners().size());
+    }
+
+    private Thread createRegisteringThread() {
+        return new Thread() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 1000; i++) {
+                    connection.registerConnectionEventListener(new ConnectionEventListener() {
+                        @Override
+                        public void onClientCharacteristicChanged(@NonNull TransactionResult result, @NonNull GattConnection connection) {
+
+                        }
+
+                        @Override
+                        public void onClientConnectionStateChanged(@NonNull TransactionResult result, @NonNull GattConnection connection) {
+
+                        }
+
+                        @Override
+                        public void onServicesDiscovered(@NonNull TransactionResult result, @NonNull GattConnection connection) {
+
+                        }
+
+                        @Override
+                        public void onMtuChanged(@NonNull TransactionResult result, @NonNull GattConnection connection) {
+
+                        }
+
+                        @Override
+                        public void onPhyChanged(@NonNull TransactionResult result, @NonNull GattConnection connection) {
+
+                        }
+                    });
+                }
+            }
+        };
     }
 }
