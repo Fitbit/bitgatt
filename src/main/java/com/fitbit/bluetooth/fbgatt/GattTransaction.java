@@ -486,7 +486,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
 
     @Override
     public void onServerConnectionStateChange(BluetoothDevice device, int status, int newState) {
-        Timber.v("[%s] onServerConnectionStateChange not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerConnectionStateChange not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
@@ -496,107 +496,107 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
 
     @Override
     public void onServerCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristicCopy characteristic) {
-        Timber.v("[%s] onServerCharacteristicReadRequest not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerCharacteristicReadRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristicCopy characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        Timber.v("[%s] onServerCharacteristicWriteRequest not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerCharacteristicWriteRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptorCopy descriptor) {
-        Timber.v("[%s] onServerDescriptorReadRequest not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerDescriptorReadRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptorCopy descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        Timber.v("[%s] onServerDescriptorWriteRequest not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerDescriptorWriteRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-        Timber.v("[%s] onServerExecuteWrite not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerExecuteWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerNotificationSent(BluetoothDevice device, int status) {
-        Timber.v("[%s] onServerNotificationSent not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerNotificationSent not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerMtuChanged(BluetoothDevice device, int mtu) {
-        Timber.v("[%s] onServerMtuChanged not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerMtuChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onServerPhyUpdate not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerPhyUpdate not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onServerPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onServerPhyRead not handled in tx: %s", utils.safeGetBtDeviceName(device), getName());
+        Timber.v("[%s] onServerPhyRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 
     @Override
     public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onPhyUpdate not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onPhyUpdate not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onPhyRead not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onPhyRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-        Timber.v("[%s] onPhyRead not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onPhyRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-        Timber.v("[%s] onServicesDiscovered not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onServicesDiscovered not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
-        Timber.v("[%s] onCharacteristicRead not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onCharacteristicRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
-        Timber.v("[%s] onCharacteristicWrite not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onCharacteristicWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic) {
-        Timber.v("[%s] onCharacteristicChanged not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onCharacteristicChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptorCopy descriptor, int status) {
-        Timber.v("[%s] onDescriptorRead not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onDescriptorRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptorCopy descriptor, int status) {
-        Timber.v("[%s] onDescriptorWrite not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onDescriptorWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
-        Timber.v("[%s] onReliableWriteCompleted not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onReliableWriteCompleted not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-        Timber.v("[%s] onReadRemoteRssi not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onReadRemoteRssi not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     @Override
     public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-        Timber.v("[%s] onMtuChanged not handled in tx: %s", utils.safeGetBtDeviceName(gatt), getName());
+        Timber.v("[%s] onMtuChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
     }
 
     /**

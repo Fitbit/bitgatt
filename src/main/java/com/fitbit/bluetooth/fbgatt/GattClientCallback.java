@@ -88,7 +88,7 @@ public class GattClientCallback extends BluetoothGattCallback {
     }
 
     private String getDeviceMacFromGatt(BluetoothGatt gatt) {
-        return gattUtils.safeGetBtDeviceName(gatt);
+        return gattUtils.debugSafeGetBtDeviceName(gatt);
     }
 
     @Override
