@@ -81,7 +81,7 @@ class GattServerCallback extends BluetoothGattServerCallback {
     }
 
     private String getDeviceMacFromDevice(BluetoothDevice device) {
-        return gattUtils.safeGetBtDeviceName(device);
+        return gattUtils.debugSafeGetBtDeviceName(device);
     }
 
     @NonNull Handler getServerCallbackHandler(){

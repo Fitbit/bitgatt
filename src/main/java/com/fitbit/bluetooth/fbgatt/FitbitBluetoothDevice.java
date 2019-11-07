@@ -61,7 +61,7 @@ public class FitbitBluetoothDevice {
         this.bluetoothAddress = device.getAddress();
         // this can throw a parcelable null pointer exception down in the stack
         try {
-            this.name = new GattUtils().safeGetBtDeviceName(device);
+            this.name = new GattUtils().debugSafeGetBtDeviceName(device);
         } catch (NullPointerException ex) {
             this.name = "Unknown Device";
         }

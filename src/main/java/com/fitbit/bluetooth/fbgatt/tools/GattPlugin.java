@@ -2112,7 +2112,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                     default:
                         type = "unknown";
                 }
-                String deviceName = new GattUtils().safeGetBtDeviceName(device);
+                String deviceName = new GattUtils().debugSafeGetBtDeviceName(device);
                 String deviceAddress = device.getAddress();
                 String origin = clientConnections.get(mac).getDevice().getOrigin().name();
                 String rssi = String.valueOf(clientConnections.get(mac).getDevice().getRssi());
@@ -2191,7 +2191,7 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
                     default:
                         type = "unknown";
                 }
-                String deviceName = new GattUtils().safeGetBtDeviceName(device);
+                String deviceName = new GattUtils().debugSafeGetBtDeviceName(device);
                 String deviceAddress = device.getAddress();
                 String origin = clientConnections.get(mac).getDevice().getOrigin().name();
                 String rssi = String.valueOf(clientConnections.get(mac).getDevice().getRssi());

@@ -60,37 +60,37 @@ public class BluetoothUtilsTest {
 
     @Test
     public void testProvidingGattWithNullDevice() throws Exception {
-        String name = utils.safeGetBtDeviceName(mockGatt);
+        String name = utils.debugSafeGetBtDeviceName(mockGatt);
         Assert.assertEquals("Unknown Name", name);
     }
 
     @Test
     public void testProvidingBluetoothDeviceWithNullName() throws Exception {
-        String name = utils.safeGetBtDeviceName(mockDevice);
+        String name = utils.debugSafeGetBtDeviceName(mockDevice);
         Assert.assertEquals("Unknown Name", name);
     }
 
     @Test
     public void testProvidingGattWithNonNullName() throws Exception {
-        String name = utils.safeGetBtDeviceName(nonNullMockGatt);
+        String name = utils.debugSafeGetBtDeviceName(nonNullMockGatt);
         Assert.assertEquals("Ionic", name);
     }
 
     @Test
     public void testProvidingBluetoothDeviceWithNonNullName() throws Exception {
-        String name = utils.safeGetBtDeviceName(nonNullMockDevice);
+        String name = utils.debugSafeGetBtDeviceName(nonNullMockDevice);
         Assert.assertEquals("Ionic", name);
     }
 
     @Test
     public void testThrowableOnGetNameInsideGatt() throws Exception {
-        String name = utils.safeGetBtDeviceName(throwableNullMockGatt);
+        String name = utils.debugSafeGetBtDeviceName(throwableNullMockGatt);
         Assert.assertEquals("Unknown Name", name);
     }
 
     @Test
     public void testThrowableOnGetNameInsideBluetoothDevice() throws Exception {
-        String name = utils.safeGetBtDeviceName(throwableNullMockDevice);
+        String name = utils.debugSafeGetBtDeviceName(throwableNullMockDevice);
         Assert.assertEquals("Unknown Name", name);
     }
 }

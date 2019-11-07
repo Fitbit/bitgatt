@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.util;
 
+import com.fitbit.bluetooth.fbgatt.BuildConfig;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattServiceCopy;
@@ -190,22 +191,27 @@ public class GattUtils {
      * Protect against NPEs while getting the bluetooth device name if we suspect that it might
      * not be set on the remote peripheral
      *
+     * In release this method will return  "Unknown Name".
+     *
      * @param localGatt The {@link BluetoothGatt} instance
      * @return The device name or "unknown" if null
      */
-
-    public String safeGetBtDeviceName(@Nullable BluetoothGatt localGatt) {
-        try {
-            if (localGatt == null || localGatt.getDevice() == null) {
-                throw new NullPointerException("The device was null inside of the gatt");
+    public String debugSafeGetBtDeviceName(@Nullable BluetoothGatt localGatt) {
+        //The problem with accessing this is that it may not be cached on some phones
+        // resulting a long blocking operation
+        if(BuildConfig.DEBUG) {
+            try {
+                if (localGatt == null || localGatt.getDevice() == null) {
+                    throw new NullPointerException("The device was null inside of the gatt");
+                }
+                String btName = localGatt.getDevice().getName();
+                if (btName != null) {
+                    return btName;
+                }
+            } catch (NullPointerException ex) {
+                // https://fabric.io/fitbit7/android/apps/com.fitbit.fitbitmobile/issues/5a9637c68cb3c2fa63fa1333?time=last-seven-days
+                Timber.e(ex, "get name internal to the gatt failed with an Parcel Read Exception NPE");
             }
-            String btName = localGatt.getDevice().getName();
-            if (btName != null) {
-                return btName;
-            }
-        } catch (NullPointerException ex) {
-            // https://fabric.io/fitbit7/android/apps/com.fitbit.fitbitmobile/issues/5a9637c68cb3c2fa63fa1333?time=last-seven-days
-            Timber.e(ex, "get name internal to the gatt failed with an Parcel Read Exception NPE");
         }
         return "Unknown Name";
     }
@@ -218,7 +224,7 @@ public class GattUtils {
      * @return The device name or "unknown" if null
      */
 
-    public String safeGetBtDeviceName(@Nullable BluetoothDevice device) {
+    public String debugSafeGetBtDeviceName(@Nullable BluetoothDevice device) {
         try {
             if (device == null) {
                 throw new NullPointerException("The device was null inside of the gatt");
