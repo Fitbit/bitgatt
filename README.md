@@ -23,9 +23,9 @@
 ### [Original Contributors](#original-contributors)
 
 #### Fitbit Maintainers
-Irvin Owens Jr <iowens@fitbit.com>, <0xbadbeef@sigsegv.us> - Creator and Maintainer
+Irvin Owens Jr <iowens@fitbit.com>, <0xbadbeef@sigsegv.us> - Creator
 
-Ionut Lepadatescu - <ilepadatescu@fitbit.com>
+Ionut Lepadatescu - <ilepadatescu@fitbit.com> - Maintainer
 
 
 #### Fitbit Contributors
