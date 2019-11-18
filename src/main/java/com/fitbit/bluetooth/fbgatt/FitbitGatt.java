@@ -1121,44 +1121,46 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      */
 
     private void addConnectedDevices(Context context) {
-        Timber.v("Adding connected or bonded devices");
-        BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
-        if (manager != null) {
-            BluetoothAdapter adapter = manager.getAdapter();
-            if (adapter != null) {
-                Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
-                for (BluetoothDevice bondedDevice : bondedDevices) {
-                    FitbitBluetoothDevice fitBluetoothDevice = new FitbitBluetoothDevice(bondedDevice);
-                    fitBluetoothDevice.origin = FitbitBluetoothDevice.DeviceOrigin.BONDED;
-                    if (null == connectionMap.get(fitBluetoothDevice)) {
-                        if (appContext == null) {
-                            Timber.w("[%s] Bitgatt must not be started, please start bitgatt", fitBluetoothDevice);
-                            return;
-                        }
-                        GattConnection conn = new GattConnection(fitBluetoothDevice, appContext.getMainLooper());
-                        Timber.v("Adding bonded device named %s, with address %s", bondedDevice.getName(), bondedDevice.getAddress());
-                        connectionMap.put(fitBluetoothDevice, conn);
-                        FitbitGatt.getInstance().notifyListenersOfConnectionAdded(conn);
-                    }
-                }
-                List<BluetoothDevice> connectedDevices = manager.getConnectedDevices(BluetoothProfile.GATT);
-                for (BluetoothDevice connectedDevice : connectedDevices) {
-                    FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(connectedDevice);
-                    fitbitBluetoothDevice.origin = FitbitBluetoothDevice.DeviceOrigin.CONNECTED;
-                    if (null == connectionMap.get(fitbitBluetoothDevice)) {
-                        Timber.v("Adding connected device named %s, with address %s", connectedDevice.getName(), connectedDevice.getAddress());
-                        if (appContext != null) {
-                            GattConnection conn = new GattConnection(fitbitBluetoothDevice, appContext.getMainLooper());
-                            connectionMap.put(fitbitBluetoothDevice, conn);
+        fitbitGattAsyncOperationHandler.post(() -> {
+            Timber.v("Adding connected or bonded devices");
+            BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+            if (manager != null) {
+                BluetoothAdapter adapter = manager.getAdapter();
+                if (adapter != null) {
+                    Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
+                    for (BluetoothDevice bondedDevice : bondedDevices) {
+                        FitbitBluetoothDevice fitBluetoothDevice = new FitbitBluetoothDevice(bondedDevice);
+                        fitBluetoothDevice.origin = FitbitBluetoothDevice.DeviceOrigin.BONDED;
+                        if (null == connectionMap.get(fitBluetoothDevice)) {
+                            if (appContext == null) {
+                                Timber.w("[%s] Bitgatt must not be started, please start bitgatt", fitBluetoothDevice);
+                                return;
+                            }
+                            GattConnection conn = new GattConnection(fitBluetoothDevice, appContext.getMainLooper());
+                            Timber.v("Adding bonded device named %s, with address %s", bondedDevice.getName(), bondedDevice.getAddress());
+                            connectionMap.put(fitBluetoothDevice, conn);
                             FitbitGatt.getInstance().notifyListenersOfConnectionAdded(conn);
-                        } else {
-                            Timber.w("Tried to add a discovered device, but the cached context was null");
+                        }
+                    }
+                    List<BluetoothDevice> connectedDevices = manager.getConnectedDevices(BluetoothProfile.GATT);
+                    for (BluetoothDevice connectedDevice : connectedDevices) {
+                        FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(connectedDevice);
+                        fitbitBluetoothDevice.origin = FitbitBluetoothDevice.DeviceOrigin.CONNECTED;
+                        if (null == connectionMap.get(fitbitBluetoothDevice)) {
+                            Timber.v("Adding connected device named %s, with address %s", connectedDevice.getName(), connectedDevice.getAddress());
+                            if (appContext != null) {
+                                GattConnection conn = new GattConnection(fitbitBluetoothDevice, appContext.getMainLooper());
+                                connectionMap.put(fitbitBluetoothDevice, conn);
+                                FitbitGatt.getInstance().notifyListenersOfConnectionAdded(conn);
+                            } else {
+                                Timber.w("Tried to add a discovered device, but the cached context was null");
+                            }
                         }
                     }
                 }
             }
-        }
-        Timber.v("Added all connected or bonded devices");
+            Timber.v("Added all connected or bonded devices");
+        });
     }
 
     /**
