@@ -1,4 +1,5 @@
 # Fitbit Gatt (Bitgatt) Documentation     [![Build Status](https://travis-ci.com/Fitbit/bitgatt.svg?branch=master)](https://travis-ci.com/Fitbit/bitgatt)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt?ref=badge_shield)
 
 ## Table of Contents
 
@@ -1329,3 +1330,6 @@ be used in the turning off callback if you implement your own bluetooth listener
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
     file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt?ref=badge_large)
