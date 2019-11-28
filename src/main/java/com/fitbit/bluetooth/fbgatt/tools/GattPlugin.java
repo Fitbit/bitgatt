@@ -17,6 +17,7 @@ import com.fitbit.bluetooth.fbgatt.GattServerConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.ServerConnectionEventListener;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
+import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
 import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceCharacteristicDescriptorTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceCharacteristicTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
@@ -2293,11 +2294,13 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
         String status;
         String error = "";
         try {
-            fitbitGatt.start(context);
+            fitbitGatt.startGattClient(context);
+            fitbitGatt.startGattServer(context);
             List<ParcelUuid> serviceUuids = new ArrayList<>(1);
             serviceUuids.add(ParcelUuid.fromString("ADABFB00-6E7D-4601-BDA2-BFFAA68956BA"));
             fitbitGatt.setScanServiceUuidFilters(serviceUuids);
             fitbitGatt.startHighPriorityScan(fitbitGatt.getAppContext());
+            fitbitGatt.initializeScanner(context);
             status = PASS_STATUS;
         } catch (Exception e) {
             status = FAIL_STATUS;
@@ -2486,16 +2489,6 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     }
 
     @Override
-    public void onFitbitGattReady() {
-        Timber.v("The gatt system is ready to rock!");
-    }
-
-    @Override
-    public void onFitbitGattStartFailed() {
-        Timber.w("Couldn't start the FitbitGatt, probably a gatt server problem");
-    }
-
-    @Override
     public void onScanStarted() {
         Timber.v("Scan was started");
     }
@@ -2503,6 +2496,11 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     @Override
     public void onScanStopped() {
         Timber.v("Scan was stopped");
+    }
+
+    @Override
+    public void onScannerInitError(BitGattStartException error) {
+        //no-op
     }
 
     @Override
@@ -2533,6 +2531,26 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
     @Override
     public void onBluetoothTurningOff() {
         Timber.v("Bluetooth turning off was called");
+    }
+
+    @Override
+    public void onGattServerStarted(GattServerConnection serverConnection) {
+        serverConnection.registerConnectionEventListener(serverConnectionListener);
+    }
+
+    @Override
+    public void onGattServerStartError(BitGattStartException error) {
+        //no-op
+    }
+
+    @Override
+    public void onGattClientStarted() {
+        //no-op
+    }
+
+    @Override
+    public void onGattClientStartError(BitGattStartException error) {
+
     }
 
     @Override

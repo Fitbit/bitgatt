@@ -8,6 +8,12 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerConnectMockTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerDisconnectMockTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.SubscribeToCharacteristicNotificationsMockTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattDescriptorMockTransaction;
+
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
@@ -15,12 +21,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
-import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerConnectMockTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerDisconnectMockTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.mocks.SubscribeToCharacteristicNotificationsMockTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattDescriptorMockTransaction;
-
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,8 +55,8 @@ public class TxPreCommitTests {
         Context mockContext = mock(Context.class);
         when(mockContext.getSystemService(Any.class)).thenReturn(null);
         when(mockContext.getApplicationContext()).thenReturn(mockContext);
-        FitbitGatt.getInstance().start(mockContext);
         FitbitGatt.getInstance().setStarted();
+        FitbitGatt.getInstance().setAppContext(mockContext);
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);
         Thread mockThread = mock(Thread.class);
@@ -81,13 +82,19 @@ public class TxPreCommitTests {
         GattServerConnection serverConnection = spy(new GattServerConnection(null, mockLooper));
         serverConnection.setMockMode(true);
         when(serverConnection.getMainHandler()).thenReturn(mockHandler);
-        FitbitGatt.getInstance().setGattServer(serverConnection);
+        FitbitGatt.getInstance().setGattServerConnection(serverConnection);
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     @SuppressWarnings("deprecation")
     @Test
     public void gattPreCommitTest() {
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         final byte[] fakeData = new byte[]{'a','b','c','d','e','f','g','h','i', 'j'};
         BluetoothGattCharacteristic characteristic = mock(BluetoothGattCharacteristic.class);
         when(characteristic.getUuid()).thenReturn(UUID.randomUUID());

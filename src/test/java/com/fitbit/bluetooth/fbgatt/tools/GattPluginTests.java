@@ -8,12 +8,15 @@
 
 package com.fitbit.bluetooth.fbgatt.tools;
 
+import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.Context;
 
 import junit.framework.Assert;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,6 +33,12 @@ public class GattPluginTests {
     @Before
     public void beforeTest(){
         mockContext = mock(Context.class);
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     @Test

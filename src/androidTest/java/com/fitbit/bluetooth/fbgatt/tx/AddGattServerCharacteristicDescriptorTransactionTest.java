@@ -11,27 +11,32 @@ package com.fitbit.bluetooth.fbgatt.tx;
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
+import com.fitbit.bluetooth.fbgatt.GattServerConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
+import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
 
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.os.ParcelUuid;
-import android.support.test.InstrumentationRegistry;
 
-import junit.framework.Assert;
-
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import static org.junit.Assert.*;
 
 public class AddGattServerCharacteristicDescriptorTransactionTest {
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
@@ -39,44 +44,74 @@ public class AddGattServerCharacteristicDescriptorTransactionTest {
     private static List<ParcelUuid> services;
     private static GattConnection conn;
     private static BluetoothGattCharacteristic gattCharacteristic = new BluetoothGattCharacteristic(UUID.randomUUID(),
-            BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE,
-            BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
+        BluetoothGattCharacteristic.PROPERTY_READ | BluetoothGattCharacteristic.PROPERTY_WRITE,
+        BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
     private static BluetoothGattService service;
 
 
-    @BeforeClass
-    public static void beforeClass(){
-        mockContext = InstrumentationRegistry.getContext();
-        services= new ArrayList<>();
+    @Before
+    public void before() throws InterruptedException {
+        mockContext = InstrumentationRegistry.getInstrumentation().getContext();
+        services = new ArrayList<>();
         services.add(new ParcelUuid(UUID.fromString("adabfb00-6e7d-4601-bda2-bffaa68956ba")));
-        FitbitGatt.getInstance().start(mockContext);
-        FitbitGatt.getInstance().setScanServiceUuidFilters(services);
+        CountDownLatch cd = new CountDownLatch(1);
+        NoOpGattCallback cb = new NoOpGattCallback() {
+
+            @Override
+            public void onGattServerStarted(GattServerConnection serverConnection) {
+                super.onGattServerStarted(serverConnection);
+                service = new BluetoothGattService(services.get(0).getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
+                service.addCharacteristic(gattCharacteristic);
+                serverConnection.getServer().addService(service);
+                cd.countDown();
+            }
+        };
+        FitbitGatt.getInstance().registerGattEventListener(cb);
+        FitbitGatt.getInstance().startGattServer(mockContext);
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "Stupid");
-        conn = new GattConnection(device, InstrumentationRegistry.getTargetContext().getMainLooper());
+
+        conn = new GattConnection(device, InstrumentationRegistry.getInstrumentation().getTargetContext().getMainLooper());
         conn.setMockMode(true);
         conn.setState(GattState.CONNECTED);
         // idempotent, can't put the same connection into the map more than once
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
-        service = new BluetoothGattService(services.get(0).getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
-        service.addCharacteristic(gattCharacteristic);
-        FitbitGatt.getInstance().getServer().getServer().addService(service);
+        try {
+            cd.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            fail("Timeout during test setup");
+        }
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     @Test
-    public void testAddingDescriptorWhenSameDescriptorAlreadyExists(){
+    public void testAddingDescriptorWhenSameDescriptorAlreadyExists() throws InterruptedException {
+        CountDownLatch cd = new CountDownLatch(1);
         UUID descriptorUuid = UUID.randomUUID();
         BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(descriptorUuid, BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
         gattCharacteristic.addDescriptor(descriptor);
         AddGattServerServiceCharacteristicDescriptorTransaction addDescriptor =
-                new AddGattServerServiceCharacteristicDescriptorTransaction(FitbitGatt.getInstance().getServer(),
-                        GattState.ADD_SERVICE_CHARACTERISTIC_DESCRIPTOR_SUCCESS,
-                        service, gattCharacteristic, descriptor);
+            new AddGattServerServiceCharacteristicDescriptorTransaction(FitbitGatt.getInstance().getServer(),
+                GattState.ADD_SERVICE_CHARACTERISTIC_DESCRIPTOR_SUCCESS,
+                service, gattCharacteristic, descriptor);
+        final TransactionResult.TransactionResultStatus[] status = new TransactionResult.TransactionResultStatus[1];
         FitbitGatt.getInstance().getServer().runTx(addDescriptor, new GattTransactionCallback() {
             @Override
             public void onTransactionComplete(@NonNull TransactionResult result) {
-                Assert.assertEquals(TransactionResult.TransactionResultStatus.FAILURE, result.getResultStatus());
+                status[0] = result.getResultStatus();
+                cd.countDown();
             }
         });
+        try {
+            cd.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            fail("Timeout during test setup");
+        }
+        assertEquals(TransactionResult.TransactionResultStatus.FAILURE, status[0]);
     }
 
 

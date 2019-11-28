@@ -12,17 +12,16 @@ package com.fitbit.bluetooth.fbgatt;
  * Test gatt connection stuff
  */
 
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
 import android.content.Context;
 import android.os.Looper;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
-
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,6 +29,9 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,11 +68,13 @@ public class GattConnectionTests {
 
     @Before
     public void before(){
-        GattClientListener listener;
-        for (GattClientListener listener1 : FitbitGatt.getInstance().getClientCallback().getGattClientListeners()) {
-            listener = listener1;
-            FitbitGatt.getInstance().getClientCallback().removeListener(listener);
-        }
+        FitbitGatt.getInstance().setClientCallback(new GattClientCallback());
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.getInstance().setClientCallback(null);
+        FitbitGatt.setInstance(null);
     }
 
     @Test

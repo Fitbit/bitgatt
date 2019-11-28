@@ -24,14 +24,14 @@ import java.util.UUID;
 public class GattUtilsTest {
 
     @Test
-    public void testCopyServiceFull(){
+    public void testCopyServiceFull() {
         BluetoothGattService service = new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
         service.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_SECONDARY));
         service.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_SECONDARY));
         service.addService(service);
         BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(UUID.randomUUID(), BluetoothGattCharacteristic.PERMISSION_READ, BluetoothGattCharacteristic.PROPERTY_NOTIFY);
         BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(UUID.randomUUID(), BluetoothGattDescriptor.PERMISSION_WRITE);
-        descriptor.setValue(new byte[] {0x01, 0x02, 0x04, 0x21});
+        descriptor.setValue(new byte[]{0x01, 0x02, 0x04, 0x21});
         characteristic.addDescriptor(descriptor);
         service.addCharacteristic(characteristic);
         BluetoothGattServiceCopy copyOfservice = new GattUtils().copyService(service);
@@ -39,18 +39,18 @@ public class GattUtilsTest {
         Assert.assertEquals(service.getIncludedServices().size(), copyOfservice.getIncludedServices().size());
         Assert.assertEquals(service.getCharacteristics().size(), copyOfservice.getCharacteristics().size());
         Assert.assertTrue(Arrays.equals(descriptor.getValue(),
-                copyOfservice.getCharacteristic(characteristic.getUuid()).getDescriptor(descriptor.getUuid()).getValue()));
+            copyOfservice.getCharacteristic(characteristic.getUuid()).getDescriptor(descriptor.getUuid()).getValue()));
     }
 
     @Test
-    public void testCopyServiceInfiniteRecursion(){
+    public void testCopyServiceInfiniteRecursion() {
         BluetoothGattService service = new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
         service.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_SECONDARY));
         service.addService(new BluetoothGattService(UUID.randomUUID(), BluetoothGattService.SERVICE_TYPE_SECONDARY));
         service.addService(service);
         BluetoothGattCharacteristic characteristic = new BluetoothGattCharacteristic(UUID.randomUUID(), BluetoothGattCharacteristic.PERMISSION_READ, BluetoothGattCharacteristic.PROPERTY_NOTIFY);
         BluetoothGattDescriptor descriptor = new BluetoothGattDescriptor(UUID.randomUUID(), BluetoothGattDescriptor.PERMISSION_WRITE);
-        descriptor.setValue(new byte[] {0x01, 0x02, 0x04, 0x21});
+        descriptor.setValue(new byte[]{0x01, 0x02, 0x04, 0x21});
         characteristic.addDescriptor(descriptor);
         service.addCharacteristic(characteristic);
         BluetoothGattServiceCopy copyOfservice = new GattUtils().copyService(service);
@@ -58,6 +58,6 @@ public class GattUtilsTest {
         Assert.assertEquals(service.getIncludedServices().size(), copyOfservice.getIncludedServices().size());
         Assert.assertEquals(service.getCharacteristics().size(), copyOfservice.getCharacteristics().size());
         Assert.assertTrue(Arrays.equals(descriptor.getValue(),
-                copyOfservice.getCharacteristic(characteristic.getUuid()).getDescriptor(descriptor.getUuid()).getValue()));
+            copyOfservice.getCharacteristic(characteristic.getUuid()).getDescriptor(descriptor.getUuid()).getValue()));
     }
 }

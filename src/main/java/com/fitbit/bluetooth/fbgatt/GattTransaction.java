@@ -285,11 +285,32 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
 
     private void executeTransaction(GattTransaction tx, GattTransactionCallback callback) {
         Timber.v("[%s] Running transaction: %s", getDevice(), tx.getName());
-        FitbitGatt.getInstance().getClientCallback().addListener(tx);
-        FitbitGatt.getInstance().getServerCallback().addListener(tx);
+        registerListener(tx);
         // it might be a pre / post commit hook so we'll need to set it here too on the tx
         tx.taskHasStarted.getAndSet(true);
         tx.transaction(getGattTransactionCallback(tx, callback));
+    }
+
+    private void unregisterListener(GattTransaction tx) {
+        GattClientCallback gattClientCallback = FitbitGatt.getInstance().getClientCallback();
+        if (gattClientCallback != null) {
+            gattClientCallback.removeListener(tx);
+        }
+        GattServerCallback serverCallback = FitbitGatt.getInstance().getServerCallback();
+        if (serverCallback != null) {
+            serverCallback.removeListener(tx);
+        }
+    }
+
+    private void registerListener(GattTransaction tx) {
+        GattClientCallback gattClientCallback = FitbitGatt.getInstance().getClientCallback();
+        if (gattClientCallback != null) {
+            gattClientCallback.addListener(tx);
+        }
+        GattServerCallback serverCallback = FitbitGatt.getInstance().getServerCallback();
+        if (serverCallback != null) {
+            serverCallback.addListener(tx);
+        }
     }
 
     protected int getExecutedTransactions() {
@@ -325,8 +346,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
                 if (!result.resultStatus.equals(TransactionResult.TransactionResultStatus.SUCCESS)) {
                     Timber.w("[%s] The transaction %s failed, Result: %s", getDevice(), tx.getName(), result);
                     wrappedCallback.onTransactionComplete(result);
-                    FitbitGatt.getInstance().getClientCallback().removeListener(tx);
-                    FitbitGatt.getInstance().getServerCallback().removeListener(tx);
+                    unregisterListener(tx);
                     Timber.w("[%s] Halting the execution chain because tx %s failed", getDevice(), tx.getName());
                     GattTransaction.this.haltChain = true;
                     // we will dispose of all timeouts now because none of the other runnables
@@ -348,8 +368,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
                     } else {
                         Timber.v("[%s] Pre / Post commit tx : %s completed successfully", getDevice(), tx.getName());
                     }
-                    FitbitGatt.getInstance().getClientCallback().removeListener(tx);
-                    FitbitGatt.getInstance().getServerCallback().removeListener(tx);
+                    unregisterListener(tx);
                 }
             }
         };
@@ -392,14 +411,12 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
                     .gattState(getGattServer().getGattState())
                     .resultStatus(TransactionResult.TransactionResultStatus.INVALID_STATE).build();
             localCallback.onTransactionComplete(transactionResult);
-            FitbitGatt.getInstance().getServerCallback().removeListener(tx);
-            FitbitGatt.getInstance().getClientCallback().removeListener(tx);
+            unregisterListener(tx);
             release();
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] Gatt server and gatt client can not both be null", getDevice()));
         }
         localCallback.onTransactionComplete(transactionResult);
-        FitbitGatt.getInstance().getServerCallback().removeListener(tx);
-        FitbitGatt.getInstance().getClientCallback().removeListener(tx);
+        unregisterListener(tx);
         release();
         Timber.v("[%s] The transaction timed out and the callbacks have already been notified, going to idle state", getDevice());
     }

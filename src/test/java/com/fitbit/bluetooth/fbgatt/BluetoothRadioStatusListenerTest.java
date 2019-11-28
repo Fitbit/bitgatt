@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
@@ -60,12 +61,16 @@ public class BluetoothRadioStatusListenerTest {
         ctx = mock(Context.class);
         when(ctx.getApplicationContext()).thenReturn(ctx);
         when(ctx.getMainLooper()).thenReturn(mockMainThreadLooper);
-        FitbitGatt.getInstance().start(ctx);
         mockHandler = mock(Handler.class);
         doAnswer(handlerPostAnswer).when(mockHandler).post(any(Runnable.class));
         doAnswer(handlerPostAnswer).when(mockHandler).postDelayed(any(Runnable.class), anyLong());
         when(mockHandler.getLooper()).thenReturn(mockMainThreadLooper);
         statusListener = new BluetoothRadioStatusListener(ctx, false, mockMainThreadLooper);
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.setInstance(null);
     }
 
     // simple case, if state is off and it goes to on, should return true

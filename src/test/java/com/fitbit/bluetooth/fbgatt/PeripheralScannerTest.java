@@ -8,6 +8,10 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
+
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
@@ -15,30 +19,28 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 
-import junit.framework.TestCase;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
-import timber.log.Timber;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,8 +51,8 @@ import static org.mockito.Mockito.when;
  */
 public class PeripheralScannerTest {
 
-    private static MockLollipopScanner mockScanner;
-    Looper mockLooper;
+    private MockLollipopScanner mockScanner;
+    private Looper mockLooper = mock(Looper.class);
     public Context mockContext;
     private FitbitGatt gatt;
     private PeripheralScanner peripheralScanner;
@@ -68,13 +70,16 @@ public class PeripheralScannerTest {
         return true;
     };
 
-    @BeforeClass
-    public static void beforeClass(){
-        mockScanner = MockLollipopScanner.BluetoothAdapter.getBluetoothLeScanner();
-    }
 
     @Before
     public void before(){
+        mockScanner = MockLollipopScanner.BluetoothAdapter.getBluetoothLeScanner();
+        GattUtils utilsMock = mock(GattUtils.class);
+        LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
+        BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
+        BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
+        BitGattDependencyProvider dependencyProviderMock = mock(BitGattDependencyProvider.class);
+
         MockLollipopScanner.BluetoothAdapter.turnBluetoothOn();
         Looper mockMainThreadLooper = mock(Looper.class);
         Thread mockMainThread = mock(Thread.class);
@@ -88,10 +93,20 @@ public class PeripheralScannerTest {
         doAnswer(handlerPostAnswer).when(mockHandler).post(any(Runnable.class));
         doAnswer(handlerPostAnswer).when(mockHandler).postDelayed(any(Runnable.class), anyLong());
         when(mockHandler.getLooper()).thenReturn(mockMainThreadLooper);
+        doReturn(mockContext).when(mockContext).getApplicationContext();
+        doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
+        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
+        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
+        doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(mockContext), any());
+        doReturn(true).when(adapterMock).isEnabled();
         gatt = FitbitGatt.getInstance();
-        gatt.start(mockContext);
+        gatt.setDependencyProvider(dependencyProviderMock);
+        gatt.setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
+        gatt.initializeScanner(mockContext);
         gatt.setScannerMockMode(true);
-        FitbitGatt.getInstance().clearConnectionsMap();
+        gatt.clearConnectionsMap();
+
         if(gatt.getPeripheralScanner() == null) {
             fail();
             return;
@@ -104,8 +119,17 @@ public class PeripheralScannerTest {
         peripheralScanner.cancelPendingIntentBasedBackgroundScan();
     }
 
+    @BeforeClass
+    public static void beforeClass() {
+        FitbitGatt.setInstance(null);
+    }
+
     @After
-    public void after() {FitbitGatt.getInstance().unregisterAllGattEventListeners();}
+    public void after() {
+        gatt.unregisterAllGattEventListeners();
+        gatt.shutdown();
+        FitbitGatt.setInstance(null);
+    }
 
     @Test
     public void testRssiFilteredScanNoResults() {
@@ -251,12 +275,12 @@ public class PeripheralScannerTest {
             @Override
             public void onScanStopped() {
                 if(startHP[0]) {
-                    if (FitbitGatt.getInstance().getPeripheralScanner() == null) {
+                    if (gatt.getPeripheralScanner() == null) {
                         fail();
                         return;
                     }
-                    Assert.assertTrue(FitbitGatt.getInstance().getPeripheralScanner().isPeriodicalScanEnabled());
-                    Assert.assertFalse(FitbitGatt.getInstance().getPeripheralScanner().isScanning());
+                    Assert.assertTrue(gatt.getPeripheralScanner().isPeriodicalScanEnabled());
+                    Assert.assertFalse(gatt.getPeripheralScanner().isScanning());
                 } else {
                     startHP[0] = true;
                 }
@@ -301,68 +325,5 @@ public class PeripheralScannerTest {
         peripheralScanner.scanTimeoutRunnable.run();
         assertTrue(peripheralScanner.isPeriodicalScanEnabled());
         peripheralScanner.setInstrumentationTestMode(false);
-    }
-
-    public static class NoOpGattCallback implements FitbitGatt.FitbitGattCallback {
-
-        @Override
-        public void onBluetoothPeripheralDiscovered(GattConnection connection) {
-
-        }
-
-        @Override
-        public void onBluetoothPeripheralDisconnected(GattConnection connection) {
-
-        }
-
-        @Override
-        public void onFitbitGattReady() {
-
-        }
-
-        @Override
-        public void onFitbitGattStartFailed() {
-
-        }
-
-        @Override
-        public void onScanStarted() {
-
-        }
-
-        @Override
-        public void onScanStopped() {
-
-        }
-
-        @Override
-        public void onPendingIntentScanStopped() {
-
-        }
-
-        @Override
-        public void onPendingIntentScanStarted() {
-
-        }
-
-        @Override
-        public void onBluetoothOff() {
-
-        }
-
-        @Override
-        public void onBluetoothOn() {
-
-        }
-
-        @Override
-        public void onBluetoothTurningOn() {
-
-        }
-
-        @Override
-        public void onBluetoothTurningOff() {
-
-        }
     }
 }
