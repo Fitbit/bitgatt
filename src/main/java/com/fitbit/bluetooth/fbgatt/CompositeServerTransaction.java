@@ -8,15 +8,14 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**

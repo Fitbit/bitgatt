@@ -13,8 +13,8 @@ import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattServiceCopy;
 
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -23,12 +23,12 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-import androidx.annotation.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**
@@ -81,7 +81,7 @@ public class GattUtils {
 
     public @Nullable
     BluetoothAdapter getBluetoothAdapter(Context context) {
-        BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothManager manager = getBluetoothManager(context);
         if (manager == null) {
             return null;
         }
@@ -90,6 +90,11 @@ public class GattUtils {
             return null;
         }
         return adapter;
+    }
+
+    public @Nullable
+    BluetoothManager getBluetoothManager(Context context) {
+        return (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
     }
 
     /**

@@ -8,6 +8,14 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.AddGattServerServiceMockTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.SendGattServerResponseMockTransaction;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
+
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
@@ -15,11 +23,6 @@ import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
-import com.fitbit.bluetooth.fbgatt.tx.mocks.AddGattServerServiceMockTransaction;
-import com.fitbit.bluetooth.fbgatt.tx.mocks.SendGattServerResponseMockTransaction;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,6 +36,7 @@ import timber.log.Timber;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -40,12 +44,24 @@ import static org.mockito.Mockito.when;
 public class GattServerTests {
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
 
+
     @Before
     public void before(){
+        GattUtils utilsMock = mock(GattUtils.class);
+        LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
+        BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
+        BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
+        BitGattDependencyProvider dependencyProviderMock = mock(BitGattDependencyProvider.class);
         Context mockContext = mock(Context.class);
+
         when(mockContext.getSystemService(Any.class)).thenReturn(null);
         when(mockContext.getApplicationContext()).thenReturn(mockContext);
-        FitbitGatt.getInstance().start(mockContext);
+        doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
+        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
+        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
+        doReturn(true).when(adapterMock).isEnabled();
+
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);
         Thread mockThread = mock(Thread.class);
@@ -66,11 +82,15 @@ public class GattServerTests {
         GattConnection conn = spy(new GattConnection(device, mockLooper));
         conn.setMockMode(true);
         when(conn.getMainHandler()).thenReturn(mockHandler);
-        FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
+
         GattServerConnection serverConnection = spy(new GattServerConnection(null, mockLooper));
         serverConnection.setMockMode(true);
         when(serverConnection.getMainHandler()).thenReturn(mockHandler);
-        FitbitGatt.getInstance().setGattServer(serverConnection);
+        FitbitGatt.getInstance().setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
+        FitbitGatt.getInstance().setDependencyProvider(dependencyProviderMock);
+        FitbitGatt.getInstance().startGattServer(mockContext);
+        FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
+        FitbitGatt.getInstance().setGattServerConnection(serverConnection);
     }
 
     @Test

@@ -55,13 +55,62 @@ abstraction on top of the Android Low Energy API : [eng.fitbit.com/what-is-bitga
 ### Getting Started
 
 To use Bitgatt, you will need to add the permission for bluetooth ( and maybe admin ) into your
-manifest.  After that, you will need to provide the services that you wish to add to the gatt server
-to the start call, alongside any filters you wish to add to the periodical scan if any.
+manifest.  
 
-This will call back once all of the services are added, and the scanner is set up.  If you do not
-wish to use local services, or the periodical scanner, then you can just call start(Context context)
-and wait for the callback to start communicating with devices.
+To allow flexibility each component can be started individually
 
+#### Starting the gatt server 
+
+The gatt server allows your application to host it's own gatt server stack that can be accessed by external bluetooth devices.
+
+You can started in 2 ways:
+
+```java
+FitbitGatt.startGattServer(@NonNull Context context) 
+```
+
+or 
+
+```java
+FitbitGatt.startGattServerWithServices(@NonNull Context context, @Nullable List<BluetoothGattService> services)
+```
+
+In both cases the server is started asynchronously and once finished will call all `FitbitGattCallback` registered listeners on `onGattServerStarted(GattServerConnection serverConnection)` or ` onGattServerStartError(BitGattStartException error)` depending on the success state
+
+In component is already started when toggling bluetooth it will try automatically starting the gatt server again. It will call the same apis on success/failure
+
+####  Starting the FitbitGatt scanner 
+
+The ble scanner from FitbitGatt allows discovery of any ble devices based on provided filters.
+
+The scanner component can be started in 2 ways:
+
+```java
+FitbitGatt.initializeScanner(@NonNull Context context)
+```  
+
+This call is synchronous. If there is an error while trying to initialize it will call `FitbitGattCallback.onScannerInitError(BitGattStartException error)` for the registered listeners.
+This method will not start any active scan. It will just initialize the scanner and allowing you to set filters and then start a scan type.
+
+or  
+
+```java
+FitbitGatt.startPeriodicalScannerWithFilters(@NonNull Context context, List<ScanFilter> filters)
+```  
+
+This second method besides initializing the scanner component it will also setup a periodical scan with the given filters.
+If the filter list is empty or the gatt scanner is already it will error out.
+If there is an error while trying to initialize it will call `FitbitGattCallback.onScannerInitError(BitGattStartException error)` for the registered listeners.
+
+
+####  Starting the bitgatt client
+
+If your connection is already present you may wish to start only the gatt client. This can be done by calling `FitbitGatt.startGattClient(@NonNull Context context)`.
+
+This will call `FitbitGattCallback.onGattClientStarted()` or `FitbitGattCallback.onGattClientStartError(BitGattStartException error)` if an error occurs.
+
+If your app is only the client in BLE connection you will use only this component and the scanner to more reliably fetch the device.
+ 
 ## [Threading](#threading)
 
 The threading model of the Android gatt is extremely fraught with landmines.
@@ -309,7 +358,7 @@ with multiple filters.  There can be multiple listeners to scan results.
 class Test {
     public void doScan(){
         FitbitGatt gatt = FitbitGatt.getInstance();
-        gatt.start(this); // start is idempotent
+        gatt.initializeScanner(this); // start is idempotent
         gatt.registerGattEventListener(mylistener);  // also idempotent for adding instances
         gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
         boolean success = gatt.startPeriodicScan(this);
@@ -325,7 +374,7 @@ callback
 class Test {
     public void doScan(){
         FitbitGatt gatt = FitbitGatt.getInstance();
-        gatt.start(this); // start is idempotent
+        gatt.initializeScanner(this); // start is idempotent
         gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
         gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
         boolean success = gatt.startHighPriorityScan(this);
@@ -341,7 +390,7 @@ the backoff, and scan intervals are managed by the Android system
 class Test {
     public void doScan(){
         FitbitGatt gatt = FitbitGatt.getInstance();
-        gatt.start(this); // start is idempotent
+        gatt.initializeScanner(this); // start is idempotent
         gatt.registerGattEventListener(mylistener); // also idempotent for adding instances
         gatt.addScanServiceUUIDWithMaskFilter(ParcelUuid.fromString("ABCDEFGH-6E7D-4601-BDA2-BFFAA68956BA"), null);
         ArrayList<ScanFilter> scanFilters = new ArrayList<>();
@@ -405,7 +454,7 @@ class Test {
     
     public void startAlwaysConnectedScanner(){
         FitbitGatt gatt = FitbitGatt.getInstance();
-        gatt.start(this); // start is idempotent
+        gatt.initializeScanner(this); // start is idempotent
         ScanFilter filter = new ScanFilter.Builder().setDeviceName("MyCoolIOTThing").build();
         // the always connected scanner will default to discovering 1 device matching the filter and that
         // once it finds a single match it should stop scanning until a device disconnects
@@ -436,7 +485,7 @@ class Test {
     
     public void startAlwaysConnectedScanner(){
         FitbitGatt gatt = FitbitGatt.getInstance();
-        gatt.start(this); // start is idempotent
+        gatt.initializeScanner(this); // start is idempotent
         ScanFilter filter = new ScanFilter.Builder().setDeviceName("MyCoolIOTThing").build();
         // the always connected scanner will default to discovering 1 device matching the filter and that
         // once it finds a single match it should stop scanning until a device disconnects
@@ -470,7 +519,7 @@ class Test {
     
     public void startAlwaysConnectedScanner(){
         FitbitGatt gatt = FitbitGatt.getInstance();
-        gatt.start(this); // start is idempotent
+        gatt.initializeScanner(this); // start is idempotent
         // device srvdata
         ParcelUuid srvUuid = new ParcelUuid(UUID.fromString("620CC755-613A-430C-BA60-17258CD6B078"));
         // device one service data

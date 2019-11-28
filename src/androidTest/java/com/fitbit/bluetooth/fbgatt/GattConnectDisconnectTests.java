@@ -8,25 +8,23 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.bluetooth.BluetoothGattService;
-import android.content.Context;
-import android.os.Looper;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
-
+import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.CloseGattMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattClientDiscoverMockServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattConnectMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattDisconnectMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerConnectMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerDisconnectMockTransaction;
+import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
+
+import android.bluetooth.BluetoothGattService;
+import android.content.Context;
+import android.os.Looper;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +33,14 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import androidx.test.platform.app.InstrumentationRegistry;
 import timber.log.Timber;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
-@RunWith(AndroidJUnit4.class)
+
 public class GattConnectDisconnectTests {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
@@ -50,19 +50,21 @@ public class GattConnectDisconnectTests {
 
     @Before
     public void before() {
-        this.mockContext = InstrumentationRegistry.getContext();
+        this.mockContext = InstrumentationRegistry.getInstrumentation().getContext();
     }
 
     @After
     public void after() {
-        FitbitGatt.getInstance().clearConnectionsMap();
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     @Test
     public void testConnect() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        final TransactionResult[] resultTx = new TransactionResult[1];
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = FitbitGatt.getInstance().getConnection(device);
         if (connection == null) {
@@ -75,21 +77,22 @@ public class GattConnectDisconnectTests {
         if (!connection.isConnected()) {
             GattConnectMockTransaction connectTransaction = new GattConnectMockTransaction(connection, GattState.CONNECTED, false);
             connection.runTx(connectTransaction, result -> {
-                assertEquals(result.resultStatus, TransactionResult.TransactionResultStatus.SUCCESS);
+                resultTx[0] = result;
                 cdl.countDown();
             });
         } else {
             cdl.countDown();
             Assert.fail();
         }
-        cdl.await(1, TimeUnit.SECONDS);
+        cdl.await(20, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, resultTx[0].resultStatus);
     }
 
     @Test
     public void connectByInstantiatingAConnectionWhenOneExists() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = new GattConnection(device, mockContext.getMainLooper());
         connection.setMockMode(true);
@@ -114,8 +117,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void connectByInstantiatingTwoIndependentConnections() {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS_3, "fooDevice");
         // unmanaged connections should be able to connect however they would like
         GattConnection connection = new GattConnection(device, mockContext.getMainLooper());
@@ -130,8 +133,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void connectByInstantiatingTwoDifferentConnectionsOneInMap() {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         FitbitBluetoothDevice device2 = new FitbitBluetoothDevice(MOCK_ADDRESS_2, "fooDevice2");
         GattConnection connection = new GattConnection(device, mockContext.getMainLooper());
@@ -147,8 +150,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void testConnectThreading() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = FitbitGatt.getInstance().getConnection(device);
         if (connection == null) {
@@ -179,8 +182,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void testServerConnect() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattServer(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattServerConnection connection = new GattServerConnection(null, Looper.getMainLooper());
         connection.setMockMode(true);
@@ -198,8 +201,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void testCloseGatt() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = FitbitGatt.getInstance().getConnection(device);
         if (connection == null) {
@@ -222,10 +225,11 @@ public class GattConnectDisconnectTests {
     @Test
     public void testDisconnect() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = FitbitGatt.getInstance().getConnection(device);
+        final TransactionResult[] resultTx = new TransactionResult[1];
         if (connection == null) {
             connection = new GattConnection(device, mockContext.getMainLooper());
             FitbitGatt.getInstance().getConnectionMap().put(device, connection);
@@ -236,17 +240,18 @@ public class GattConnectDisconnectTests {
         GattDisconnectMockTransaction disconnectTransaction = new GattDisconnectMockTransaction(connection, GattState.DISCONNECTED, false);
         // shouldn't let go until transition to disconnected
         connection.runTx(disconnectTransaction, nuResult -> {
-            assertEquals(GattState.DISCONNECTED, nuResult.getResultState());
+            resultTx[0] = nuResult;
             latch.countDown();
         });
         latch.await(2, TimeUnit.SECONDS);
+        assertEquals(GattState.DISCONNECTED, resultTx[0].getResultState());
     }
 
     @Test
     public void testIsConnectedWhenStateIsDisconnecting() {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = FitbitGatt.getInstance().getConnection(device);
         if (connection == null) {
@@ -261,8 +266,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void testIsConnectedWhenStateIsConnecting() {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         GattConnection connection = FitbitGatt.getInstance().getConnection(device);
         if (connection == null) {
@@ -277,41 +282,62 @@ public class GattConnectDisconnectTests {
     @Test
     public void testServerDisconnect() throws Exception {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
-        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
-        GattServerConnection connection = FitbitGatt.getInstance().getServer();
-        connection.setMockMode(true);
-        connection.setState(GattState.IDLE);
         CountDownLatch cdl = new CountDownLatch(1);
-        GattServerDisconnectMockTransaction connectTransaction = new GattServerDisconnectMockTransaction(connection, GattState.DISCONNECTED, device, false);
-        connection.runTx(connectTransaction, result -> {
-            assertTrue(result.resultStatus.equals(TransactionResult.TransactionResultStatus.SUCCESS) && connection.getGattState().equals(GattState.DISCONNECTED));
-            cdl.countDown();
-        });
-        cdl.await(1, TimeUnit.SECONDS);
+        final TransactionResult[] resultTx = new TransactionResult[1];
+        NoOpGattCallback cb = new NoOpGattCallback() {
+            @Override
+            public void onGattServerStarted(GattServerConnection serverConnection) {
+                super.onGattServerStarted(serverConnection);
+                serverConnection.setMockMode(true);
+                serverConnection.setState(GattState.IDLE);
+                FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
+                GattServerDisconnectMockTransaction connectTransaction = new GattServerDisconnectMockTransaction(serverConnection, GattState.DISCONNECTED, device, false);
+                serverConnection.runTx(connectTransaction, result -> {
+                    resultTx[0] = result;
+                    cdl.countDown();
+                });
+            }
+        };
+        FitbitGatt.getInstance().registerGattEventListener(cb);
+        FitbitGatt.getInstance().startGattServer(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
+        cdl.await(3, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, resultTx[0].resultStatus);
+        assertEquals(GattState.DISCONNECTED, FitbitGatt.getInstance().getServer().getGattState());
     }
 
     @Test
-    @Ignore("Skipping until we sort how to make this non-flaky") // skip for now, we can't really reliably connect
+    // skip for now, we can't really reliably connect
     public void connectToScannedDevice() throws Exception {
-        // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
-        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
         CountDownLatch latch = new CountDownLatch(1);
-        FitbitGatt.getInstance().connectToScannedDevice(device, true, result -> {
-            Assert.assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, result.resultStatus);
-            latch.countDown();
-        });
+        NoOpGattCallback cb = new NoOpGattCallback() {
+            @Override
+            public void onGattClientStarted() {
+                super.onGattClientStarted();
+                FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
+                FitbitGatt.getInstance().connectToScannedDevice(device, true, result -> {
+                    Assert.assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, result.resultStatus);
+                    latch.countDown();
+                });
+            }
+
+            @Override
+            public void onGattClientStartError(BitGattStartException error) {
+                super.onGattClientStartError(error);
+                fail("Gatt Client Error start " + error.getMessage());
+            }
+        };
+        // started
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         latch.await(1, TimeUnit.SECONDS);
     }
 
     @Test
     public void filterConnectedDevices() {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         // populate fake connected devices
         for (int i = 0; i < 4; i++) {
             String address = String.format(Locale.ENGLISH, "02:00:00:00:00:1%s", Integer.toString(i));
@@ -331,8 +357,8 @@ public class GattConnectDisconnectTests {
     @Test
     public void filterConnectedDevicesAll() {
         // started
-        FitbitGatt.getInstance().start(mockContext);
-        Assert.assertTrue(FitbitGatt.getInstance().isStarted());
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
         UUID serviceUuidOne = UUID.fromString("5F1CBF47-4A8E-467F-9E55-BAFE00839CC1");
         UUID serviceUuidTwo = UUID.fromString("528B080E-6608-403F-8F39-2246650751D0");
         BluetoothGattService service1 = new BluetoothGattService(serviceUuidOne, BluetoothGattService.SERVICE_TYPE_PRIMARY);
@@ -362,11 +388,10 @@ public class GattConnectDisconnectTests {
 
     @Test
     public void gattDiscoverServicesTest() throws Exception {
-        FitbitGatt.getInstance().start(mockContext);
-
+        FitbitGatt.getInstance().startGattClient(mockContext);
         UUID serviceUuidOne = UUID.randomUUID();
         UUID serviceUuidTwo = UUID.randomUUID();
-
+        final TransactionResult[] resultTx = new TransactionResult[1];
         BluetoothGattService service1 = new BluetoothGattService(serviceUuidOne, BluetoothGattService.SERVICE_TYPE_PRIMARY);
         BluetoothGattService service2 = new BluetoothGattService(serviceUuidTwo, BluetoothGattService.SERVICE_TYPE_SECONDARY);
         ArrayList<BluetoothGattService> services = new ArrayList<>();
@@ -380,10 +405,11 @@ public class GattConnectDisconnectTests {
         CountDownLatch latch = new CountDownLatch(1);
         GattClientDiscoverMockServicesTransaction discoverMockTx = new GattClientDiscoverMockServicesTransaction(conn, GattState.DISCOVERY_SUCCESS, services, false);
         conn.runTx(discoverMockTx, result -> {
-            Assert.assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, result.resultStatus);
-            Assert.assertEquals(services.size(), result.getServices().size());
+            resultTx[0] = result;
             latch.countDown();
         });
         latch.await(1, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, resultTx[0].resultStatus);
+        assertEquals(services.size(), resultTx[0].getServices().size());
     }
 }

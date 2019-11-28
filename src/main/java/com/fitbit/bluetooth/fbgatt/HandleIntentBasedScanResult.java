@@ -8,6 +8,10 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
+
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -17,13 +21,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import androidx.annotation.NonNull;
-
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
 
 import java.util.List;
 
+import androidx.annotation.NonNull;
 import timber.log.Timber;
 
 /**
@@ -50,9 +51,8 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
                 Timber.w("Bluetooth is turned off, ignoring");
                 return;
             }
-            if(!FitbitGatt.getInstance().isStarted()) {
+            if (!FitbitGatt.getInstance().isInitialized()) {
                 Timber.v("Bitgatt wasn't started, starting before handling...");
-                FitbitGatt.getInstance().start(context);
             }
             Timber.v("Received connection update : %s", intent.getAction());
             // added by the system to the intent defined in {@link OreoBackgroundScanner#explicitIntentHelper}
@@ -66,103 +66,118 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
                     // there are callback results, so now we should do something with this, it's
                     // not OK to do this on the main thread so we'll jump onto a scheduler
                     for(ScanResult result : results) {
-                        FitbitGatt.getInstance().getClientCallback().getClientCallbackHandler().post(() -> {
-                            FitbitBluetoothDevice fitBd = new FitbitBluetoothDevice(result.getDevice());
-                            fitBd.setScanRecord(result.getScanRecord());
-                            fitBd.origin = FitbitBluetoothDevice.DeviceOrigin.SCANNED;
-                            fitBd.setRssi(result.getRssi());
-                            /*
-                             * If bitgatt is started, then we need to determine whether we are still
-                             * pending intent scanning from a different start and set the correct
-                             * state internally.  If we are not started, then is pending intent scanning
-                             * will be false because the scanner will have been null, so the next scan event
-                             * we will enter is started and is pending intent scanning false, so we will
-                             * update the state.
-                             */
-                            if(FitbitGatt.getInstance().isStarted()) {
-                                if(FitbitGatt.getInstance().isPendingIntentScanning()) {
-                                    Timber.v("Bitgatt is started and scanning, so we should add %s", fitBd);
-                                    FitbitGatt.getInstance().addBackgroundScannedDeviceConnection(fitBd);
-                                } else {
-                                    Timber.v("Bitgatt is started, but is not intent scanning, so we may have died in the background adding %s and telling bitgatt that we are still intent scanning", fitBd);
-                                    PeripheralScanner scanner = FitbitGatt.getInstance().getPeripheralScanner();
-                                    if(scanner != null) {
-                                        scanner.setIsPendingIntentScanning(true);
-                                    } else {
-                                        Timber.v("Tried to handle the event and update the scanner's internal state, but the scanner was null");
-                                    }
-                                    FitbitGatt.getInstance().addBackgroundScannedDeviceConnection(fitBd);
-                                }
-                            } else {
-                                Timber.w("Bitgatt is not started, or we aren't pending intent scanning, let's try starting for %s", fitBd);
-                                // this will take us off of the main thread
-                                FitbitGatt.getInstance().registerGattEventListener(new FitbitGatt.FitbitGattCallback() {
-                                    @Override
-                                    public void onBluetoothPeripheralDiscovered(@NonNull GattConnection connection) {
-
-                                    }
-
-                                    @Override
-                                    public void onBluetoothPeripheralDisconnected(@NonNull GattConnection connection) {
-
-                                    }
-
-                                    @Override
-                                    public void onFitbitGattReady() {
-                                        Timber.v("Bitgatt is started, so we should add %s, but the internal scan state may not be consistent.", fitBd);
+                        GattClientCallback callbackClient = FitbitGatt.getInstance().getClientCallback();
+                        if (callbackClient != null) {
+                            callbackClient.getClientCallbackHandler().post(() -> {
+                                FitbitBluetoothDevice fitBd = new FitbitBluetoothDevice(result.getDevice());
+                                fitBd.setScanRecord(result.getScanRecord());
+                                fitBd.origin = FitbitBluetoothDevice.DeviceOrigin.SCANNED;
+                                fitBd.setRssi(result.getRssi());
+                                /*
+                                 * If bitgatt is started, then we need to determine whether we are still
+                                 * pending intent scanning from a different start and set the correct
+                                 * state internally.  If we are not started, then is pending intent scanning
+                                 * will be false because the scanner will have been null, so the next scan event
+                                 * we will enter is started and is pending intent scanning false, so we will
+                                 * update the state.
+                                 */
+                                if (FitbitGatt.getInstance().isInitialized()) {
+                                    if (FitbitGatt.getInstance().isPendingIntentScanning()) {
+                                        Timber.v("Bitgatt is started and scanning, so we should add %s", fitBd);
                                         FitbitGatt.getInstance().addBackgroundScannedDeviceConnection(fitBd);
-                                        // after the start is done, we don't want to be a dead-weight
-                                        FitbitGatt.getInstance().unregisterGattEventListener(this);
+                                    } else {
+                                        Timber.v("Bitgatt is started, but is not intent scanning, so we may have died in the background adding %s and telling bitgatt that we are still intent scanning", fitBd);
+                                        PeripheralScanner scanner = FitbitGatt.getInstance().getPeripheralScanner();
+                                        if (scanner != null) {
+                                            scanner.setIsPendingIntentScanning(true);
+                                        } else {
+                                            Timber.v("Tried to handle the event and update the scanner's internal state, but the scanner was null");
+                                        }
+                                        FitbitGatt.getInstance().addBackgroundScannedDeviceConnection(fitBd);
                                     }
+                                } else {
+                                    Timber.w("Bitgatt is not started, or we aren't pending intent scanning, let's try starting for %s", fitBd);
+                                    // this will take us off of the main thread
+                                    FitbitGatt.getInstance().registerGattEventListener(new FitbitGatt.FitbitGattCallback() {
+                                        @Override
+                                        public void onBluetoothPeripheralDiscovered(@NonNull GattConnection connection) {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onFitbitGattStartFailed() {
-                                        // sad, but what can we do from here
-                                    }
+                                        @Override
+                                        public void onBluetoothPeripheralDisconnected(@NonNull GattConnection connection) {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onScanStarted() {
 
-                                    }
+                                        @Override
+                                        public void onScanStarted() {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onScanStopped() {
+                                        @Override
+                                        public void onScanStopped() {
+                                            //no-op
+                                        }
 
-                                    }
+                                        @Override
+                                        public void onScannerInitError(BitGattStartException error) {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onPendingIntentScanStopped() {
+                                        @Override
+                                        public void onPendingIntentScanStopped() {
+                                            //no-op
+                                        }
 
-                                    }
+                                        @Override
+                                        public void onPendingIntentScanStarted() {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onPendingIntentScanStarted() {
+                                        @Override
+                                        public void onBluetoothOff() {
+                                            //no-op
+                                        }
 
-                                    }
+                                        @Override
+                                        public void onBluetoothOn() {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onBluetoothOff() {
+                                        @Override
+                                        public void onBluetoothTurningOn() {
+                                            //no-op
+                                        }
 
-                                    }
+                                        @Override
+                                        public void onBluetoothTurningOff() {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onBluetoothOn() {
+                                        @Override
+                                        public void onGattServerStarted(GattServerConnection serverConnection) {
+                                            //no-op
+                                        }
 
-                                    }
+                                        @Override
+                                        public void onGattServerStartError(BitGattStartException error) {
+                                            //no-op
+                                        }
 
-                                    @Override
-                                    public void onBluetoothTurningOn() {
+                                        @Override
+                                        public void onGattClientStarted() {
+                                            //no-op
+                                        }
 
-                                    }
-
-                                    @Override
-                                    public void onBluetoothTurningOff() {
-
-                                    }
-                                });
-                                FitbitGatt.getInstance().start(context);
-                            }
-                        });
+                                        @Override
+                                        public void onGattClientStartError(BitGattStartException error) {
+                                            //no-op
+                                        }
+                                    });
+                                }
+                            });
+                        }
                     }
                 } else {
                     Timber.w("Scan callback with no results");

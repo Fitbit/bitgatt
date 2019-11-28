@@ -8,38 +8,36 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
-import android.content.Context;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
-
 import com.fitbit.bluetooth.fbgatt.tx.mocks.BlockingTaskTestMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.MockNoOpTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.ReadGattCharacteristicMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.TimeoutTestMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattDescriptorMockTransaction;
 
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.content.Context;
+import android.os.Handler;
+import android.os.HandlerThread;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import androidx.test.platform.app.InstrumentationRegistry;
 import timber.log.Timber;
 
 import static android.bluetooth.BluetoothGattCharacteristic.PROPERTY_WRITE;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
-@RunWith(AndroidJUnit4.class)
+
 public class TxConcurrencyTests {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
@@ -56,15 +54,15 @@ public class TxConcurrencyTests {
 
     @Before
     public void before() {
-        Context appContext = InstrumentationRegistry.getContext();
+        Context appContext = InstrumentationRegistry.getInstrumentation().getContext();
+        FitbitGatt.getInstance().startGattClient(appContext);
         // started
-        FitbitGatt.getInstance().start(appContext);
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
-        fakeData = new byte[]{'a','b','c','d','e','f','g','h','i', 'j'};
+        fakeData = new byte[]{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
         characteristic = new BluetoothGattCharacteristic(CHAR_NAME, PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_WRITE);
         descriptor = new BluetoothGattDescriptor(DESCRIPTOR_NAME, BluetoothGattDescriptor.PERMISSION_WRITE);
         connection = FitbitGatt.getInstance().getConnection(device);
-        if(connection == null) {
+        if (connection == null) {
             connection = new GattConnection(device, appContext.getMainLooper());
             FitbitGatt.getInstance().getConnectionMap().put(device, connection);
         }
@@ -74,7 +72,7 @@ public class TxConcurrencyTests {
     }
 
     @BeforeClass
-    public static void beforeClass(){
+    public static void beforeClass() {
         handlerThread = new HandlerThread("Test Handler Thread");
         handlerThread.start();
         HandlerThread secondThread = new HandlerThread("Second Handler Thread");

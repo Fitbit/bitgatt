@@ -8,26 +8,41 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
+import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
 
+import android.content.Context;
+
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
-@RunWith(AndroidJUnit4.class)
+
 public class ThreadManagementTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
     private final ExecutorService service = Executors.newFixedThreadPool(100);
 
+
+    @Before
+    public void before() {
+        FitbitGatt.getInstance().startGattClient(InstrumentationRegistry.getInstrumentation().getContext());
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
+    }
 
     @Test
     public void testTransactionQueueControllerThreadStoppage() {
@@ -40,7 +55,7 @@ public class ThreadManagementTest {
     @Test
     public void testReleasedConnectionHasStoppedThread() {
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
-        GattConnection conn = new GattConnection(device, InstrumentationRegistry.getTargetContext().getMainLooper());
+        GattConnection conn = new GattConnection(device, InstrumentationRegistry.getInstrumentation().getTargetContext().getMainLooper());
         // finish is always called by ttl expiry
         conn.finish();
         assertTrue("Conn thread should be stopped", conn.getClientTransactionQueueController().isQueueThreadStopped());
@@ -55,7 +70,7 @@ public class ThreadManagementTest {
         final int[] total = new int[1];
         controller.queueTransaction(() -> {
             int i;
-            for(i=0; i < 100000; i++) {
+            for (i = 0; i < 100000; i++) {
                 i++;
             }
             total[0] = i;
@@ -73,101 +88,79 @@ public class ThreadManagementTest {
      * working
      */
     @Test
-    public void testHammeringStartFromOneHundredThreads(){
-        CountDownLatch cdl = new CountDownLatch(1001);
-        FitbitGatt.getInstance().registerGattEventListener(new NoOpGattCallback() {
+    public void testHammeringStartGattClientFromOneHundredThreads() {
+        testHammerStart(new TestHammerRunner() {
             @Override
-            public void onFitbitGattReady() {
-                // this should only happen once
-                cdl.countDown();
+            public NoOpGattCallback getCB(CountDownLatch cdl, Context ctx) {
+                return new NoOpGattCallback() {
+                    @Override
+                    public void onGattClientStarted() {
+                        super.onGattClientStarted();
+                        cdl.countDown();
+                    }
+                };
             }
 
             @Override
-            public void onFitbitGattStartFailed() {
-                fail("Gatt start should never fail");
+            public Runnable getRunnable(FitbitGatt gatt, CountDownLatch cdl, Context ctx) {
+                return () -> {
+                    gatt.startGattClient(ctx);
+                    cdl.countDown();
+                };
             }
         });
-        for(int i=0; i < 1000; i++) {
-            service.execute(new Runnable() {
-                @Override
-                public void run() {
-                    FitbitGatt.getInstance().start(InstrumentationRegistry.getTargetContext());
+    }
+
+    @Test
+    public void testHammeringStartGattServerFromOneHundredThreads() {
+        testHammerStart(new TestHammerRunner() {
+            @Override
+            public NoOpGattCallback getCB(CountDownLatch cdl, Context ctx) {
+                return new NoOpGattCallback() {
+                    @Override
+                    public void onGattServerStarted(GattServerConnection connection) {
+                        super.onGattClientStarted();
+                        cdl.countDown();
+                    }
+                };
+            }
+
+            @Override
+            public Runnable getRunnable(FitbitGatt gatt, CountDownLatch cdl, Context ctx) {
+                return () -> {
+                    gatt.startGattServer(ctx);
                     cdl.countDown();
-                }
-            });
+                };
+            }
+        });
+    }
+
+    private interface TestHammerRunner {
+        NoOpGattCallback getCB(CountDownLatch cdl, Context ctx);
+
+        Runnable getRunnable(FitbitGatt gatt, CountDownLatch cdl, Context ctx);
+    }
+
+
+    private void testHammerStart(TestHammerRunner runner) {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
+        CountDownLatch cdl = new CountDownLatch(1001);
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        FitbitGatt gatt = FitbitGatt.getInstance();
+        gatt.registerGattEventListener(runner.getCB(cdl, context));
+        for (int i = 0; i < 1000; i++) {
+            service.execute(runner.getRunnable(gatt, cdl, context));
         }
         try {
             boolean timedout = !cdl.await(30, TimeUnit.SECONDS);
-            if(timedout) {
-                fail("test timed out waiting for start");
+            if (timedout) {
+                fail("test timed out waiting for start " + cdl.getCount());
             }
         } catch (InterruptedException ex) {
             fail("Thread was interrupted before all calls complete");
         }
-        assertTrue(FitbitGatt.getInstance().isStarted());
+        assertTrue(FitbitGatt.getInstance().isInitialized());
         FitbitGatt.getInstance().unregisterAllGattEventListeners();
-    }
-
-    public class NoOpGattCallback implements FitbitGatt.FitbitGattCallback {
-
-        @Override
-        public void onBluetoothPeripheralDiscovered(GattConnection connection) {
-
-        }
-
-        @Override
-        public void onBluetoothPeripheralDisconnected(GattConnection connection) {
-
-        }
-
-        @Override
-        public void onFitbitGattReady() {
-
-        }
-
-        @Override
-        public void onFitbitGattStartFailed() {
-
-        }
-
-        @Override
-        public void onScanStarted() {
-
-        }
-
-        @Override
-        public void onScanStopped() {
-
-        }
-
-        @Override
-        public void onPendingIntentScanStopped() {
-
-        }
-
-        @Override
-        public void onPendingIntentScanStarted() {
-
-        }
-
-        @Override
-        public void onBluetoothOff() {
-
-        }
-
-        @Override
-        public void onBluetoothOn() {
-
-        }
-
-        @Override
-        public void onBluetoothTurningOn() {
-
-        }
-
-        @Override
-        public void onBluetoothTurningOff() {
-
-        }
     }
 }

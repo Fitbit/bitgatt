@@ -23,9 +23,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
 import android.os.ParcelUuid;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 import static android.bluetooth.le.ScanCallback.SCAN_FAILED_ALREADY_STARTED;
@@ -94,10 +94,12 @@ class PeripheralScanner {
     private Runnable resetScanCounter = new Runnable() {
         @Override
         public void run() {
-            Timber.v("Resetting scan too much counter, 30s have gone by.");
+            long scannerTime = getScannerDuration();
+            Timber.v("Resetting scan too much counter, %s ms have gone by.", scannerTime);
             scanCount.set(0);
             mHandler.postDelayed(resetScanCounter, SCAN_TOO_MUCH_WARN_INTERVAL);
         }
+
     };
 
     PeripheralScanner(Context context, @NonNull TrackerScannerListener listener) {
@@ -165,6 +167,14 @@ class PeripheralScanner {
         };
     }
 
+    private long getScannerDuration() {
+        return instrumentationTestMode ? TEST_SCAN_DURATION : SCAN_DURATION;
+    }
+
+    private long getScannerInterval() {
+        return instrumentationTestMode ? TEST_SCAN_INTERVAL : SCAN_INTERVAL;
+    }
+
     void setInstrumentationTestMode(boolean instrumentationTestMode) {
         this.instrumentationTestMode = instrumentationTestMode;
     }
@@ -181,6 +191,7 @@ class PeripheralScanner {
      * Stops the scans and releases any resources.
      */
     void onDestroy(Context context) {
+        cancelPeriodicalScan(context);
         cancelScan(context);
     }
 
@@ -527,7 +538,7 @@ class PeripheralScanner {
             return false;
         }
         if (scanCount.get() >= MAX_SCANS_ALLOWED_PER_30_SECONDS) {
-            Timber.e("Yo Dawg I heard u like scanning ... You have already started 4 scanners in this 30s, you must wait");
+            Timber.e("Yo Dawg I heard u like scanning ... You have already started %d scanners in this 30s, you must wait", MAX_SCANS_ALLOWED_PER_30_SECONDS);
             listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
             return false;
         }
@@ -557,7 +568,7 @@ class PeripheralScanner {
                 return false;
             }
             int count = scanCount.incrementAndGet();
-            Timber.v("Starting scan, scan count in this 30s is %d", count);
+            Timber.v("Starting scan, scan count in this %d ms is %d", getScannerDuration(), count);
             if (didStart == 0) {
                 Timber.d("You have started a system background scan, any other scan is still running");
                 boolean oldValue = pendingIntentIsScanning.getAndSet(true);
@@ -634,7 +645,7 @@ class PeripheralScanner {
                 return null;
             }
             if (scanCount.get() >= MAX_SCANS_ALLOWED_PER_30_SECONDS) {
-                Timber.e("Yo Dawg I heard u like scanning ... You have already started 4 scanners in this 30s, you must wait");
+                Timber.e("Yo Dawg I heard u like scanning ... You have already started %d scanners in this 30s, you must wait", MAX_SCANS_ALLOWED_PER_30_SECONDS);
                 listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return null;
             }
@@ -678,7 +689,7 @@ class PeripheralScanner {
                     return null;
                 }
                 int count = scanCount.incrementAndGet();
-                Timber.v("Starting scan, scan count in this 30s is %d", count);
+                Timber.v("Starting scan, scan count in this %d ms is %d", getScannerDuration(), count);
                 if (didStart == 0) {
                     Timber.d("You have started a DIY system background scan, stopping periodical scan until background scan is stopped");
                     boolean oldValue = pendingIntentIsScanning.getAndSet(true);
@@ -753,7 +764,7 @@ class PeripheralScanner {
             return false;
         }
         if (scanCount.get() >= MAX_SCANS_ALLOWED_PER_30_SECONDS) {
-            Timber.e("Yo Dawg I heard u like scanning ... You have already started 4 scanners in this 30s, you must wait");
+            Timber.e("Yo Dawg I heard u like scanning ... You have already started %d scanners in this %d, you must wait", MAX_SCANS_ALLOWED_PER_30_SECONDS, getScannerDuration());
             listener.onScanStatusChanged(isScanning.get());
             return false;
         }
@@ -792,7 +803,7 @@ class PeripheralScanner {
                     return false;
                 }
                 int count = scanCount.incrementAndGet();
-                Timber.v("Starting scan, scan count in this 30s is %d", count);
+                Timber.v("Starting scan, scan count in this %d ms is %d", getScannerDuration(), count);
                 scanStarted = true;
             } else {
                 Timber.w("BT Seems to be off, not starting scan");
@@ -803,11 +814,7 @@ class PeripheralScanner {
             resetScanBackoff = false;
 
             //Schedule timeout
-            if (instrumentationTestMode) {
-                mHandler.postDelayed(scanTimeoutRunnable, TEST_SCAN_DURATION);
-            } else {
-                mHandler.postDelayed(scanTimeoutRunnable, SCAN_DURATION);
-            }
+            mHandler.postDelayed(scanTimeoutRunnable, getScannerDuration());
             return scanStarted;
         } else {
             Timber.w("Already scanning, will not start a new scan");
@@ -895,11 +902,8 @@ class PeripheralScanner {
                 } else {
                     scanBackoffMultiplier = Math.min(MAX_BACKOFF_MULTIPLIER, scanBackoffMultiplier << 1);
                 }
-                if (PeripheralScanner.this.instrumentationTestMode) {
-                    mHandler.postDelayed(periodicRunnable, scanBackoffMultiplier * TEST_SCAN_INTERVAL);
-                } else {
-                    mHandler.postDelayed(periodicRunnable, scanBackoffMultiplier * SCAN_INTERVAL);
-                }
+                Timber.d("Posting the periodic start to run in %d ms", scanBackoffMultiplier * getScannerInterval());
+                mHandler.postDelayed(periodicRunnable, scanBackoffMultiplier * getScannerInterval());
             }
         }
     }

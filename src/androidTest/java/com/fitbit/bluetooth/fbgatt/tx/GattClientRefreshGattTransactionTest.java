@@ -18,36 +18,35 @@ import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.os.ParcelUuid;
-import androidx.annotation.NonNull;
-import android.support.test.InstrumentationRegistry;
 
 import org.junit.After;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import static org.junit.Assert.*;
 
 public class GattClientRefreshGattTransactionTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
-    private static Context mockContext;
-    private static List<ParcelUuid> services;
-    private static GattConnection conn;
-    private static BluetoothGattService service;
+    private Context mockContext;
+    private List<ParcelUuid> services;
+    private GattConnection conn;
+    private BluetoothGattService service;
 
 
-    @BeforeClass
-    public static void beforeClass(){
-        mockContext = InstrumentationRegistry.getContext();
-        services= new ArrayList<>();
+    @Before
+    public void before() {
+        mockContext = InstrumentationRegistry.getInstrumentation().getContext();
+        services = new ArrayList<>();
         services.add(new ParcelUuid(UUID.fromString("adabfb00-6e7d-4601-bda2-bffaa68956ba")));
-        FitbitGatt.getInstance().start(mockContext);
-        FitbitGatt.getInstance().setScanServiceUuidFilters(services);
+        FitbitGatt.getInstance().startGattClient(mockContext);
         FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "Stupid");
         conn = new GattConnection(device, mockContext.getMainLooper());
         conn.setMockMode(true);
@@ -55,16 +54,16 @@ public class GattClientRefreshGattTransactionTest {
         // idempotent, can't put the same connection into the map more than once
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
         service = new BluetoothGattService(services.get(0).getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
-        FitbitGatt.getInstance().getServer().getServer().addService(service);
     }
 
     @After
-    public void cleanUpState(){
-        FitbitGatt.getInstance().getServer().setState(GattState.IDLE);
+    public void cleanUpState() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     @Test
-    public void testFailureToCallRefreshGattScenario(){
+    public void testFailureToCallRefreshGattScenario() {
         // sadly we can only test the failure mode because we have a fake device, we will have to
         // test this in the real world to understand how it behaves
         GattClientRefreshGattTransaction refresh = new GattClientRefreshGattTransaction(conn, GattState.REFRESH_GATT_SUCCESS);

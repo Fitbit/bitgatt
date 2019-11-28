@@ -36,7 +36,7 @@ android {
         versionCode buildNumber
         versionName libraryVersionName
         multiDexEnabled true
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -68,6 +68,7 @@ allprojects {
     repositories {
         jcenter()
         google()
+        maven { url 'https://jitpack.io' }
     }
 }
 
@@ -83,7 +84,7 @@ ext {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    androidTestImplementation("com.android.support.test.espresso:espresso-core:3.0.1", {
+    androidTestImplementation('androidx.test.espresso:espresso-core:3.1.0', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     implementation "androidx.multidex:multidex:$MULTIDEX_VERSION"
@@ -98,11 +99,8 @@ dependencies {
     androidTestImplementation "junit:junit:$JUNIT_VERSION"
     androidTestImplementation "androidx.test:runner:$TEST_RUNNER_VERSION"
     androidTestImplementation "androidx.test:rules:$TEST_RUNNER_VERSION"
-    androidTestImplementation "org.mockito:mockito-inline:$MOCKITO_VERSION"
-    androidTestImplementation "org.mockito:mockito-core:$MOCKITO_VERSION"
-    androidTestImplementation("org.mockito:mockito-android:$MOCKITO_VERSION") {
-        exclude group: "net.bytebuddy"
-    }
+    androidTestImplementation("org.mockito:mockito-android:$MOCKITO_VERSION")
+    androidTestImplementation 'com.github.tmurakami:dexopener:2.0.0'
 }
 
 task sourceJar(type: Jar) {

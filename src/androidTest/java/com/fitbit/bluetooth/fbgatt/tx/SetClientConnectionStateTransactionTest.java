@@ -8,20 +8,20 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
-import android.bluetooth.BluetoothGattService;
-import android.content.Context;
-import android.os.ParcelUuid;
-import android.support.test.InstrumentationRegistry;
-
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
+import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
+import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
 
+import android.content.Context;
+import android.os.ParcelUuid;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -30,86 +30,109 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import static org.junit.Assert.*;
 
 public class SetClientConnectionStateTransactionTest {
 
-    private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
-    private static GattConnection conn;
+    private final String MOCK_ADDRESS = "02:00:00:00:00:00";
+    private GattConnection conn;
 
-
-    @BeforeClass
-    public static void beforeClass(){
-        Context mockContext = InstrumentationRegistry.getContext();
-        List<ParcelUuid> services = new ArrayList<>();
-        services.add(new ParcelUuid(UUID.fromString("adabfb00-6e7d-4601-bda2-bffaa68956ba")));
-        FitbitGatt.getInstance().start(mockContext);
-        FitbitGatt.getInstance().setScanServiceUuidFilters(services);
-        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "Stupid");
-        conn = new GattConnection(device, mockContext.getMainLooper());
-        conn.setMockMode(true);
-        conn.setState(GattState.CONNECTED);
-        // idempotent, can't put the same connection into the map more than once
-        FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
-        BluetoothGattService service = new BluetoothGattService(services.get(0).getUuid(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
-        FitbitGatt.getInstance().getServer().getServer().addService(service);
-    }
 
     @Before
-    public void setUpState() { conn.setState(GattState.CONNECTED); }
+    public void before() {
+        Context mockContext = InstrumentationRegistry.getInstrumentation().getContext();
+        List<ParcelUuid> services = new ArrayList<>();
+        services.add(new ParcelUuid(UUID.fromString("adabfb00-6e7d-4601-bda2-bffaa68956ba")));
+        CountDownLatch cd = new CountDownLatch(2);
+        NoOpGattCallback cb = new NoOpGattCallback() {
+            @Override
+            public void onGattClientStarted() {
+                super.onGattClientStarted();
+                FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "Stupid");
+                conn = new GattConnection(device, mockContext.getMainLooper());
+                conn.setMockMode(true);
+                conn.setState(GattState.CONNECTED);
+                // idempotent, can't put the same connection into the map more than once
+                FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
+                cd.countDown();
+            }
+        };
+        FitbitGatt.getInstance().registerGattEventListener(cb);
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        FitbitGatt.getInstance().setScanServiceUuidFilters(services);
+        try {
+            cd.await(1, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            fail("Timeout during test setup");
+        }
+    }
 
     @After
-    public void cleanUpState(){
-        conn.setState(GattState.CONNECTED);
+    public void cleanUpState() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     @Test
     public void testSettingConnectionToFailureState() throws Exception {
+        final TransactionResult[] txResult = new TransactionResult[1];
         SetClientConnectionStateTransaction setClientConnectionStateTransaction =
-                new SetClientConnectionStateTransaction(conn,
-                        GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
-                        GattState.FAILURE_DISCONNECTING);
+            new SetClientConnectionStateTransaction(conn,
+                GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
+                GattState.FAILURE_DISCONNECTING);
         CountDownLatch cdl = new CountDownLatch(1);
         conn.runTx(setClientConnectionStateTransaction, result -> {
-            assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, result.getResultStatus());
-            assertEquals(GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY, result.getResultState());
-            assertEquals(GattState.FAILURE_DISCONNECTING, conn.getGattState());
+            txResult[0] = result;
             cdl.countDown();
         });
         cdl.await(1, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, txResult[0].getResultStatus());
+        assertEquals(GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY, txResult[0].getResultState());
+        assertEquals(GattState.FAILURE_DISCONNECTING, conn.getGattState());
     }
 
     @Test
     public void testSettingConnectionToSuccessState() throws Exception {
         SetClientConnectionStateTransaction setClientConnectionStateTransaction =
-                new SetClientConnectionStateTransaction(conn,
-                        GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
-                        GattState.ADD_SERVICE_CHARACTERISTIC_SUCCESS);
+            new SetClientConnectionStateTransaction(conn,
+                GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
+                GattState.ADD_SERVICE_CHARACTERISTIC_SUCCESS);
         CountDownLatch cdl = new CountDownLatch(1);
+        final TransactionResult[] txResult = new TransactionResult[1];
         conn.runTx(setClientConnectionStateTransaction, result -> {
-            assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, result.getResultStatus());
-            assertEquals(GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY, result.getResultState());
-            // this can't be CONNECTED, because upon success the connection state should be ADD_SERVICE_CHARACTERISTIC_SUCCESS
-            // with the recent changes sha 99eb54c27009d40b0cbd86cafb7ae8e58f595761
-            assertEquals(GattState.ADD_SERVICE_CHARACTERISTIC_SUCCESS, conn.getGattState());
+            txResult[0] = result;
             cdl.countDown();
         });
         cdl.await(1, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, txResult[0].getResultStatus());
+        assertEquals(GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY, txResult[0].getResultState());
+        // this can't be CONNECTED, because upon success the connection state should be ADD_SERVICE_CHARACTERISTIC_SUCCESS
+        // with the recent changes sha 99eb54c27009d40b0cbd86cafb7ae8e58f595761
+        assertEquals(GattState.ADD_SERVICE_CHARACTERISTIC_SUCCESS, conn.getGattState());
     }
 
     @Test
-    public void testSettingConnectionToCurrentState() throws Exception{
+    public void testSettingConnectionToCurrentState() throws Exception {
+        final TransactionResult[] txResult = new TransactionResult[1];
         SetClientConnectionStateTransaction setClientConnectionStateTransaction =
-                new SetClientConnectionStateTransaction(conn,
-                        GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
-                        GattState.CONNECTED);
+            new SetClientConnectionStateTransaction(conn,
+                GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
+                GattState.CONNECTED);
         CountDownLatch cdl = new CountDownLatch(1);
-        conn.runTx(setClientConnectionStateTransaction, result -> {
-            assertEquals(TransactionResult.TransactionResultStatus.FAILURE, result.getResultStatus());
-            assertEquals(GattState.GATT_CONNECTION_STATE_SET_FAILURE, result.getResultState());
-            assertEquals(GattState.CONNECTED, conn.getGattState());
-            cdl.countDown();
-        });
+        conn.runTx(setClientConnectionStateTransaction, getGattTransactionCallback(txResult, cdl));
         cdl.await(1, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.FAILURE, txResult[0].getResultStatus());
+        assertEquals(GattState.GATT_CONNECTION_STATE_SET_FAILURE, txResult[0].getResultState());
+        assertEquals(GattState.CONNECTED, conn.getGattState());
+    }
+
+    @NotNull
+    private GattTransactionCallback getGattTransactionCallback(TransactionResult[] txResult, CountDownLatch cdl) {
+        return result -> {
+            txResult[0] = result;
+            cdl.countDown();
+        };
     }
 }

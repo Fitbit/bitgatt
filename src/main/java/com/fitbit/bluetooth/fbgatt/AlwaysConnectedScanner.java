@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
 import com.fitbit.bluetooth.fbgatt.tx.GattClientDiscoverServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattDisconnectTransaction;
@@ -23,16 +24,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**
@@ -391,7 +391,6 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
         if (isAlwaysConnectedScannerEnabled()) {
             PeripheralScanner peripheralScanner = FitbitGatt.getInstance().getPeripheralScanner();
             if (peripheralScanner != null) {
-                boolean didStart = false;
                 if (FitbitGatt.atLeastSDK(Build.VERSION_CODES.O_MR1)) {
                     peripheralScanner.cancelPendingIntentBasedBackgroundScan();
                 } else {
@@ -412,7 +411,6 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
         if (isAlwaysConnectedScannerEnabled()) {
             PeripheralScanner peripheralScanner = FitbitGatt.getInstance().getPeripheralScanner();
             if (peripheralScanner != null) {
-                boolean didStart = false;
                 if (FitbitGatt.atLeastSDK(Build.VERSION_CODES.O_MR1)) {
                     return peripheralScanner.startPendingIntentBasedBackgroundScan(scanFilters, context);
                 } else {
@@ -601,23 +599,19 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
     }
 
     @Override
-    public void onFitbitGattReady() {
-
-    }
-
-    @Override
-    public void onFitbitGattStartFailed() {
-        // this is sad, but nothing we can do from this class
-    }
-
-    @Override
     public void onScanStarted() {
         // that's cool
+        //no-op
     }
 
     @Override
     public void onScanStopped() {
         Timber.i("Always connected scanner scan stopped");
+    }
+
+    @Override
+    public void onScannerInitError(BitGattStartException error) {
+        //no-op
     }
 
     @Override
@@ -659,6 +653,26 @@ public class AlwaysConnectedScanner implements FitbitGatt.FitbitGattCallback {
     @Override
     public void onBluetoothTurningOff() {
 
+    }
+
+    @Override
+    public void onGattServerStarted(GattServerConnection serverConnection) {
+        //no-op
+    }
+
+    @Override
+    public void onGattServerStartError(BitGattStartException error) {
+        //no-op
+    }
+
+    @Override
+    public void onGattClientStarted() {
+        //no-op
+    }
+
+    @Override
+    public void onGattClientStartError(BitGattStartException error) {
+        //no-op
     }
 
     /**

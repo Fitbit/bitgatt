@@ -17,10 +17,12 @@ import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransacti
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,7 +64,14 @@ public class GattTransactionValidatorTest {
         serverConnection = spy(new GattServerConnection(null, mockLooper));
         serverConnection.setMockMode(true);
         when(serverConnection.getMainHandler()).thenReturn(mockHandler);
-        FitbitGatt.getInstance().setGattServer(serverConnection);
+        FitbitGatt.getInstance().setGattServerConnection(serverConnection);
+        FitbitGatt.getInstance().setStarted(true);
+        FitbitGatt.getInstance().setAppContext(mock(Context.class));
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.setInstance(null);
     }
 
     @Test

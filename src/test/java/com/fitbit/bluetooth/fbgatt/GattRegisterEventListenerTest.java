@@ -12,14 +12,15 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import androidx.annotation.NonNull;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import androidx.annotation.NonNull;
+
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -44,7 +45,6 @@ public class GattRegisterEventListenerTest {
         when(appContext.getSystemService(any(String.class))).thenReturn(null);
         when(appContext.getApplicationContext()).thenReturn(appContext);
         // started
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setStarted();
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);
@@ -69,9 +69,15 @@ public class GattRegisterEventListenerTest {
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
     }
 
+    @After
+    public void after() {
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
+    }
+
     @Test
     public void makeSureCanNotRegisterListenerTwice() {
-        assertTrue(FitbitGatt.getInstance().isStarted());
+        assertTrue(FitbitGatt.getInstance().isInitialized());
         ConnectionEventListener eventListener = new ConnectionEventListener() {
             @Override
             public void onClientCharacteristicChanged(@NonNull TransactionResult result, @NonNull GattConnection connection) {

@@ -41,7 +41,6 @@ public class GattNotifyIndicateTests {
         Context ctx = mock(Context.class);
         Looper looper = mock(Looper.class);
         when(ctx.getApplicationContext()).thenReturn(ctx);
-        FitbitGatt.getInstance().start(ctx);
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);
         Thread mockThread = mock(Thread.class);
@@ -68,7 +67,8 @@ public class GattNotifyIndicateTests {
         when(serverConnection.getMainHandler()).thenReturn(mockHandler);
         conn.setState(GattState.IDLE);
         serverConnection.setState(GattState.IDLE);
-        FitbitGatt.getInstance().setGattServer(serverConnection);
+        FitbitGatt.getInstance().startGattServer(ctx);
+        FitbitGatt.getInstance().setGattServerConnection(serverConnection);
     }
 
     @Test

@@ -13,6 +13,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,7 +21,6 @@ import org.mockito.stubbing.Answer;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -44,7 +44,6 @@ public class BluetoothAdapterStatusTests {
         when(appContext.getSystemService(any(String.class))).thenReturn(null);
         when(appContext.getApplicationContext()).thenReturn(appContext);
         // started
-        FitbitGatt.getInstance().start(appContext);
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);
         Thread mockThread = mock(Thread.class);
@@ -61,6 +60,13 @@ public class BluetoothAdapterStatusTests {
             msg.run();
             return null;
         });
+        FitbitGatt.getInstance().setStarted(true);
+        FitbitGatt.getInstance().setAppContext(appContext);
+    }
+
+    @After
+    public void after() {
+        FitbitGatt.setInstance(null);
     }
 
     @Test
@@ -68,7 +74,6 @@ public class BluetoothAdapterStatusTests {
         BroadcastReceiver mockBroadcastReceiver = mock(BroadcastReceiver.class);
         mockStatusListener = new BluetoothRadioStatusListener(appContext, false);
         mockStatusListener.receiver = mockBroadcastReceiver;
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setBluetoothListener(mockStatusListener);
         mockStatusListener.listener = FitbitGatt.getInstance();
         mockStatusListener.listener.bluetoothTurningOn();
@@ -80,7 +85,6 @@ public class BluetoothAdapterStatusTests {
         BroadcastReceiver mockBroadcastReceiver = mock(BroadcastReceiver.class);
         mockStatusListener = new BluetoothRadioStatusListener(appContext, false);
         mockStatusListener.receiver = mockBroadcastReceiver;
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setBluetoothListener(mockStatusListener);
         mockStatusListener.listener = FitbitGatt.getInstance();
         mockStatusListener.listener.bluetoothTurningOff();
@@ -92,7 +96,6 @@ public class BluetoothAdapterStatusTests {
         BroadcastReceiver mockBroadcastReceiver = mock(BroadcastReceiver.class);
         mockStatusListener = new BluetoothRadioStatusListener(appContext, false);
         mockStatusListener.receiver = mockBroadcastReceiver;
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setBluetoothListener(mockStatusListener);
         mockStatusListener.listener = FitbitGatt.getInstance();
         mockStatusListener.listener.bluetoothOn();
@@ -104,7 +107,6 @@ public class BluetoothAdapterStatusTests {
         BroadcastReceiver mockBroadcastReceiver = mock(BroadcastReceiver.class);
         mockStatusListener = new BluetoothRadioStatusListener(appContext, false);
         mockStatusListener.receiver = mockBroadcastReceiver;
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setBluetoothListener(mockStatusListener);
         mockStatusListener.listener = FitbitGatt.getInstance();
         mockStatusListener.listener.bluetoothOff();
@@ -115,68 +117,8 @@ public class BluetoothAdapterStatusTests {
         BroadcastReceiver mockBroadcastReceiver = mock(BroadcastReceiver.class);
         mockStatusListener = new BluetoothRadioStatusListener(appContext, false);
         mockStatusListener.receiver = mockBroadcastReceiver;
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setBluetoothListener(mockStatusListener);
-        FitbitGatt.FitbitGattCallback cb = spy(new FitbitGatt.FitbitGattCallback() {
-            @Override
-            public void onBluetoothPeripheralDiscovered(GattConnection connection) {
-
-            }
-
-            @Override
-            public void onBluetoothPeripheralDisconnected(GattConnection connection) {
-
-            }
-
-            @Override
-            public void onFitbitGattReady() {
-
-            }
-
-            @Override
-            public void onFitbitGattStartFailed() {
-
-            }
-
-            @Override
-            public void onScanStarted() {
-
-            }
-
-            @Override
-            public void onScanStopped() {
-
-            }
-
-            @Override
-            public void onPendingIntentScanStopped() {
-
-            }
-
-            @Override
-            public void onPendingIntentScanStarted() {
-
-            }
-
-            @Override
-            public void onBluetoothOff() {
-
-            }
-
-            @Override
-            public void onBluetoothOn() {
-            }
-
-            @Override
-            public void onBluetoothTurningOn() {
-
-            }
-
-            @Override
-            public void onBluetoothTurningOff() {
-
-            }
-        });
+        FitbitGatt.FitbitGattCallback cb = spy(new NoOpGattCallback());
         FitbitGatt.getInstance().registerGattEventListener(cb);
         mockStatusListener.listener = FitbitGatt.getInstance();
         mockStatusListener.listener.bluetoothOn();
@@ -189,68 +131,8 @@ public class BluetoothAdapterStatusTests {
         BroadcastReceiver mockBroadcastReceiver = mock(BroadcastReceiver.class);
         mockStatusListener = new BluetoothRadioStatusListener(appContext, false);
         mockStatusListener.receiver = mockBroadcastReceiver;
-        FitbitGatt.getInstance().start(appContext);
         FitbitGatt.getInstance().setBluetoothListener(mockStatusListener);
-        FitbitGatt.FitbitGattCallback cb = spy(new FitbitGatt.FitbitGattCallback() {
-            @Override
-            public void onBluetoothPeripheralDiscovered(GattConnection connection) {
-
-            }
-
-            @Override
-            public void onBluetoothPeripheralDisconnected(GattConnection connection) {
-
-            }
-
-            @Override
-            public void onFitbitGattReady() {
-
-            }
-
-            @Override
-            public void onFitbitGattStartFailed() {
-
-            }
-
-            @Override
-            public void onScanStarted() {
-
-            }
-
-            @Override
-            public void onScanStopped() {
-
-            }
-
-            @Override
-            public void onPendingIntentScanStopped() {
-
-            }
-
-            @Override
-            public void onPendingIntentScanStarted() {
-
-            }
-
-            @Override
-            public void onBluetoothOff() {
-            }
-
-            @Override
-            public void onBluetoothOn() {
-
-            }
-
-            @Override
-            public void onBluetoothTurningOn() {
-
-            }
-
-            @Override
-            public void onBluetoothTurningOff() {
-
-            }
-        });
+        FitbitGatt.FitbitGattCallback cb = spy(new NoOpGattCallback());
         FitbitGatt.getInstance().registerGattEventListener(cb);
         mockStatusListener.listener = FitbitGatt.getInstance();
         mockStatusListener.listener.bluetoothOff();

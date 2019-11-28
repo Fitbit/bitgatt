@@ -8,14 +8,15 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
+import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.ParcelUuid;
 
 import org.junit.After;
 import org.junit.Before;
@@ -23,12 +24,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.Timer;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +35,10 @@ import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +49,7 @@ public class AlwaysConnectedScannerTest {
 
     private static MockLollipopScanner mockScanner;
     private FitbitGatt gatt;
-    private Context mockContext;
+    private Context mockContext = mock(Context.class);
     private PeripheralScanner peripheralScanner;
     private AlwaysConnectedScanner alwaysConnectedScanner;
     private Handler mockHandler;
@@ -65,6 +65,11 @@ public class AlwaysConnectedScannerTest {
         }
         return true;
     };
+    private GattUtils utilsMock = mock(GattUtils.class);
+    private LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
+    private BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
+    private BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
+    private BitGattDependencyProvider dependencyProviderMock = mock(BitGattDependencyProvider.class);
 
     @BeforeClass
     public static void beforeClass() {
@@ -73,21 +78,32 @@ public class AlwaysConnectedScannerTest {
 
     @Before
     public void before(){
+
+        doReturn(mockContext).when(mockContext).getApplicationContext();
+        doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
+        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
+        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
+        doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(mockContext), any());
+        doReturn(true).when(adapterMock).isEnabled();
+
         Looper mockMainThreadLooper = mock(Looper.class);
         Thread mockMainThread = mock(Thread.class);
         when(mockMainThread.getName()).thenReturn("Irvin's mock thread");
         when(mockMainThreadLooper.getThread()).thenReturn(mockMainThread);
-        mockContext = mock(Context.class);
-        when(mockContext.getApplicationContext()).thenReturn(mockContext);
         when(mockContext.registerReceiver(any(), any())).thenReturn(new Intent("some custom action"));
         when(mockContext.getMainLooper()).thenReturn(mockMainThreadLooper);
         mockHandler = mock(Handler.class);
         doAnswer(handlerPostAnswer).when(mockHandler).post(any(Runnable.class));
         doAnswer(handlerPostAnswer).when(mockHandler).postDelayed(any(Runnable.class), anyLong());
         when(mockHandler.getLooper()).thenReturn(mockMainThreadLooper);
+
         gatt = FitbitGatt.getInstance();
-        gatt.start(mockContext);
+        gatt.setDependencyProvider(dependencyProviderMock);
+        gatt.setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
+        gatt.initializeScanner(mockContext);
         gatt.setScannerMockMode(true);
+
         MockLollipopScanner.BluetoothAdapter.turnBluetoothOn();
         alwaysConnectedScanner = gatt.getAlwaysConnectedScanner();
         alwaysConnectedScanner.setHandler(mockHandler);
@@ -108,7 +124,8 @@ public class AlwaysConnectedScannerTest {
 
     @After
     public void after(){
-        // dunno yet
+        FitbitGatt.getInstance().shutdown();
+        FitbitGatt.setInstance(null);
     }
 
     /**
@@ -197,9 +214,10 @@ public class AlwaysConnectedScannerTest {
         alwaysConnectedScanner.setNumberOfExpectedDevices(1);
         alwaysConnectedScanner.setShouldKeepLooking(false);
         alwaysConnectedScanner.addScanFilter(mockContext, filter);
+
         CountDownLatch cdl = new CountDownLatch(3);
         long startTime = new Date().getTime();
-        NoOpFitbitGattCallback callback = new NoOpFitbitGattCallback() {
+        NoOpGattCallback callback = new NoOpGattCallback() {
             @Override
             public void onScanStarted() {
                 cdl.countDown();
@@ -348,75 +366,6 @@ public class AlwaysConnectedScannerTest {
             fail("Test timed out");
         } else {
             alwaysConnectedScanner.unregisterAlwaysConnectedScannerListener(callback);
-        }
-    }
-
-    /**
-     * Since its likely that we will continue to use the callback to manage various test verifications
-     * as an efficiency we will create a no op class so that we don't have to constantly re-implement
-     * these methods.
-     */
-
-    private class NoOpFitbitGattCallback implements FitbitGatt.FitbitGattCallback {
-
-        @Override
-        public void onBluetoothPeripheralDiscovered(GattConnection connection) {
-
-        }
-
-        @Override
-        public void onBluetoothPeripheralDisconnected(GattConnection connection) {
-
-        }
-
-        @Override
-        public void onFitbitGattReady() {
-
-        }
-
-        @Override
-        public void onFitbitGattStartFailed() {
-
-        }
-
-        @Override
-        public void onScanStarted() {
-
-        }
-
-        @Override
-        public void onScanStopped() {
-
-        }
-
-        @Override
-        public void onPendingIntentScanStopped() {
-
-        }
-
-        @Override
-        public void onPendingIntentScanStarted() {
-
-        }
-
-        @Override
-        public void onBluetoothOff() {
-
-        }
-
-        @Override
-        public void onBluetoothOn() {
-
-        }
-
-        @Override
-        public void onBluetoothTurningOn() {
-
-        }
-
-        @Override
-        public void onBluetoothTurningOff() {
-
         }
     }
 }
