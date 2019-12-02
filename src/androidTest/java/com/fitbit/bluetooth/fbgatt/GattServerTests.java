@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2019 Fitbit, Inc. All rights reserved.
  *
@@ -235,11 +236,7 @@ public class GattServerTests {
         // should do nothing if already started
         final CountDownLatch cdl = new CountDownLatch(2);
         BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
-        if (adapter == null) {
-            // if adapter is null always pass we are probably running in the simulator
-            Assert.assertTrue("adapter is null", true);
-            return;
-        }
+        assertNotNull("adapter is null", adapter);
         AtomicBoolean isFirst = new AtomicBoolean(true);
         FitbitGatt.FitbitGattCallback cb = new NoOpGattCallback() {
             @Override
@@ -281,11 +278,7 @@ public class GattServerTests {
         // should do nothing if already started
         final CountDownLatch cdl = new CountDownLatch(2);
         BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
-        if (adapter == null) {
-            // if adapter is null always pass we are probably running in the simulator
-            Assert.assertTrue("adapter is null", true);
-            return;
-        }
+        assertNotNull("adapter is null", adapter);
         AtomicBoolean isFirst = new AtomicBoolean(true);
         FitbitGatt.FitbitGattCallback cb = new NoOpGattCallback() {
             @Override
@@ -334,11 +327,7 @@ public class GattServerTests {
         // should do nothing if already started
         final CountDownLatch cdl = new CountDownLatch(2);
         BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
-        if (adapter == null) {
-            // if adapter is null always pass we are probably running in the simulator
-            Assert.assertTrue("adapter is null", true);
-            return;
-        }
+        assertNotNull("adapter is null", adapter);
         AtomicBoolean isFirst = new AtomicBoolean(true);
         AtomicInteger countTest = new AtomicInteger(1);
         FitbitGatt.FitbitGattCallback cb = new NoOpGattCallback() {
