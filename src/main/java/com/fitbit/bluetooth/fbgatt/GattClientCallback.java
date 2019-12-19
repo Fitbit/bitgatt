@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
+import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.tx.GattClientDiscoverServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.RequestGattClientPhyChangeTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.RequestMtuGattTransaction;
@@ -329,10 +330,11 @@ public class GattClientCallback extends BluetoothGattCallback {
         Timber.d("[%s][Threading] Originally called on thread : %s", getDeviceMacFromGatt(gatt), Thread.currentThread().getName());
         ArrayList<GattClientListener> copy = new ArrayList<>(listeners.size());
         copy.addAll(listeners);
+        final BluetoothGattCharacteristicCopy bluetoothGattCharacteristic = gattUtils.copyCharacteristic(characteristic);
         handler.post(() -> {
             for (GattClientListener listener : copy) {
                 if (listener.getDevice() != null && listener.getDevice().equals(gatt.getDevice())) {
-                    listener.onCharacteristicWrite(gatt, gattUtils.copyCharacteristic(characteristic), status);
+                    listener.onCharacteristicWrite(gatt, bluetoothGattCharacteristic, status);
                 }
             }
         });
@@ -344,9 +346,9 @@ public class GattClientCallback extends BluetoothGattCallback {
         Timber.d("[%s] onCharacteristicChanged: [Threading] Originally called on thread : %s", getDeviceMacFromGatt(gatt), Thread.currentThread().getName());
         ArrayList<GattClientListener> copy = new ArrayList<>(listeners.size());
         copy.addAll(listeners);
+        BluetoothDevice device = gatt.getDevice();
+        final BluetoothGattCharacteristicCopy copyOfCharacteristic = gattUtils.copyCharacteristic(characteristic);
         handler.post(() -> {
-            BluetoothDevice device = gatt.getDevice();
-            BluetoothGattCharacteristicCopy copyOfCharacteristic = gattUtils.copyCharacteristic(characteristic);
                 for (GattClientListener listener : copy) {
                     if (listener.getDevice() != null && listener.getDevice().equals(device)) {
                         listener.onCharacteristicChanged(gatt, copyOfCharacteristic);
@@ -380,10 +382,11 @@ public class GattClientCallback extends BluetoothGattCallback {
         Timber.d("[%s][Threading] Originally called on thread : %s", getDeviceMacFromGatt(gatt), Thread.currentThread().getName());
         ArrayList<GattClientListener> copy = new ArrayList<>(listeners.size());
         copy.addAll(listeners);
+        final BluetoothGattDescriptorCopy bluetoothGattDescriptorCopy = gattUtils.copyDescriptor(descriptor);
         handler.post(() -> {
             for (GattClientListener listener : copy) {
                 if (listener.getDevice() != null && listener.getDevice().equals(gatt.getDevice())) {
-                    listener.onDescriptorRead(gatt, gattUtils.copyDescriptor(descriptor), status);
+                    listener.onDescriptorRead(gatt, bluetoothGattDescriptorCopy, status);
                 }
             }
         });
@@ -396,10 +399,11 @@ public class GattClientCallback extends BluetoothGattCallback {
         Timber.d("[%s][Threading] Originally called on thread : %s", getDeviceMacFromGatt(gatt), Thread.currentThread().getName());
         ArrayList<GattClientListener> copy = new ArrayList<>(listeners.size());
         copy.addAll(listeners);
+        final BluetoothGattDescriptorCopy bluetoothGattDescriptorCopy = gattUtils.copyDescriptor(descriptor);
         handler.post(() -> {
             for (GattClientListener listener : copy) {
                 if (listener.getDevice() != null && listener.getDevice().equals(gatt.getDevice())) {
-                    listener.onDescriptorWrite(gatt, gattUtils.copyDescriptor(descriptor), status);
+                    listener.onDescriptorWrite(gatt, bluetoothGattDescriptorCopy, status);
                 }
             }
         });
