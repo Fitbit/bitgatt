@@ -134,6 +134,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     private BluetoothRadioStatusListener radioStatusListener;
     @VisibleForTesting
     volatile boolean isBluetoothOn;
+    private volatile boolean slowLoggingEnabled = false;
 
     private BitGattDependencyProvider dependencyProvider = new BitGattDependencyProvider();
 
@@ -1960,5 +1961,21 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         for (FitbitGattCallback callback : overallGattEventListeners) {
             callback.onBluetoothTurningOn();
         }
+    }
+
+    /**
+     * @return true if log statements that may slow down data transfer speeds should be executed
+     */
+    boolean isSlowLoggingEnabled() {
+        return slowLoggingEnabled;
+    }
+
+    /**
+     * Use this method to enable or disable (default) log statements that may slow down data transfer speeds
+     * @param newValue true to enable these logs, false to disable.
+     */
+    @SuppressWarnings({"unused"}) // API Method
+    public void setSlowLoggingEnabled(boolean newValue) {
+        slowLoggingEnabled = newValue;
     }
 }

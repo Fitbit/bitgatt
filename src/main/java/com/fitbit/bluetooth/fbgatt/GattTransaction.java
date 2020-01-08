@@ -233,7 +233,9 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
                 return;
             }
         }
-        Timber.v("[%s] Completed running all pre-commit, post-commit, and main transactions", getDevice());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+            Timber.v("[%s] Completed running all pre-commit, post-commit, and main transactions", getDevice());
+        }
     }
 
     /**
@@ -284,7 +286,9 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
      */
 
     private void executeTransaction(GattTransaction tx, GattTransactionCallback callback) {
-        Timber.v("[%s] Running transaction: %s", getDevice(), tx.getName());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+            Timber.v("[%s] Running transaction: %s", getDevice(), tx.getName());
+        }
         registerListener(tx);
         // it might be a pre / post commit hook so we'll need to set it here too on the tx
         tx.taskHasStarted.getAndSet(true);
@@ -339,10 +343,12 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         return new ParentGattTransactionCallback() {
             @Override
             public void onTransactionComplete(@NonNull TransactionResult result) {
-                Timber.v("[%s] Transaction %s complete.", getDevice(), tx.getName());
                 int done = executedTransactions.addAndGet(1);
                 int totalTx = preCommitHooks.size() + postCommitHooks.size() + 1; // the 1 is this
-                Timber.v("[%s] Transactions done %d of %d", getDevice(), done, totalTx);
+                if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                    Timber.v("[%s] Transaction %s complete.", getDevice(), tx.getName());
+                    Timber.v("[%s] Transactions done %d of %d", getDevice(), done, totalTx);
+                }
                 if (!result.resultStatus.equals(TransactionResult.TransactionResultStatus.SUCCESS)) {
                     Timber.w("[%s] The transaction %s failed, Result: %s", getDevice(), tx.getName(), result);
                     wrappedCallback.onTransactionComplete(result);
@@ -353,7 +359,9 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
                     // will complete
                     timeoutHandler.removeCallbacksAndMessages(null);
                 } else {
-                    Timber.d("[%s] Transaction %s success, Result: %s", getDevice(), tx.getName(), result);
+                    if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                        Timber.d("[%s] Transaction %s success, Result: %s", getDevice(), tx.getName(), result);
+                    }
                     // the callbacks are always handled by the individual transactions, here we only
                     // want to manage the timeout
                     if (done == totalTx) {
@@ -365,7 +373,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
                             wrappedCallback.onTransactionComplete(result);
                             release();
                         }
-                    } else {
+                    } else if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
                         Timber.v("[%s] Pre / Post commit tx : %s completed successfully", getDevice(), tx.getName());
                     }
                     unregisterListener(tx);
@@ -578,17 +586,23 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
 
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
-        Timber.v("[%s] onCharacteristicRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+            Timber.v("[%s] onCharacteristicRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
+        }
     }
 
     @Override
     public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
-        Timber.v("[%s] onCharacteristicWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+            Timber.v("[%s] onCharacteristicWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
+        }
     }
 
     @Override
     public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic) {
-        Timber.v("[%s] onCharacteristicChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+            Timber.v("[%s] onCharacteristicChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
+        }
     }
 
     @Override

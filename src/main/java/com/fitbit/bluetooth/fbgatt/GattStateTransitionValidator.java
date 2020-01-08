@@ -49,29 +49,39 @@ class GattStateTransitionValidator {
             return INVALID_TARGET_STATE;
         }
         if(transaction instanceof SetClientConnectionStateTransaction || transaction instanceof SetServerConnectionStateTransaction) {
-            Timber.v("[%s] Not checking because we are manually resetting.  Current state %s, destination state %s",
-                    transaction.getDevice(), currentState.name(), successState.name());
+            if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                Timber.v("[%s] Not checking because we are manually resetting.  Current state %s, destination state %s",
+                        transaction.getDevice(), currentState.name(), successState.name());
+            }
             return OK;
         }
         Timber.v("[%s] Current State %s, Success State %s", transaction.getDevice(), currentState.name(), successState.name());
         state = checkIsConnectionAttemptWhileConnected(currentState, successState);
         if (state.equals(INVALID_TARGET_STATE)) {
-            Timber.v("[%s] %s Entry state invalid, connecting while connected", transaction.getDevice(), transaction.getName());
+            if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                Timber.v("[%s] %s Entry state invalid, connecting while connected", transaction.getDevice(), transaction.getName());
+            }
             return INVALID_TARGET_STATE;
         }
         state = checkIsDisconnectAttemptWhileDisconnected(currentState, successState);
         if (state.equals(INVALID_TARGET_STATE)) {
-            Timber.v("[%s] %s Entry state invalid, disconnecting while disconnected", transaction.getDevice(), transaction.getName());
+            if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                Timber.v("[%s] %s Entry state invalid, disconnecting while disconnected", transaction.getDevice(), transaction.getName());
+            }
             return INVALID_TARGET_STATE;
         }
         state = checkIsTransactionWhileDisconnected(currentState, successState);
         if (state.equals(INVALID_TARGET_STATE)) {
-            Timber.v("[%s] %s Entry state invalid, you can't do something else while disconnected", transaction.getDevice(), transaction.getName());
+            if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                Timber.v("[%s] %s Entry state invalid, you can't do something else while disconnected", transaction.getDevice(), transaction.getName());
+            }
             return INVALID_TARGET_STATE;
         }
         state = checkStateIsValidForGattOperations(currentState, successState);
         if (state.equals(INVALID_TARGET_STATE)) {
-            Timber.v("[%s] %s Entry state invalid, can't read, write, notify or indicate, until idle or connected", transaction.getDevice(), transaction.getName());
+            if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+                Timber.v("[%s] %s Entry state invalid, can't read, write, notify or indicate, until idle or connected", transaction.getDevice(), transaction.getName());
+            }
             return INVALID_TARGET_STATE;
         }
         return OK;
