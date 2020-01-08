@@ -185,7 +185,9 @@ public class GattConnection implements Closeable {
      */
 
     public synchronized void setState(GattState state) {
-        Timber.v("[%s] Transitioning from state %s to state %s", getDevice(), this.state.name(), state.name());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
+            Timber.v("[%s] Transitioning from state %s to state %s", getDevice(), this.state.name(), state.name());
+        }
         this.state = state;
     }
 
