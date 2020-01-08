@@ -349,14 +349,14 @@ public class GattClientCallback extends BluetoothGattCallback {
         BluetoothDevice device = gatt.getDevice();
         final BluetoothGattCharacteristicCopy copyOfCharacteristic = gattUtils.copyCharacteristic(characteristic);
         handler.post(() -> {
-                for (GattClientListener listener : copy) {
-                    if (listener.getDevice() != null && listener.getDevice().equals(device)) {
-                        listener.onCharacteristicChanged(gatt, copyOfCharacteristic);
-                    }
+            for (GattClientListener listener : copy) {
+                if (listener.getDevice() != null && listener.getDevice().equals(device)) {
+                    listener.onCharacteristicChanged(gatt, copyOfCharacteristic);
                 }
-            });
+            }
+        });
         GattConnection conn = FitbitGatt.getInstance().getConnection(gatt.getDevice());
-        if(conn == null) {
+        if (conn == null) {
             Timber.v("[%s] Gatt was null, we could be mocking, if so we can't notify async", getDeviceMacFromGatt(gatt));
         } else {
             handler.post(() -> {
@@ -364,11 +364,11 @@ public class GattClientCallback extends BluetoothGattCallback {
                 // success because we received this data, as this is a snapshot of a live object
                 // we will need to copy the values into the tx result
                 TransactionResult result = new TransactionResult.Builder()
-                    .gattState(conn.getGattState())
-                    .characteristicUuid(characteristic.getUuid())
-                    .data(characteristic.getValue())
-                    .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
-                for(ConnectionEventListener asyncListener: conn.getConnectionEventListeners()) {
+                        .gattState(conn.getGattState())
+                        .characteristicUuid(copyOfCharacteristic.getUuid())
+                        .data(copyOfCharacteristic.getValue())
+                        .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
+                for (ConnectionEventListener asyncListener : conn.getConnectionEventListeners()) {
                     asyncListener.onClientCharacteristicChanged(result, conn);
                 }
             });
@@ -457,20 +457,20 @@ public class GattClientCallback extends BluetoothGattCallback {
         });
         GattConnection conn = FitbitGatt.getInstance().getConnection(gatt.getDevice());
         if(conn != null) {
-            // since this is one of the events that could happen asynchronously, we will
-            // need to iterate through our connection listeners
-            handler.post(() -> {
-                TransactionResult.Builder builder = new TransactionResult.Builder();
-                if(status == BluetoothGatt.GATT_SUCCESS) {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
-                } else {
-                    builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
-                }
-                TransactionResult result = builder
+            TransactionResult.Builder builder = new TransactionResult.Builder();
+            if(status == BluetoothGatt.GATT_SUCCESS) {
+                builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
+            } else {
+                builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
+            }
+            TransactionResult result = builder
                     .transactionName(RequestMtuGattTransaction.NAME)
                     .mtu(mtu)
                     .gattState(conn.getGattState())
                     .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build();
+            // since this is one of the events that could happen asynchronously, we will
+            // need to iterate through our connection listeners
+            handler.post(() -> {
                 for (ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
                     asyncConnListener.onMtuChanged(result, conn);
                 }
