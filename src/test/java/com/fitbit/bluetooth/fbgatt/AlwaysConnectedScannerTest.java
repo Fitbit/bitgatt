@@ -78,7 +78,7 @@ public class AlwaysConnectedScannerTest {
 
     @Before
     public void before(){
-
+        FitbitGatt.setInstance(null); // It seems another test is influencing this one. Haven't yet pinpointed witch one. This fixes the issue.
         doReturn(mockContext).when(mockContext).getApplicationContext();
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
         doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
