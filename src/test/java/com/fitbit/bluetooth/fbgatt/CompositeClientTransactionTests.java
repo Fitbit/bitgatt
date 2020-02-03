@@ -10,6 +10,7 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -32,9 +33,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -77,7 +79,7 @@ public class CompositeClientTransactionTests {
 
         when(mockContext.getSystemService(Any.class)).thenReturn(null);
         when(mockContext.getApplicationContext()).thenReturn(mockContext);
-        doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
+        doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(any(), eq(false));
         doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
         doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
@@ -100,7 +102,7 @@ public class CompositeClientTransactionTests {
         conn.setMockMode(true);
         when(conn.getMainHandler()).thenReturn(mockHandler);
         conn.setState(GattState.IDLE);
-
+        FitbitGatt.getInstance().setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
         FitbitGatt.getInstance().registerGattEventListener(new NoOpGattCallback());
         FitbitGatt.getInstance().setDependencyProvider(dependencyProviderMock);
         FitbitGatt.getInstance().startGattClient(ctx);

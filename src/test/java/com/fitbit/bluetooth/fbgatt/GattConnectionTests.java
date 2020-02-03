@@ -14,6 +14,7 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -33,7 +34,8 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -52,6 +54,7 @@ public class GattConnectionTests {
         Context appContext = mock(Context.class);
         when(appContext.getSystemService(any(String.class))).thenReturn(null);
         when(appContext.getApplicationContext()).thenReturn(appContext);
+        FitbitGatt.getInstance().setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
         FitbitGatt.getInstance().start(appContext);
         Looper mockLooper = mock(Looper.class);
         BluetoothDevice mockBluetoothDevice = mock(BluetoothDevice.class);

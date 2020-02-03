@@ -23,6 +23,7 @@ import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransacti
 import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattDescriptorMockTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -80,6 +81,7 @@ public class GattReadWriteTests {
         conn = spy(new GattConnection(device, mockLooper));
         conn.setMockMode(true);
         when(conn.getMainHandler()).thenReturn(mockHandler);
+        FitbitGatt.getInstance().setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
         FitbitGatt.getInstance().startGattClient(ctx);
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
         conn.setState(GattState.IDLE);

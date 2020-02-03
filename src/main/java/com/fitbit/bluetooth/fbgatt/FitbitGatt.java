@@ -714,22 +714,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         return peripheralScanner.isPeriodicalScanEnabled();
     }
 
-    private synchronized boolean internalInitialize(@NonNull Context context, StartErrorCallback errorHandler) {
-        if (!isInitialized()) {
-            if (!startSimple(context.getApplicationContext(), errorHandler)) {
-                Timber.w("Couldn't start because BT was off");
-                return false;
-            }
-            boolean success = isInitialized.compareAndSet(false, true);
-            if (!success) {
-                Timber.w("There was a problem updating the started state, are you starting from two threads?");
-            }
-        } else {
-            Timber.v("Already started");
-        }
-        return isInitialized();
-    }
-
     /**
      * Convenience method that attempts to start all the components
      *
@@ -746,7 +730,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * Initializes the scanner component
      */
     public synchronized boolean initializeScanner(@NonNull Context context) {
-        boolean started = internalInitialize(context, (error -> {
+        boolean started = startSimple(context, (error -> {
             for (FitbitGattCallback cb : overallGattEventListeners) {
                 cb.onScannerInitError(error);
             }
@@ -756,9 +740,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                 cb.onScannerInitError(new BluetoothNotEnabledException());
             }
             return false;
-        }
-        if (this.peripheralScanner == null && started) {
-            this.peripheralScanner = dependencyProvider.getNewPeripheralScanner(this.appContext, this);
         }
         return started;
     }
@@ -806,7 +787,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      *
      */
     public synchronized void startGattClient(@NonNull Context context) {
-        if (!internalInitialize(context, (error -> {
+        isGattClientStarted.set(true);
+        if (!startSimple(context, (error -> {
             for (FitbitGattCallback cb : overallGattEventListeners) {
                 cb.onGattClientStartError(error);
             }
@@ -819,8 +801,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             }
             return;
         }
-        if (this.clientCallback == null) {
-            this.clientCallback = new GattClientCallback();
+        if (this.aclListener == null) {
             this.aclListener = dependencyProvider.getNewLowEnergyAclListener();
             this.aclListener.register(this.appContext);
             for (FitbitGattCallback cb : overallGattEventListeners) {
@@ -830,7 +811,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                 addConnectedDevices(this.appContext);
             }
         }
-        isGattClientStarted.set(true);
     }
 
     /**
@@ -851,7 +831,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @WorkerThread
     @SuppressWarnings("WeakerAccess") // API Method
     public synchronized void startGattServerWithServices(@NonNull Context context, @Nullable List<BluetoothGattService> services) {
-        if (!internalInitialize(context, (error -> {
+        isGattServerStarted.set(true);
+        if (!startSimple(context, (error -> {
             for (FitbitGattCallback cb : overallGattEventListeners) {
                 cb.onGattServerStartError(error);
             }
@@ -866,11 +847,11 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             return;
         }
 
-        if (isGattServerStarted.get()) {
+        if (serverConnection != null && gattServer != null && serverConnection.getGattState() != GattState.CLOSED) {
+            //server already started and running
             for (FitbitGattCallback cb : overallGattEventListeners) {
                 cb.onGattServerStartError(new AlreadyStartedException());
             }
-            // we cannot start what has been already started.
             return;
         }
 
@@ -879,9 +860,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             return;
         }
 
-        if (this.serverCallback == null) {
-            this.serverCallback = new GattServerCallback();
-        }
 
         startServer(getOpenGattServerCallback(services));
     }
@@ -890,7 +868,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @VisibleForTesting
     OpenGattServerCallback getOpenGattServerCallback(@Nullable List<BluetoothGattService> services) {
         return started -> {
-            isGattServerStarted.set(started);
+
             if (!started) {
                 Timber.w("Could not get an instance of a gatt server, if you keep trying without fixing the issue, you might end up with too many server_if");
                 for (FitbitGattCallback readCallback : overallGattEventListeners) {
@@ -912,29 +890,38 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         };
     }
 
+    private synchronized void initialize(Context context) {
+        if (!isInitialized.get()) {
+            Timber.v("Starting fitbit gatt");
+            appContext = context.getApplicationContext();
+
+            powerAggregator = new BatteryDataStatsAggregator(this.appContext);
+            peripheralScanner = dependencyProvider.getNewPeripheralScanner(this.appContext, this);
+            connectionCleanup = new Handler(context.getMainLooper());
+
+            Timber.v("Initializing the always connected scanner for one device, and that it should stop scanning when it finds one, if you wish to change this, please configure it.");
+            if (radioStatusListener == null) {
+                radioStatusListener = dependencyProvider.getNewBluetoothRadioStatusListener(this.appContext, false);
+                radioStatusListener.startListening();
+                radioStatusListener.setListener(this);
+            }
+            if (asyncOperationThreadWatchdog != null) {
+                asyncOperationThreadWatchdog.startProbing();
+            }
+            clientCallback = new GattClientCallback();
+            serverCallback = new GattServerCallback();
+            isInitialized.set(true);
+        }
+    }
+
     private synchronized boolean startSimple(@NonNull Context context, StartErrorCallback errorHandler) {
-        Timber.v("Starting fitbit gatt");
-        this.appContext = context;
+        initialize(context);
         if (!isBluetoothOn()) {
             errorHandler.onError(new BluetoothNotEnabledException());
             return false;
         }
-        powerAggregator = new BatteryDataStatsAggregator(this.appContext);
-
-        connectionCleanup = new Handler(context.getMainLooper());
-
-        Timber.v("Initializing the always connected scanner for one device, and that it should stop scanning when it finds one, if you wish to change this, please configure it.");
-
         // will start the cleanup process
         decrementAndInvalidateClosedConnections();
-        if (radioStatusListener == null) {
-            radioStatusListener = dependencyProvider.getNewBluetoothRadioStatusListener(this.appContext, false);
-        }
-        radioStatusListener.startListening();
-        radioStatusListener.setListener(this);
-        if (asyncOperationThreadWatchdog != null) {
-            asyncOperationThreadWatchdog.startProbing();
-        }
         return true;
     }
 
@@ -1268,7 +1255,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                 previousRssi != device.getRssi() ||
                 (previousScanRecord != null && device.getScanRecord() != null &&
                     !Arrays.equals(previousScanRecord.getBytes(), device.getScanRecord().getBytes()))) {
-                Timber.v("Found device may have changed was %s, and now is %s", oldDevice, device);
+                //Timber.v("Found device may have changed was %s, and now is %s", oldDevice, device);
                 oldDevice.setName(device.getName());
                 oldDevice.setScanRecord(device.getScanRecord());
                 oldDevice.setRssi(device.getRssi());
@@ -1462,7 +1449,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                 //We observed this behaviour inside the FitbitGattTest instrumentation test
                 //when trying to start the gatt server multiple times
                 Timber.tag("FitbitGattServer").d("Trying to start the gatt server");
-                if(gattServer != null) {
+                if (gattServer != null) {
                     gattServer.close();
                 }
                 for (int openServerRetryCount = 0; openServerRetryCount < OPEN_GATT_SERVER_RETRY_COUNT; openServerRetryCount++) {
@@ -1471,7 +1458,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                         if (serverConnection != null) {
                             // let's try to run a clear tx since we already have a server connection
                             ClearServerServicesTransaction clearServices = new ClearServerServicesTransaction(serverConnection,
-                                GattState.CLEAR_GATT_SERVER_SERVICES_SUCCESS);
+                                    GattState.CLEAR_GATT_SERVER_SERVICES_SUCCESS);
                             serverConnection.runTx(clearServices, getGattClearServicesTransactionCallback(context, callback));
                             return;
                         } else {

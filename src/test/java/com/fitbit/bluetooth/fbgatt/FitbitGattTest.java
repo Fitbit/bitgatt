@@ -35,7 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -125,9 +126,7 @@ public class FitbitGattTest {
         verify(cb).onGattClientStartError(any(BluetoothNotEnabledException.class));
         verify(contextMock).getApplicationContext();
         verify(lowEnergyAclListenerMock, never()).register(contextMock);
-        verify(bluetoothRadioStatusListenerMock, never()).startListening();
-        verify(bluetoothRadioStatusListenerMock, never()).setListener(fitbitGatt);
-        assertFalse(fitbitGatt.isInitialized());
+        assertTrue(fitbitGatt.isInitialized());
         verifyNoMoreInteractions(cb);
     }
 
