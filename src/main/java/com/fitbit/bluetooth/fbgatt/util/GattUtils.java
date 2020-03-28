@@ -12,7 +12,6 @@ import com.fitbit.bluetooth.fbgatt.BuildConfig;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattServiceCopy;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
@@ -23,11 +22,8 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
-
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 
@@ -51,14 +47,14 @@ public class GattUtils {
             return null;
         }
         BluetoothGattCharacteristicCopy newCharacteristic =
-                new BluetoothGattCharacteristicCopy(UUID.fromString(characteristic.getUuid().toString()),
+                new BluetoothGattCharacteristicCopy(characteristic.getUuid(),
                         characteristic.getProperties(), characteristic.getPermissions());
         if (characteristic.getValue() != null) {
             newCharacteristic.setValue(Arrays.copyOf(characteristic.getValue(), characteristic.getValue().length));
         }
         if (!characteristic.getDescriptors().isEmpty()) {
             for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
-                BluetoothGattDescriptorCopy newDescriptor = new BluetoothGattDescriptorCopy(UUID.fromString(descriptor.getUuid().toString()), descriptor.getPermissions());
+                BluetoothGattDescriptorCopy newDescriptor = new BluetoothGattDescriptorCopy(descriptor.getUuid(), descriptor.getPermissions());
                 if (descriptor.getValue() != null) {
                     newDescriptor.setValue(Arrays.copyOf(descriptor.getValue(), descriptor.getValue().length));
                 }
@@ -66,7 +62,7 @@ public class GattUtils {
             }
         }
         if (characteristic.getService() != null) {
-            BluetoothGattServiceCopy newService = new BluetoothGattServiceCopy(UUID.fromString(characteristic.getService().getUuid().toString()), characteristic.getService().getType());
+            BluetoothGattServiceCopy newService = new BluetoothGattServiceCopy(characteristic.getService().getUuid(), characteristic.getService().getType());
             newService.addCharacteristic(newCharacteristic);
         }
         return newCharacteristic;
@@ -111,14 +107,14 @@ public class GattUtils {
             return null;
         }
         BluetoothGattDescriptorCopy newDescriptor =
-                new BluetoothGattDescriptorCopy(UUID.fromString(descriptor.getUuid().toString()),
+                new BluetoothGattDescriptorCopy(descriptor.getUuid(),
                         descriptor.getPermissions());
         if (newDescriptor.getValue() != null) {
             newDescriptor.setValue(Arrays.copyOf(descriptor.getValue(), descriptor.getValue().length));
         }
         if (newDescriptor.getCharacteristic() != null) {
             BluetoothGattCharacteristicCopy oldCharacteristic = newDescriptor.getCharacteristic();
-            BluetoothGattCharacteristicCopy copyOfCharacteristic = new BluetoothGattCharacteristicCopy(UUID.fromString(oldCharacteristic.getUuid().toString()), oldCharacteristic.getProperties(), oldCharacteristic.getPermissions());
+            BluetoothGattCharacteristicCopy copyOfCharacteristic = new BluetoothGattCharacteristicCopy(oldCharacteristic.getUuid(), oldCharacteristic.getProperties(), oldCharacteristic.getPermissions());
             if (oldCharacteristic.getValue() != null) {
                 copyOfCharacteristic.setValue(Arrays.copyOf(oldCharacteristic.getValue(), oldCharacteristic.getValue().length));
             }
@@ -140,23 +136,23 @@ public class GattUtils {
         if (null == service || null == service.getUuid()) {
             return null;
         }
-        BluetoothGattServiceCopy newService = new BluetoothGattServiceCopy(UUID.fromString(service.getUuid().toString()), service.getType());
+        BluetoothGattServiceCopy newService = new BluetoothGattServiceCopy(service.getUuid(), service.getType());
         if (!service.getIncludedServices().isEmpty()) {
             for (BluetoothGattService includedService : service.getIncludedServices()) {
-                BluetoothGattServiceCopy newGattService = new BluetoothGattServiceCopy(UUID.fromString(includedService.getUuid().toString()), includedService.getType());
+                BluetoothGattServiceCopy newGattService = new BluetoothGattServiceCopy(includedService.getUuid(), includedService.getType());
                 newService.addService(newGattService);
             }
         }
         if (!service.getCharacteristics().isEmpty()) {
             // why not use the copy characteristic method, it will implicitly link itself to the null service
             for (BluetoothGattCharacteristic characteristic : service.getCharacteristics()) {
-                BluetoothGattCharacteristicCopy newCharacteristic = new BluetoothGattCharacteristicCopy(UUID.fromString(characteristic.getUuid().toString()), characteristic.getProperties(), characteristic.getPermissions());
+                BluetoothGattCharacteristicCopy newCharacteristic = new BluetoothGattCharacteristicCopy(characteristic.getUuid(), characteristic.getProperties(), characteristic.getPermissions());
                 if (characteristic.getValue() != null) {
                     newCharacteristic.setValue(Arrays.copyOf(characteristic.getValue(), characteristic.getValue().length));
                 }
                 // why not use the copy descriptor method?  It will implicitly link itself to the null characteristic
                 for (BluetoothGattDescriptor descriptor : characteristic.getDescriptors()) {
-                    BluetoothGattDescriptorCopy newDescriptor = new BluetoothGattDescriptorCopy(UUID.fromString(descriptor.getUuid().toString()), descriptor.getPermissions());
+                    BluetoothGattDescriptorCopy newDescriptor = new BluetoothGattDescriptorCopy(descriptor.getUuid(), descriptor.getPermissions());
                     if (descriptor.getValue() != null) {
                         newDescriptor.setValue(Arrays.copyOf(descriptor.getValue(), descriptor.getValue().length));
                     }
