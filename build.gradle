@@ -21,10 +21,9 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'maven-publish'
 
-def packageName = 'com.fitbit.bluetooth.fbgatt'
-
 def buildNumber = System.getenv("BUILD_NUMBER") != null ? System.getenv("BUILD_NUMBER").toInteger() : 10000
-def libraryVersionName = sprintf("0.8.0", buildNumber)
+def versionNumber = System.getenv("VERSION_NUMBER") != null ? System.getenv("VERSION_NUMBER").toInteger() : "0.8.0"
+def libraryVersionName = sprintf(versionNumber, buildNumber)
 
 android {
     compileSdkVersion 29
@@ -51,7 +50,7 @@ android {
             consumerProguardFile 'proguard-rules.pro'
         }
         debug {
-            testCoverageEnabled true
+            testCoverageEnabled false
         }
         library {
             debuggable true
@@ -106,43 +105,4 @@ dependencies {
 task sourceJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
     classifier "sources"
-}
-
-publishing {
-    publications {
-        libraryAar(MavenPublication) {
-            groupId packageName
-            version = libraryVersionName
-            artifactId project.getName()
-            artifact sourceJar { classifier 'library' }
-            artifact("$buildDir/outputs/aar/${project.getName()}-library.aar") {classifier 'library' }
-        }
-        releaseAar(MavenPublication) {
-            groupId packageName
-            groupId packageName
-            version = libraryVersionName
-            artifactId project.getName()
-
-            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar") { classifier 'release' }
-            artifact sourceJar { classifier 'release' }
-        }
-        debugAar(MavenPublication) {
-            groupId packageName
-            groupId packageName
-            version = libraryVersionName
-            artifactId project.getName()
-
-            artifact("$buildDir/outputs/aar/${project.getName()}-debug.aar") { classifier 'debug' }
-            artifact sourceJar { classifier 'debug' }
-        }
-        testAar(MavenPublication) {
-            groupId packageName
-            groupId packageName
-            version = libraryVersionName
-            artifactId project.getName()
-
-            artifact("$buildDir/outputs/aar/${project.getName()}-batteryDataTest.aar") { classifier 'test' }
-            artifact sourceJar { classifier 'test' }
-        }
-    }
 }
