@@ -9,7 +9,7 @@ name: Create Release Draft And Attach apk
 jobs:
   build_release:
     name: Upload Release Asset
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
