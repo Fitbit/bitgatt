@@ -26,6 +26,17 @@ if(group == null) {
 }
 
 
+def releaseTag = System.getenv("RELEASE_TAG");
+if (releaseTag != null && !releaseTag.isEmpty()) {
+    if (releaseTag.startsWith("v")) {
+        releaseTag = releaseTag.substring(1);
+    }
+    version = releaseTag;
+    project.properties.put("release.version", releaseTag);
+
+    println("Releasing with version " + version);
+}
+
 def isJitPack =  System.getenv('JITPACK') ? System.getenv('JITPACK').toBoolean() : false
 def artifactPath = "$buildDir/outputs/aar"
 def libPrefix = project.name
@@ -51,8 +62,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            consumerProguardFile 'proguard-rules.pro'
+            consumerProguardFiles 'proguard-rules.pro'
         }
         debug {
             testCoverageEnabled false
@@ -112,6 +122,11 @@ task sourceJar(type: Jar) {
     classifier "sources"
 }
 
+android.libraryVariants.all { variant ->
+    variant.outputs.all {
+        outputFileName = "${variant.name}.aar"
+    }
+}
 
 
 publishing {
@@ -122,7 +137,7 @@ publishing {
                 groupId group
                 artifactId 'bitgatt'
                 version "$version-${variant.name}"
-                artifact("$artifactPath/$libPrefix-${variant.name}.aar")  {
+                artifact("$artifactPath/${variant.name}.aar")  {
                     builtBy tasks.getByName("build")
                 }
             }
