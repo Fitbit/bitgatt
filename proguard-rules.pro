@@ -24,3 +24,14 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -dontwarn java.lang.invoke.**
+
+# essentially remove verbose, debug, and info logs
+-assumenosideeffects class timber.log.Timber {
+    public static *** v(...);
+    public static *** d(...);
+    public static *** i(...);
+}
+
+-keep public class * {
+    public protected *;
+}
