@@ -47,6 +47,10 @@ public enum GattState {
      */
     FAILURE_CONNECTING(StateType.ERROR),
     /*
+     * The underlying bluetooth api resulted in a crash when trying to connect
+     */
+    FAILURE_CONNECTING_WITH_SYSTEM_CRASH(StateType.ERROR),
+    /*
      * We successfully established a connection
      */
     CONNECTED(StateType.IDLE),
