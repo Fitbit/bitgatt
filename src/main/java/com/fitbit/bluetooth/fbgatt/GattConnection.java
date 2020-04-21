@@ -130,7 +130,7 @@ public class GattConnection implements Closeable {
 
     public void unregisterConnectionEventListener(@NonNull ConnectionEventListener eventListener) {
         Boolean previousValue = asynchronousEventListeners.remove(eventListener);
-        if(previousValue == null) { // null when returned from ConcurrentHashMap.remove() means the key was not present.
+        if (previousValue == null) { // null when returned from ConcurrentHashMap.remove() means the key was not present.
             Timber.v("[%s] There are no event listeners to remove", Build.MODEL);
         }
     }
@@ -364,8 +364,14 @@ public class GattConnection implements Closeable {
          */
         BluetoothGatt localGatt = gatt;
         boolean success = false;
-        if(localGatt != null) {
-            success = localGatt.connect();
+        if (localGatt != null) {
+            try {
+                success = localGatt.connect();
+            } catch (NullPointerException e) {
+                Timber.e(e);
+                setState(GattState.FAILURE_CONNECTING_WITH_SYSTEM_CRASH);
+                return false;
+            }
         }
         if (!success) {
             setState(GattState.FAILURE_CONNECTING);
@@ -380,7 +386,14 @@ public class GattConnection implements Closeable {
             return true;
         }
         if (atLeastSDK(Build.VERSION_CODES.M)) {
-            gatt = device.getBtDevice().connectGatt(FitbitGatt.getInstance().getAppContext(), false, FitbitGatt.getInstance().getClientCallback(), BluetoothDevice.TRANSPORT_LE);
+            try {
+                gatt = device.getBtDevice().connectGatt(FitbitGatt.getInstance().getAppContext(), false, FitbitGatt.getInstance().getClientCallback(), BluetoothDevice.TRANSPORT_LE);
+            } catch (NullPointerException e) {
+                Timber.e(e);
+                //This crash can be seen mainly on some low end devices such as P20 Lite or A5
+                setState(GattState.FAILURE_CONNECTING_WITH_SYSTEM_CRASH);
+                return false;
+            }
         } else {
             gatt = device.getBtDevice().connectGatt(FitbitGatt.getInstance().getAppContext(), false, FitbitGatt.getInstance().getClientCallback());
         }
