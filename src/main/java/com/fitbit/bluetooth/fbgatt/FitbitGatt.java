@@ -22,7 +22,6 @@ import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.ClearServerServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
@@ -43,9 +42,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.ParcelUuid;
-
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,7 +54,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -103,8 +98,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     private BluetoothGattServer gattServer;
     // this is only used on init
     private final CopyOnWriteArrayList<BluetoothGattService> servicesToAdd = new CopyOnWriteArrayList<>();
-    private @NonNull
-    BatteryDataStatsAggregator powerAggregator;
     @Nullable
     private GattServerConnection serverConnection;
     private GattServerCallback serverCallback;
@@ -172,7 +165,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         ourInstance.overallGattEventListeners = new CopyOnWriteArrayList<>();
         // we will default to one expected device and that it should not looking
         ourInstance.alwaysConnectedScanner = new AlwaysConnectedScanner(1, false, Looper.getMainLooper());
-        ourInstance.powerAggregator = new BatteryDataStatsAggregator(null);
         ourInstance.fitbitGattAsyncOperationThread.start();
         ourInstance.fitbitGattAsyncOperationHandler = new Handler(ourInstance.fitbitGattAsyncOperationThread.getLooper());
         // we need to make sure that this thread is alive and responsive or our gatt
@@ -206,18 +198,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             }
         }
         return isBluetoothOn;
-    }
-
-    @SuppressWarnings({"unused", "WeakerAccess"}) // internal API method
-    @NonNull
-    BatteryDataStatsAggregator getPowerAggregator() {
-        return powerAggregator;
-    }
-
-    @SuppressWarnings({"unused", "WeakerAccess"})
-        // internal API method
-    void setPowerAggregator(@NonNull BatteryDataStatsAggregator powerAggregator) {
-        this.powerAggregator = powerAggregator;
     }
 
     /**
@@ -367,10 +347,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     //Allows us to inject in FitbitGatt dependencies for testing
     @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-    FitbitGatt(AlwaysConnectedScanner alwaysConnectedScanner, BatteryDataStatsAggregator aggregator, Handler fitbitGattAsyncOperationHandler, Handler connectionCleanup, LooperWatchdog watchDog) {
+    FitbitGatt(AlwaysConnectedScanner alwaysConnectedScanner, Handler fitbitGattAsyncOperationHandler, Handler connectionCleanup, LooperWatchdog watchDog) {
         this.overallGattEventListeners = new CopyOnWriteArrayList<>();
         this.alwaysConnectedScanner = alwaysConnectedScanner;
-        this.powerAggregator = aggregator;
         this.fitbitGattAsyncOperationHandler = fitbitGattAsyncOperationHandler;
         this.connectionCleanup = connectionCleanup;
         this.asyncOperationThreadWatchdog = watchDog;
@@ -894,8 +873,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         if (!isInitialized.get()) {
             Timber.v("Starting fitbit gatt");
             appContext = context.getApplicationContext();
-
-            powerAggregator = new BatteryDataStatsAggregator(this.appContext);
             peripheralScanner = dependencyProvider.getNewPeripheralScanner(this.appContext, this);
             connectionCleanup = new Handler(context.getMainLooper());
 
@@ -1797,7 +1774,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     }
 
-    @NotNull
+    @NonNull
     private List<GattServerTransaction> getGattAddServerServiceTransactions(List<BluetoothGattService> services) {
         List<GattServerTransaction> transactions = new ArrayList<>();
         for (BluetoothGattService service : services) {
@@ -1806,7 +1783,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         return transactions;
     }
 
-    @NotNull
+    @NonNull
     private GattTransactionCallback getGattAddServicesOnTransactionCallback() {
         return result -> {
             Timber.d("Gatt server init add service result: %s", result);

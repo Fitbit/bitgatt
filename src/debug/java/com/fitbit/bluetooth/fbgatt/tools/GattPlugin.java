@@ -49,7 +49,6 @@ import com.fitbit.bluetooth.fbgatt.tx.WriteGattServerCharacteristicDescriptorVal
 import com.fitbit.bluetooth.fbgatt.tx.WriteGattServerCharacteristicValueTransaction;
 import com.fitbit.bluetooth.fbgatt.util.Bytes;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
@@ -60,16 +59,13 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.os.ParcelUuid;
-
 import com.facebook.stetho.dumpapp.ArgsHelper;
 import com.facebook.stetho.dumpapp.DumpException;
 import com.facebook.stetho.dumpapp.DumperContext;
 import com.facebook.stetho.dumpapp.DumperPlugin;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -83,12 +79,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
-
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_CLASSIC;
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_DUAL;
 import static android.bluetooth.BluetoothDevice.DEVICE_TYPE_LE;

@@ -104,7 +104,7 @@ dependencies {
     implementation "androidx.multidex:multidex:$MULTIDEX_VERSION"
     implementation "androidx.appcompat:appcompat:$APP_COMPAT_VERSION"
     implementation "com.jakewharton.timber:timber:$TIMBER_VERSION"
-    implementation "com.facebook.stetho:stetho:$STETHO_VERSION"
+    debugImplementation "com.facebook.stetho:stetho:$STETHO_VERSION"
     testImplementation "junit:junit:$JUNIT_VERSION"
     testImplementation "androidx.test:runner:$TEST_RUNNER_VERSION"
     testImplementation "androidx.test:rules:$TEST_RUNNER_VERSION"

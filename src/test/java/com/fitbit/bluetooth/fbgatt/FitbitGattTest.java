@@ -13,7 +13,6 @@ import com.fitbit.bluetooth.fbgatt.exception.MissingGattServerErrorException;
 import com.fitbit.bluetooth.fbgatt.tx.ClearServerServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
-
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattServer;
@@ -25,18 +24,14 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelUuid;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -58,7 +53,6 @@ public class FitbitGattTest {
     private BluetoothManager managerMock = mock(BluetoothManager.class);
     private BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
     private Handler fitbitGattAsyncOperationHandlerMock = mock(Handler.class);
-    private BatteryDataStatsAggregator batteryDataStatsAggregatorMock = mock(BatteryDataStatsAggregator.class);
     private AlwaysConnectedScanner alwaysConnectedScannerMock = mock(AlwaysConnectedScanner.class);
     private Looper looperMock = mock(Looper.class);
     private Context contextMock = mock(Context.class);
@@ -70,7 +64,6 @@ public class FitbitGattTest {
     private PendingIntent scanIntentMock = mock(PendingIntent.class);
     private FitbitGatt fitbitGatt = new FitbitGatt(
         alwaysConnectedScannerMock,
-        batteryDataStatsAggregatorMock,
         fitbitGattAsyncOperationHandlerMock,
         connectionCleanUpHandler,
         mock(LooperWatchdog.class));
