@@ -1930,7 +1930,8 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     /**
      * @return true if log statements that may slow down data transfer speeds should be executed
      */
-    boolean isSlowLoggingEnabled() {
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public boolean isSlowLoggingEnabled() {
         return slowLoggingEnabled;
     }
 

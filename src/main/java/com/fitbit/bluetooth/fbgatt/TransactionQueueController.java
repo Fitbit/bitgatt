@@ -12,53 +12,46 @@ import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 class TransactionQueueController {
 
     private String threadName;
-    private AtomicBoolean stop = new AtomicBoolean(false);
+    private AtomicBoolean stopped = new AtomicBoolean(true);
     private final LinkedBlockingQueue<Runnable> transactionQueue = new LinkedBlockingQueue<>();
     private ClientThread transactionThread;
-
-    TransactionQueueController(GattConnection connection){
-        this.threadName = String.format(Locale.ENGLISH, "%s GATT Transaction Thread", connection.getDevice().getName());
-    }
-
-    TransactionQueueController(){
-        this.threadName = "GATT Server Transaction Thread";
-    }
 
     TransactionQueueController(String name) {
         this.threadName = name;
     }
 
+    TransactionQueueController(GattConnection connection) {
+        this(String.format(Locale.ENGLISH, "%s GATT Transaction Thread", connection.getDevice().getName()));
+    }
+
+    TransactionQueueController() {
+        this("GATT Server Transaction Thread");
+    }
 
     void queueTransaction(Runnable tx) {
-        if(stop.get()) {
+        if (stopped.get()) {
             Timber.i("Implicitly restarting queue");
             start();
         }
         transactionQueue.add(tx);
     }
 
-    /**
-     * Will return the client thread being used to run transactions on this connection
-     * @return The client transaction thread
-     */
 
-    ClientThread getTransactionThread(){
-        return transactionThread;
-    }
-
-    void clearQueue(){
+    void clearQueue() {
         transactionQueue.clear();
     }
 
-    synchronized void start(){
+    @VisibleForTesting
+    synchronized void start() {
         Timber.v("Starting execution thread");
-        stop.compareAndSet(true, false);
-        if(transactionThread != null) {
+        stopped.compareAndSet(true, false);
+        if (transactionThread != null) {
             transactionThread.interrupt();
             transactionThread = null;
         }
@@ -67,15 +60,18 @@ class TransactionQueueController {
         transactionThread.start();
     }
 
-    synchronized void stop(){
-        Timber.v("Stopping execution thread");
-        stop.compareAndSet(false, true);
-        clearQueue();
-        transactionThread.interrupt();
-        transactionThread = null;
+    synchronized void stop() {
+        if (!isQueueThreadStopped()) {
+            Timber.v("Stopping execution thread");
+            stopped.compareAndSet(false, true);
+            clearQueue();
+            transactionThread.interrupt();
+            transactionThread = null;
+        }
     }
 
-    boolean isQueueThreadStopped(){
+    @VisibleForTesting
+    boolean isQueueThreadStopped() {
         return transactionThread == null || transactionThread.isInterrupted();
     }
 
@@ -86,9 +82,9 @@ class TransactionQueueController {
         }
 
         @Override
-        public void run(){
+        public void run() {
             Runnable tx;
-            while(!stop.get()) {
+            while (!stopped.get()) {
                 try {
                     tx = transactionQueue.take();
                     tx.run();

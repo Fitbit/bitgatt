@@ -2468,10 +2468,10 @@ public class GattPlugin implements DumperPlugin, FitbitGatt.FitbitGattCallback, 
 
     @Override
     public void onBluetoothPeripheralDiscovered(@NonNull GattConnection connection) {
-        if (connection != null) {
-            this.clientConnections.put(connection.getDevice().getAddress(), connection);
+        this.clientConnections.put(connection.getDevice().getAddress(), connection);
+        onBluetoothPeripheralDevicePropertiesChanged(connection.getDevice());
+        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
             Timber.d("Discovered device %s", connection.getDevice());
-            onBluetoothPeripheralDevicePropertiesChanged(connection.getDevice());
         }
     }
 

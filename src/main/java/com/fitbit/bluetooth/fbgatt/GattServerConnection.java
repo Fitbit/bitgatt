@@ -48,7 +48,6 @@ public class GattServerConnection implements Closeable {
     protected GattServerConnection(@Nullable BluetoothGattServer server, Looper looper) {
         this.server = server;
         this.serverQueue = new TransactionQueueController();
-        this.serverQueue.start();
         this.guard = new GattStateTransitionValidator();
         this.state = GattState.IDLE;
         this.mainHandler = new Handler(looper);
@@ -239,7 +238,6 @@ public class GattServerConnection implements Closeable {
             server.close();
             setState(GattState.CLOSE_GATT_SERVER_SUCCESS);
             if(serverQueue != null) {
-                serverQueue.clearQueue();
                 serverQueue.stop();
             }
         }
@@ -285,7 +283,7 @@ public class GattServerConnection implements Closeable {
 
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     synchronized void finish() {
-        if(serverQueue != null && !serverQueue.isQueueThreadStopped()) {
+        if(serverQueue != null) {
             serverQueue.stop();
         }
     }
