@@ -52,7 +52,6 @@ public class CompositeServerTransaction extends GattServerTransaction implements
         // The composite server transaction will need it's own queue controller to run
         // child transactions while still blocking the main connection queue controller
         compositeServerQueueController = new TransactionQueueController(NAME);
-        compositeServerQueueController.start();
         executeTransaction();
     }
 

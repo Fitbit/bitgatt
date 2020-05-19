@@ -50,7 +50,6 @@ public class CompositeClientTransaction extends GattTransaction implements Close
         // The composite client transaction will need it's own queue controller to run
         // child transactions while still blocking the main connection queue controller
         compositeClientQueueController = new TransactionQueueController(NAME);
-        compositeClientQueueController.start();
         // at this point the CDL for the transaction has already been latched
         compositeClientQueueController.queueTransaction(this::executeTransaction);
     }

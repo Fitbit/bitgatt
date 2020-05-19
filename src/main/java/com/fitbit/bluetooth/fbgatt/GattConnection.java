@@ -56,7 +56,6 @@ public class GattConnection implements Closeable {
         this.guard = new GattStateTransitionValidator();
         this.mockServices = new ArrayList<>(1);
         this.clientQueue = new TransactionQueueController(this);
-        this.clientQueue.start();
         this.state = GattState.DISCONNECTED;
         this.disconnectedTTL = new AtomicLong(FitbitGatt.MAX_TTL);
         this.mainHandler = new Handler(mainLooper);

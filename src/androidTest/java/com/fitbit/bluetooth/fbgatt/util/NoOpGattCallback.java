@@ -11,6 +11,7 @@ package com.fitbit.bluetooth.fbgatt.util;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattServerConnection;
+import com.fitbit.bluetooth.fbgatt.exception.AlreadyStartedException;
 import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
 
 import static org.junit.Assert.*;
@@ -84,7 +85,9 @@ public class NoOpGattCallback implements FitbitGatt.FitbitGattCallback {
 
     @Override
     public void onGattServerStartError(BitGattStartException error) {
-        fail("Gatt Server Start error " + error.getMessage());
+        if(!(error instanceof AlreadyStartedException)) {
+            fail("Gatt Server Start error " + error.getMessage());
+        }
     }
 
     @Override
