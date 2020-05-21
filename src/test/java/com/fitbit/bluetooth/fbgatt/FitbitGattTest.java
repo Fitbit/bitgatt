@@ -363,6 +363,61 @@ public class FitbitGattTest {
     }
 
     @Test
+    public void testAddingNewConnectedDevice() {
+        ConcurrentHashMap<FitbitBluetoothDevice, GattConnection> map = new ConcurrentHashMap<FitbitBluetoothDevice, GattConnection>();
+        FitbitBluetoothDevice fbDevice = mock(FitbitBluetoothDevice.class);
+
+        FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
+        fitbitGatt.registerGattEventListener(cb);
+        fitbitGatt.setAppContext(contextMock);
+        fitbitGatt.setStarted(true);
+        fitbitGatt.setGattClientStarted(true);
+        fitbitGatt.setConnectionMap(map);
+
+        fitbitGatt.addConnectedDeviceToConnectionMap(contextMock, fbDevice);
+
+        verify(cb, times(1)).onBluetoothPeripheralDiscovered(any());
+        verifyNoMoreInteractions(cb);
+    }
+
+    @Test
+    public void failToAddExistingConnectedDevice() {
+        ConcurrentHashMap<FitbitBluetoothDevice, GattConnection> map = new ConcurrentHashMap<FitbitBluetoothDevice, GattConnection>();
+        FitbitBluetoothDevice fbDevice = mock(FitbitBluetoothDevice.class);
+        GattConnection connection = mock(GattConnection.class);
+        map.put(fbDevice, connection);
+
+        FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
+        fitbitGatt.registerGattEventListener(cb);
+        fitbitGatt.setAppContext(contextMock);
+        fitbitGatt.setStarted(true);
+        fitbitGatt.setGattClientStarted(true);
+        fitbitGatt.setConnectionMap(map);
+
+        fitbitGatt.addConnectedDeviceToConnectionMap(contextMock, fbDevice);
+
+        verifyZeroInteractions(cb);
+    }
+
+    @Test
+    public void failToAddConnectedDeviceIfAdapterIsNull() {
+        ConcurrentHashMap<FitbitBluetoothDevice, GattConnection> map = new ConcurrentHashMap<FitbitBluetoothDevice, GattConnection>();
+        FitbitBluetoothDevice fbDevice = mock(FitbitBluetoothDevice.class);
+        doReturn(null).when(utilsMock).getBluetoothAdapter(contextMock);
+
+        FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
+        fitbitGatt.registerGattEventListener(cb);
+        fitbitGatt.setAppContext(contextMock);
+        fitbitGatt.setStarted(true);
+        fitbitGatt.setGattClientStarted(true);
+        fitbitGatt.setConnectionMap(map);
+
+        fitbitGatt.addConnectedDeviceToConnectionMap(contextMock, fbDevice);
+
+        verifyZeroInteractions(cb);
+    }
+
+    @Test
     public void testStartPeriodicScanAlwaysOnDisabled() {
         doReturn(false).when(alwaysConnectedScannerMock).isAlwaysConnectedScannerEnabled();
 

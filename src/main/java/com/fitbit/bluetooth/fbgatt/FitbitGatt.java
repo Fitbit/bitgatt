@@ -792,6 +792,33 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         }
     }
 
+    synchronized void addConnectedDevice(BluetoothDevice device) {
+        fitbitGattAsyncOperationHandler.post(() -> {
+            FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(device);
+            fitbitBluetoothDevice.origin = FitbitBluetoothDevice.DeviceOrigin.CONNECTED;
+            addConnectedDeviceToConnectionMap(this.appContext, fitbitBluetoothDevice);
+        });
+    }
+
+    @VisibleForTesting
+    void addConnectedDeviceToConnectionMap(Context context, FitbitBluetoothDevice device) {
+        Timber.v("Adding the new connected device");
+        BluetoothAdapter adapter = dependencyProvider.getNewGattUtils().getBluetoothAdapter(context);
+        if (adapter != null) {
+            if (null == connectionMap.get(device)) {
+                Timber.v("Adding connected device named %s, with address %s", device.getName(), device.getAddress());
+                if (context != null) {
+                    GattConnection conn = new GattConnection(device, context.getMainLooper());
+                    connectionMap.put(device, conn);
+                    FitbitGatt.getInstance().notifyListenersOfConnectionAdded(conn);
+                } else {
+                    Timber.w("Tried to add the connected device, but the cached context was null");
+                }
+            }
+        }
+        Timber.v("Added the new connected device");
+    }
+
     /**
      * Starts the gatt server and allows the execution of {@link GattTransaction} on it
      *
