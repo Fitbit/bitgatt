@@ -37,6 +37,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import timber.log.Timber;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
@@ -411,5 +412,34 @@ public class GattConnectDisconnectTests {
         latch.await(1, TimeUnit.SECONDS);
         assertEquals(TransactionResult.TransactionResultStatus.SUCCESS, resultTx[0].resultStatus);
         assertEquals(services.size(), resultTx[0].getServices().size());
+    }
+
+    @Test
+    public void testAddConnectedDevice() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        FitbitGatt.FitbitGattCallback cb = new NoOpGattCallback() {
+            @Override
+            public void onBluetoothPeripheralDiscovered(GattConnection connection) {
+                latch.countDown();
+            }
+        };
+
+        // started
+        FitbitGatt.getInstance().registerGattEventListener(cb);
+        FitbitGatt.getInstance().startGattClient(mockContext);
+        Assert.assertTrue(FitbitGatt.getInstance().isInitialized());
+        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice");
+        GattConnection connection = FitbitGatt.getInstance().getConnection(device);
+        if (connection == null) {
+            FitbitGatt
+                .getInstance()
+                .addConnectedDevice(device.device);
+        }
+
+        latch.await(10, TimeUnit.SECONDS);
+
+        assertEquals(0, latch.getCount());
+        connection = FitbitGatt.getInstance().getConnection(device);
+        assertNotNull(connection);
     }
 }
