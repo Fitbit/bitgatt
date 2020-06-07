@@ -1,27 +1,63 @@
 # Fitbit Gatt (Bitgatt) Documentation     [![Build Status](https://travis-ci.com/Fitbit/bitgatt.svg?branch=master)](https://travis-ci.com/Fitbit/bitgatt)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt?ref=badge_shield)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FFitbit%2Fbitgatt?ref=badge_shield) [![](https://jitpack.io/v/Fitbit/bitgatt.svg)](https://jitpack.io/#Fitbit/bitgatt)
 
 ## Table of Contents
 
+1. [Setting up the dependency](#setting-up-the-dependency)
 1. [Original Contributors](#original-contributors)
-2. [Purpose](#purpose)
-3. [Threading](#threading)
-4. [Diagram](#diagram)
-5. [Architectural Overview](#archectural-overview)
-6. [Transactions](#transactions)
-7. [Validation](#validation)
-8. [Pre/Post Commit (Deprecated)](#pre-post-commit-deprecated)
-9. [Composite Transactions](#composite-transactions)
-10. [Gatt Server](#gatt-server)
-11. [Sample Code](#sample-code)
-12. [Bitgatt Scanner](#bitgatt-scanner)
-13. [Always Connected Scanner](#always-connected-scanner)
-14. [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
-15. [Runtime Mocking](#runtime-mocking)
-16. [Bitgatt Transaction Manual](#bitgatt-transaction-manual)
-17. [License](#license)
+1. [Purpose](#purpose)
+1. [Threading](#threading)
+1. [Diagram](#diagram)
+1. [Architectural Overview](#architectural-overview)
+1. [Transactions](#transactions)
+1. [Validation](#validation)
+1. [Pre/Post Commit (Deprecated)](#pre-post-commit-deprecated)
+1. [Composite Transactions](#composite-transactions)
+1. [Gatt Server](#gatt-server)
+1. [Sample Code](#sample-code)
+1. [Bitgatt Scanner](#bitgatt-scanner)
+1. [Always Connected Scanner](#always-connected-scanner)
+1. [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
+1. [Runtime Mocking](#runtime-mocking)
+1. [Bitgatt Transaction Manual](#bitgatt-transaction-manual)
+1. [License](#license)
 
-### [Original Contributors](#original-contributors)
+## Purpose
+
+The FitbitGatt API is designed to provide a strong state machine around
+all Android gatt operations with the aim to make Android BLE development
+as bomb-proof as possible.
+
+We created a blog post to explain further why we need such a significant
+abstraction on top of the Android Low Energy API : [eng.fitbit.com/what-is-bitgatt-and-why-do-we-need-it/](https://eng.fitbit.com/what-is-bitgatt-and-why-do-we-need-it/)
+
+### Setting up the dependency
+
+Add it in your root build.gradle at the end of repositories:
+
+```gradle
+allprojects {
+  repositories {
+    ...
+    maven { url 'https://jitpack.io' }
+  }
+}
+```
+
+```gradle
+dependencies {
+    implementation 'com.github.Fitbit:bitgatt:TAG'
+}
+```
+
+Where `TAG` can be any of the following
+- a release tag such as `v0.9.1`
+- a snapshot from master `master-SNAPSHOT`
+- a specifici commit `53ebed0415`
+
+
+
+### Original Contributors
 
 #### Fitbit Maintainers
 Irvin Owens Jr <iowens@fitbit.com>, <0xbadbeef@sigsegv.us> - Creator
@@ -43,14 +79,7 @@ Ionut Lepadatescu - <ilepadatescu@fitbit.com>
 Irvin Owens Jr - <iowens@fitbit.com>
 
 
-## [Purpose](#purpose)
 
-The FitbitGatt API is designed to provide a strong state machine around
-all Android gatt operations with the aim to make Android BLE development
-as bomb-proof as possible.
-
-We created a blog post to explain further why we need such a significant
-abstraction on top of the Android Low Energy API : [eng.fitbit.com/what-is-bitgatt-and-why-do-we-need-it/](https://eng.fitbit.com/what-is-bitgatt-and-why-do-we-need-it/)
 
 ### Getting Started
 
@@ -111,7 +140,7 @@ This will call `FitbitGattCallback.onGattClientStarted()` or `FitbitGattCallback
 
 If your app is only the client in BLE connection you will use only this component and the scanner to more reliably fetch the device.
  
-## [Threading](#threading)
+## Threading
 
 The threading model of the Android gatt is extremely fraught with landmines.
   It was very easy to end up processing data on one of the JNI binder
@@ -134,7 +163,7 @@ The threading model of the Android gatt is extremely fraught with landmines.
   instance, it did not originate from the GATT DB so the instance is null.  By forcing the use of
   copies, bitgatt eliminates the possibility of this error from the developer.
 
-## [Diagram](#diagram)
+## Diagram 
 
 <pre>
 
@@ -190,7 +219,7 @@ The threading model of the Android gatt is extremely fraught with landmines.
 
 Created with Monodraw                                                                                                                                  </pre>
 
-### [Architectural Overview](#archectural-overview)
+### Architectural Overview
 
 The general idea behind this is that we want to use the right number of threads.
 This means that we will keep the serial execution nature of the legacy implementation
@@ -206,7 +235,7 @@ core code free of "hacks" around bugs in the Android BLE code, or peripheral iss
 *NOTE* The present API is not stable as the library is still at 0.8.x.  Improvements in the API
 may still occur, especially around the scanner.
 
-## [Transactions](#transactions)
+## Transactions
 
 Gatt transactions are single gatt operations such as enable characteristic notifications
 on x characteristic, or write to characteristic, etc... transactions can
@@ -243,28 +272,28 @@ to return your own strategies.  You could determine the firmware version and aft
  you could retry, whatever your business logic required.  This you could do without modifying bitgatt,
  and without adversely affecting your basic GATT logic. 
 
-## [Validation](#validation)
+## Validation
 
 The transaction entry states are guarded by a transaction validator
 that verifies that the gatt is in a good state and is ready to
 be used by a client.  If it isn't it will return a clear transaction result
 error that will allow the developer to understand why it isn't working.
 
-## [Pre/Post Commit Deprecated](#pre-post-commit-deprecated)
+## Pre/Post Commit Deprecated
 
 In order to chain transactions we provide a pre/post commit implemention
 that will allow you to provide a bundle of transactions that must
 execute in order.  Pre-commit transactions will execute before the main body
 of the transaction while post-commit transactions will run after
 
-## [Composite Transactions](#composite-transactions)
+## Composite Transactions
 
 The pre / post transaction API was deprecated in favor of a single composite transaction that takes
 as an argument a list of transactions.  These transactions will be executed atomically in the order
 in which they are present in the list.  Any failure will halt the chain of transactions and exit
 the composite transaction.
 
-## [Gatt Server](#gatt-server)
+## Gatt Server 
 
 The gatt server implementation here is designed to protect the developer from common Android mistakes
 such as not responding to write requests or read requests on characteristics or descriptors that
@@ -278,7 +307,7 @@ order to use services again, please re-add any gatt server services that you are
 Android device when BT is turned on again.  You can do this by listening for bt on / off events 
 with the FitbitGattCallback.
 
-## [Sample Code](#sample-code)
+## Sample Code
 
 Pre-Commit ( Deprecated )
 ```java
@@ -403,7 +432,7 @@ class Test {
 }
 ```
 
-## [Bitgatt Scanner](#bitgatt-scanner)
+## Bitgatt Scanner
 
 The Bitgatt scanner is designed around the principle that the developer should have a particular
 set of filters that they want to find and always want to know about them.  The FitbitBluetoothDevice
@@ -446,7 +475,8 @@ for example.  Make sure to test thoroughly if you are concerned with Android ver
 Simplest case, no scanning in effect and, we want to stay connected all peripherals with a given name,
  also that we do not want to keep scanning after we have found any device that matches the name filter
  
- ### Find one device matching a name filter and keep it connected
+### Find one device matching a name filter and keep it connected
+
 ```java
 class Test {
     
@@ -477,7 +507,9 @@ class Test {
 ```
 
 Slightly more complex case, find one device, but keep looking even after it is connected
+
 ### Find one device, but keep scanning even after it is connected
+
 ```java
 class Test {
     
@@ -511,7 +543,9 @@ class Test {
 
 Filter more complex with a SRV data mask maybe matching some kind of encrypted user id for several
 devices, should stop when all devices are found
+
 ### Find a few devices via some sort of SRV data
+
 ```java
 class Test {
     
@@ -564,7 +598,7 @@ class Test {
 }
 ```
 
-## [Bluetooth State on Android Device](#bluetooth-state-on-android-device)
+## Bluetooth State on Android Device
 
 If the user disables Bluetooth, bitgatt will manage that state accordingly, it will drop any pending
 transactions in the queue and stop the queues as well as setting it's internal bluetooth state to
@@ -610,7 +644,7 @@ you can simulate failure and provide the data to be returned to test content han
 * WriteGattCharacteristicMockTransaction - Will mock a characteristic write to a gatt client connection
 * WriteGattDescriptorMockTransaction - Will mock a gatt descriptor write transaction
 
-## [Bitgatt Transaction Manual](#bitgatt-transaction-manual)
+## Bitgatt Transaction Manual
 
 The transaction manual will explain in detail what each transaction does as well has how strategies
 play into transactions.  A strategy can hook into a transaction or transaction subclass to perform
@@ -1372,7 +1406,7 @@ be used in the turning off callback if you implement your own bluetooth listener
 * Does it block on failure? No
 * Includes copy in result? No
 
-## [License](#license)
+## License
 
     Copyright 2019 Fitbit, Inc. All rights reserved.
     
