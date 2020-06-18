@@ -82,6 +82,33 @@ public class ThreadManagementTest {
         controller.stop();
     }
 
+    @Test
+    public void testSynchronizedControllerStart() throws InterruptedException {
+        TransactionQueueController controller = new TransactionQueueController();
+        controller.start();
+        controller.stop();
+        final int MAX_THREAD_COUNT = 10;
+        final int MAX_LOOP_COUNT = 5000;
+
+        CountDownLatch cdl = new CountDownLatch(MAX_THREAD_COUNT);
+        final int[] total = new int[1];
+        total[0] = 0;
+        for (int i = 0; i < MAX_THREAD_COUNT; i++) {
+            service.submit(() -> {
+                controller.queueTransaction(() -> {
+                    int i1;
+                    for (i1 = 0; i1 < MAX_LOOP_COUNT; i1++) {
+                        total[0] += 1;
+                    }
+                    cdl.countDown();
+                });
+            });
+        }
+        cdl.await(1000, TimeUnit.MILLISECONDS);
+        assertEquals(MAX_THREAD_COUNT * MAX_LOOP_COUNT, total[0]);
+        controller.stop();
+    }
+
     /**
      * Negative test for gatt start, worst case scenario, if synchronization isn't working
      * will crash the bluetooth service and will start returning calling back that start isn't

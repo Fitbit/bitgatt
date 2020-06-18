@@ -119,6 +119,9 @@ class GattServerCallback extends BluetoothGattServerCallback {
 
                     break;
                 case BluetoothProfile.STATE_CONNECTED:
+                    if (gattConnection == null) {
+                        FitbitGatt.getInstance().addConnectedDevice(device);
+                    }
                     for (ServerConnectionEventListener asyncListener : conn.getConnectionEventListeners()) {
                         // since this is async, the result status is irrelevant so it will always be
                         // success because we received this data
@@ -127,10 +130,6 @@ class GattServerCallback extends BluetoothGattServerCallback {
                                 .responseStatus(status)
                                 .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
                         handler.post(() -> asyncListener.onServerConnectionStateChanged(device, result, conn));
-                    }
-
-                    if (gattConnection == null) {
-                        FitbitGatt.getInstance().addConnectedDevice(device);
                     }
 
                     break;

@@ -42,22 +42,22 @@ class TransactionQueueController {
         transactionQueue.add(tx);
     }
 
-
     void clearQueue() {
         transactionQueue.clear();
     }
 
     @VisibleForTesting
     synchronized void start() {
-        Timber.v("Starting execution thread");
-        stopped.compareAndSet(true, false);
-        if (transactionThread != null) {
-            transactionThread.interrupt();
-            transactionThread = null;
+        if (stopped.compareAndSet(true, false)) {
+            Timber.v("Starting execution thread");
+            if (transactionThread != null) {
+                transactionThread.interrupt();
+                transactionThread = null;
+            }
+            transactionThread = new ClientThread(threadName);
+            transactionThread.setPriority(Thread.MAX_PRIORITY);
+            transactionThread.start();
         }
-        transactionThread = new ClientThread(threadName);
-        transactionThread.setPriority(Thread.MAX_PRIORITY);
-        transactionThread.start();
     }
 
     synchronized void stop() {
