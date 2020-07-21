@@ -8,7 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
 import android.bluetooth.BluetoothAdapter;
@@ -74,7 +74,7 @@ public class PeripheralScannerTest {
     @Before
     public void before(){
         mockScanner = MockLollipopScanner.BluetoothAdapter.getBluetoothLeScanner();
-        GattUtils utilsMock = mock(GattUtils.class);
+        BluetoothUtils utilsMock = mock(BluetoothUtils.class);
         LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
         BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
         BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
@@ -95,11 +95,10 @@ public class PeripheralScannerTest {
         when(mockHandler.getLooper()).thenReturn(mockMainThreadLooper);
         doReturn(mockContext).when(mockContext).getApplicationContext();
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
-        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
-        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
         doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(mockContext), any());
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(utilsMock).isBluetoothEnabled(mockContext);
         gatt = FitbitGatt.getInstance();
         gatt.setDependencyProvider(dependencyProviderMock);
         gatt.setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));

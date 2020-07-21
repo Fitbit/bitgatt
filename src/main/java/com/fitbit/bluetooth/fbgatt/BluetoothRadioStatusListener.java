@@ -8,7 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -18,8 +18,8 @@ import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import androidx.annotation.VisibleForTesting;
 
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**
@@ -173,7 +173,8 @@ class BluetoothRadioStatusListener {
 
     BluetoothRadioStatusListener(Context context, boolean shouldInitializeListening) {
         this.context = context;
-        BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(context);
+        BluetoothUtils bluetoothUtils = new BluetoothUtils();
+        BluetoothAdapter adapter = bluetoothUtils.getBluetoothAdapter(context);
         // if we are in this condition, something is seriously wrong
         this.currentState = (adapter != null) ? adapter.getState() : BluetoothAdapter.STATE_OFF;
         // this handler is to deliver the callbacks in the same way as they would usually

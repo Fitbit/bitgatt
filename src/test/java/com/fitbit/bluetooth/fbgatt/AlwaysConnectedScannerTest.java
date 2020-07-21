@@ -8,10 +8,9 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.content.Intent;
@@ -65,9 +64,8 @@ public class AlwaysConnectedScannerTest {
         }
         return true;
     };
-    private GattUtils utilsMock = mock(GattUtils.class);
+    private BluetoothUtils utilsMock = mock(BluetoothUtils.class);
     private LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
-    private BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
     private BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
     private BitGattDependencyProvider dependencyProviderMock = mock(BitGattDependencyProvider.class);
 
@@ -81,11 +79,10 @@ public class AlwaysConnectedScannerTest {
         FitbitGatt.setInstance(null); // It seems another test is influencing this one. Haven't yet pinpointed witch one. This fixes the issue.
         doReturn(mockContext).when(mockContext).getApplicationContext();
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
-        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
-        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
         doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(mockContext), any());
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(utilsMock).isBluetoothEnabled(mockContext);
 
         Looper mockMainThreadLooper = mock(Looper.class);
         Thread mockMainThread = mock(Thread.class);

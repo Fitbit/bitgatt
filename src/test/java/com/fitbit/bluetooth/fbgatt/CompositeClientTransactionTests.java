@@ -9,10 +9,9 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.content.Context;
@@ -33,7 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,9 +69,8 @@ public class CompositeClientTransactionTests {
 
     @Before
     public void before() {
-        GattUtils utilsMock = mock(GattUtils.class);
+        BluetoothUtils utilsMock = mock(BluetoothUtils.class);
         LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
-        BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
         BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
         BitGattDependencyProvider dependencyProviderMock = mock(BitGattDependencyProvider.class);
         Context mockContext = mock(Context.class);
@@ -80,10 +78,9 @@ public class CompositeClientTransactionTests {
         when(mockContext.getSystemService(Any.class)).thenReturn(null);
         when(mockContext.getApplicationContext()).thenReturn(mockContext);
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(any(), eq(false));
-        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
-        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(utilsMock).isBluetoothEnabled(mockContext);
 
         Looper mockMainThreadLooper = mock(Looper.class);
         Thread mockMainThread = mock(Thread.class);

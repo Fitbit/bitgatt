@@ -11,8 +11,10 @@ package com.fitbit.bluetooth.fbgatt;
 import com.fitbit.bluetooth.fbgatt.exception.BluetoothNotEnabledException;
 import com.fitbit.bluetooth.fbgatt.exception.MissingGattServerErrorException;
 import com.fitbit.bluetooth.fbgatt.tx.ClearServerServicesTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothManagerProvider;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
+
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattServer;
@@ -24,13 +26,16 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelUuid;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -56,7 +61,8 @@ public class FitbitGattTest {
     private AlwaysConnectedScanner alwaysConnectedScannerMock = mock(AlwaysConnectedScanner.class);
     private Looper looperMock = mock(Looper.class);
     private Context contextMock = mock(Context.class);
-    private GattUtils utilsMock = mock(GattUtils.class);
+    private BluetoothUtils utilsMock = mock(BluetoothUtils.class);
+    private BluetoothManagerProvider mockBluetoothManagerProvider = mock(BluetoothManagerProvider.class);
     private Handler connectionCleanUpHandler = mock(Handler.class);
     private LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
     private PeripheralScanner scannerMock = mock(PeripheralScanner.class);
@@ -73,15 +79,15 @@ public class FitbitGattTest {
         doReturn(contextMock).when(contextMock).getApplicationContext();
         doReturn(looperMock).when(contextMock).getMainLooper();
         doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(utilsMock).isBluetoothEnabled(contextMock);
         doReturn(adapterMock).when(managerMock).getAdapter();
-        doReturn(managerMock).when(contextMock).getSystemService(Context.BLUETOOTH_SERVICE);
-        doReturn(managerMock).when(utilsMock).getBluetoothManager(contextMock);
 
 
         doReturn(scanIntentMock).when(dependencyProviderMock).getNewScanPendingIntent(eq(contextMock), any());
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(contextMock, false);
-        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
+        doReturn(mockBluetoothManagerProvider).when(dependencyProviderMock).getBluetoothManagerProvider();
+        doReturn(managerMock).when(mockBluetoothManagerProvider).get(contextMock);
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
         fitbitGatt.setDependencyProvider(dependencyProviderMock);
         FitbitGatt.setInstance(fitbitGatt);
@@ -110,7 +116,7 @@ public class FitbitGattTest {
 
     @Test
     public void testGattClientStartWithBluetoothOff() {
-        doReturn(false).when(adapterMock).isEnabled();
+        doReturn(false).when(utilsMock).isBluetoothEnabled(contextMock);
 
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
         fitbitGatt.registerGattEventListener(cb);
@@ -125,8 +131,6 @@ public class FitbitGattTest {
 
     @Test
     public void startGattServerWithBitgattStarted() {
-        doReturn(true).when(adapterMock).isEnabled();
-
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
         fitbitGatt.registerGattEventListener(cb);
         fitbitGatt.setStarted(true);
@@ -141,7 +145,7 @@ public class FitbitGattTest {
 
     @Test
     public void startGattServerWithMissingBluetoothManager() {
-        doReturn(null).when(utilsMock).getBluetoothManager(contextMock);
+        doReturn(null).when(mockBluetoothManagerProvider).get(contextMock);
 
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
         fitbitGatt.registerGattEventListener(cb);
