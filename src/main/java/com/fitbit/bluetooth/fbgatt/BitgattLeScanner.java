@@ -9,7 +9,6 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
@@ -19,57 +18,66 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Build;
+import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import java.util.List;
-
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**
  * Concrete implementation of the Android scanner
- *
+ * <p>
  * Created by iowens on 07/08/19.
  */
 
 class BitgattLeScanner implements ScannerInterface {
 
-    private final @Nullable BluetoothAdapter adapter;
-    private final @Nullable BluetoothLeScanner leScanner;
+    @Nullable
+    private final BluetoothAdapter adapter;
 
-    /**
-     * Provides a context for use with manipulating the adapter
-     * @param context The android context
-     */
-    BitgattLeScanner(@Nullable Context context) {
-        if(context != null) {
-            GattUtils utils = new GattUtils();
-            this.adapter = utils.getBluetoothAdapter(context);
-            if(adapter != null) {
-                leScanner = adapter.getBluetoothLeScanner();
-            } else {
-                leScanner = null;
-                Timber.w("The adapter was null");
-            }
+    @VisibleForTesting
+    BitgattLeScanner(@Nullable Context context, GattUtils gattUtils) {
+        if (context != null) {
+            this.adapter = gattUtils.getBluetoothAdapter(context);
         } else {
             this.adapter = null;
-            this.leScanner = null;
             Timber.w("The context was null");
         }
     }
 
+    /**
+     * Provides a context for use with manipulating the adapter
+     *
+     * @param context The android context
+     */
+    BitgattLeScanner(@Nullable Context context) {
+        this(context, new GattUtils());
+    }
+
     @Override
     public void startScan(ScanCallback callback) {
-        if(leScanner == null) {
+        BluetoothLeScanner leScanner = getScanner();
+        if (leScanner == null) {
             Timber.w("The scanner was null, context or adapter was null");
             return;
         }
         leScanner.startScan(callback);
     }
 
+    @Nullable
+    private BluetoothLeScanner getScanner() {
+        // Normaly we should not check if ble is enabled due to the underlying implementation
+        // which check for bluetooth state. This is added to ensure consistency on all OEM's
+        if (adapter != null && adapter.getBluetoothLeScanner() != null && isBluetoothEnabled()) {
+            return adapter.getBluetoothLeScanner();
+        }
+        return null;
+    }
+
     @Override
     public void startScan(List<ScanFilter> filters, ScanSettings settings, ScanCallback callback) {
-        if(leScanner == null) {
+        BluetoothLeScanner leScanner = getScanner();
+        if (leScanner == null) {
             Timber.w("The scanner was null, context or adapter was null");
             return;
         }
@@ -79,6 +87,7 @@ class BitgattLeScanner implements ScannerInterface {
     @TargetApi(Build.VERSION_CODES.O)
     @Override
     public int startScan(@Nullable List<ScanFilter> filters, @Nullable ScanSettings settings, @NonNull PendingIntent callbackIntent) {
+        BluetoothLeScanner leScanner = getScanner();
         if(leScanner == null || !FitbitGatt.atLeastSDK(Build.VERSION_CODES.O)) {
             Timber.w("The scanner was null, context or adapter was null");
             return ScanCallback.SCAN_FAILED_INTERNAL_ERROR;
@@ -88,7 +97,8 @@ class BitgattLeScanner implements ScannerInterface {
 
     @Override
     public void stopScan(ScanCallback callback) {
-        if(leScanner == null) {
+        BluetoothLeScanner leScanner = getScanner();
+        if (leScanner == null) {
             Timber.w("The scanner was null, context or adapter was null");
             return;
         }
@@ -98,7 +108,8 @@ class BitgattLeScanner implements ScannerInterface {
     @TargetApi(Build.VERSION_CODES.O)
     @Override
     public void stopScan(PendingIntent callbackIntent) {
-        if(leScanner == null || !FitbitGatt.atLeastSDK(Build.VERSION_CODES.O)) {
+        BluetoothLeScanner leScanner = getScanner();
+        if (leScanner == null || !FitbitGatt.atLeastSDK(Build.VERSION_CODES.O)) {
             Timber.w("The scanner was null, the context or adapter must have been null");
             return;
         }
@@ -107,6 +118,7 @@ class BitgattLeScanner implements ScannerInterface {
 
     @Override
     public void flushPendingScanResults(ScanCallback callback) {
+        BluetoothLeScanner leScanner = getScanner();
         if(leScanner == null) {
             Timber.w("The scanner was null, the context or adpater also must have been null");
             return;
@@ -116,14 +128,10 @@ class BitgattLeScanner implements ScannerInterface {
 
     @Override
     public boolean isBluetoothEnabled() {
-        if(leScanner == null) {
-            return false;
+        if(adapter != null) {
+            return adapter.isEnabled();
         } else {
-            if(adapter != null) {
-                return adapter.isEnabled();
-            } else {
-                return false;
-            }
+            return false;
         }
     }
 
