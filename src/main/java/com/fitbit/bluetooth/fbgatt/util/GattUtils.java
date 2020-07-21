@@ -22,8 +22,10 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+
 import java.util.Arrays;
 import java.util.List;
+
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 
@@ -73,8 +75,10 @@ public class GattUtils {
      *
      * @param context The android context
      * @return The bluetooth adapter or null
+     *
+     * @deprecated see {{@link BluetoothUtils}}
      */
-
+    @Deprecated
     public @Nullable
     BluetoothAdapter getBluetoothAdapter(Context context) {
         BluetoothManager manager = getBluetoothManager(context);
@@ -88,6 +92,7 @@ public class GattUtils {
         return adapter;
     }
 
+    @Deprecated
     public @Nullable
     BluetoothManager getBluetoothManager(Context context) {
         return (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);

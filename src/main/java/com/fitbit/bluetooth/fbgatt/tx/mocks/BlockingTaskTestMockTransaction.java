@@ -16,6 +16,7 @@ import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
 import java.util.Objects;
@@ -38,10 +39,10 @@ public class BlockingTaskTestMockTransaction extends GattTransaction {
     protected void transaction(GattTransactionCallback callback) {
         super.transaction(callback);
         // let's do something useful with the adapter
-        GattUtils utils = new GattUtils();
+        BluetoothUtils bluetoothUtils = new BluetoothUtils();
         boolean is2MsymSupported = false;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            is2MsymSupported = Objects.requireNonNull(utils.getBluetoothAdapter(FitbitGatt.getInstance().getAppContext())).isLe2MPhySupported();
+            is2MsymSupported = Objects.requireNonNull(bluetoothUtils.getBluetoothAdapter(FitbitGatt.getInstance().getAppContext())).isLe2MPhySupported();
         }
         Timber.i("2 msym is supported? %b", is2MsymSupported);
         startTime = System.currentTimeMillis();

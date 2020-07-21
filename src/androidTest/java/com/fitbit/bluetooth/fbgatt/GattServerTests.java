@@ -14,7 +14,7 @@ import com.fitbit.bluetooth.fbgatt.tx.ReadGattServerCharacteristicDescriptorValu
 import com.fitbit.bluetooth.fbgatt.tx.ReadGattServerCharacteristicValueTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.MockNoOpTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.NotifyGattServerCharacteristicMockTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
 
 import android.bluetooth.BluetoothAdapter;
@@ -235,7 +235,7 @@ public class GattServerTests {
     public void btOffOnWillClearServicesAndThatGattServerIfStartedWillRetunrAfterToggle() throws InterruptedException {
         // should do nothing if already started
         final CountDownLatch cdl = new CountDownLatch(2);
-        BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
+        BluetoothAdapter adapter = new BluetoothUtils().getBluetoothAdapter(mockContext);
         assertNotNull("adapter is null", adapter);
         AtomicBoolean isFirst = new AtomicBoolean(true);
         FitbitGatt.FitbitGattCallback cb = new NoOpGattCallback() {
@@ -277,7 +277,7 @@ public class GattServerTests {
     public void btOffOnWillClearServicesAndThatGattServerIsStillUsable() throws InterruptedException {
         // should do nothing if already started
         final CountDownLatch cdl = new CountDownLatch(2);
-        BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
+        BluetoothAdapter adapter = new BluetoothUtils().getBluetoothAdapter(mockContext);
         assertNotNull("adapter is null", adapter);
         AtomicBoolean isFirst = new AtomicBoolean(true);
         FitbitGatt.FitbitGattCallback cb = new NoOpGattCallback() {
@@ -326,7 +326,7 @@ public class GattServerTests {
     public void btOffOnWillClearServicesAndThatGattServerIfStartedWillRetunrAfterToggleMultipleTimesInQuickSuccession() throws InterruptedException {
         // should do nothing if already started
         final CountDownLatch cdl = new CountDownLatch(2);
-        BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(mockContext);
+        BluetoothAdapter adapter = new BluetoothUtils().getBluetoothAdapter(mockContext);
         assertNotNull("adapter is null", adapter);
         AtomicBoolean isFirst = new AtomicBoolean(true);
         AtomicInteger countTest = new AtomicInteger(1);

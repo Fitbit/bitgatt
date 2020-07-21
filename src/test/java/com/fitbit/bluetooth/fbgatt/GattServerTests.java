@@ -12,7 +12,8 @@ import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.AddGattServerServiceMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.SendGattServerResponseMockTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothManagerProvider;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
 import android.bluetooth.BluetoothAdapter;
@@ -20,6 +21,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -47,20 +49,23 @@ public class GattServerTests {
 
     @Before
     public void before(){
-        GattUtils utilsMock = mock(GattUtils.class);
+        BluetoothUtils utilsMock = mock(BluetoothUtils.class);
         LowEnergyAclListener lowEnergyAclListenerMock = mock(LowEnergyAclListener.class);
         BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
         BluetoothRadioStatusListener bluetoothRadioStatusListenerMock = mock(BluetoothRadioStatusListener.class);
         BitGattDependencyProvider dependencyProviderMock = mock(BitGattDependencyProvider.class);
         Context mockContext = mock(Context.class);
+        BluetoothManager managerMock = mock(BluetoothManager.class);
+        BluetoothManagerProvider mockBluetoothManagerProvider = mock(BluetoothManagerProvider.class);
 
         when(mockContext.getSystemService(Any.class)).thenReturn(null);
         when(mockContext.getApplicationContext()).thenReturn(mockContext);
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
-        doReturn(utilsMock).when(dependencyProviderMock).getNewGattUtils();
+        doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
-        doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(utilsMock).isBluetoothEnabled(mockContext);
+        doReturn(mockBluetoothManagerProvider).when(dependencyProviderMock).getBluetoothManagerProvider();
+        doReturn(managerMock).when(mockBluetoothManagerProvider).get(mockContext);
 
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);
