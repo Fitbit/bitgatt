@@ -14,9 +14,8 @@ import com.fitbit.bluetooth.fbgatt.GattServerTransaction;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattServer;
 
 import timber.log.Timber;
@@ -59,8 +58,8 @@ public class CloseGattServerTransaction extends GattServerTransaction {
                 getGattServer().setState(GattState.IDLE);
             });
         } else {
-            BluetoothAdapter adapter = new GattUtils().getBluetoothAdapter(FitbitGatt.getInstance().getAppContext());
-            if(adapter != null && adapter.isEnabled()) {
+            BluetoothUtils bluetoothUtils = new BluetoothUtils();
+            if(bluetoothUtils.isBluetoothEnabled(FitbitGatt.getInstance().getAppContext())) {
                 Timber.e("I hope you know what you are doing, you will not be able to operate on the gatt server again until BT is toggled.");
             }
             try {

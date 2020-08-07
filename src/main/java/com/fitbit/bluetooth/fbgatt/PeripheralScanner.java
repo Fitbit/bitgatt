@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
 import android.annotation.TargetApi;
@@ -76,7 +77,7 @@ class PeripheralScanner {
     AtomicBoolean periodicalScanEnabled;
     private ScanCallback callback;
     private TrackerScannerListener listener;
-    private GattUtils bleUtils;
+    private BluetoothUtils bleUtils;
     private boolean instrumentationTestMode;
 
     private Map<String, BluetoothDevice> foundDevices = new HashMap<>();
@@ -117,7 +118,7 @@ class PeripheralScanner {
         // we can just run this every 30s, if the caller doesn't do anything wrong it should never
         // exceed five ... once it gets to 4 don't let the user start another one
         mHandler.postDelayed(resetScanCounter, SCAN_TOO_MUCH_WARN_INTERVAL);
-        bleUtils = new GattUtils();
+        bleUtils = new BluetoothUtils();
         scanner = new BitgattLeScanner(context);
         callback = new ScanCallback() {
             @Override
@@ -639,7 +640,7 @@ class PeripheralScanner {
                 return null;
             }
 
-            if (!scanner.isBluetoothEnabled()) {
+            if (!bleUtils.isBluetoothEnabled(context)) {
                 Timber.w("Scanner cannot be started when Bluetooth is off");
                 listener.onPendingIntentScanStatusChanged(pendingIntentIsScanning.get());
                 return null;

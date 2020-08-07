@@ -10,6 +10,8 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import com.fitbit.bluetooth.fbgatt.util.BluetoothManagerProvider;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
 import android.app.PendingIntent;
@@ -33,6 +35,14 @@ class BitGattDependencyProvider {
 
     GattUtils getNewGattUtils() {
         return new GattUtils();
+    }
+
+    BluetoothUtils getBluetoothUtils() {
+        return new BluetoothUtils();
+    }
+
+    BluetoothManagerProvider getBluetoothManagerProvider() {
+        return new BluetoothManagerProvider();
     }
 
     LowEnergyAclListener getNewLowEnergyAclListener() {

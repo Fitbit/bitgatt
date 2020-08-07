@@ -8,19 +8,22 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
+
 import android.app.PendingIntent;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Build;
+
 import org.junit.Before;
 import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -32,17 +35,15 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public class BitgattLeScannerTest {
 
     private Context contextMock = mock(Context.class);
-    private BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
     private BluetoothLeScanner scannerMock = mock(BluetoothLeScanner.class);
-    private GattUtils gattUtilsMock = mock(GattUtils.class);
+    private BluetoothUtils mockBluetoothUtils = mock(BluetoothUtils.class);
     private BitgattLeScanner sut;
 
     @Before
     public void before() {
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(scannerMock).when(adapterMock).getBluetoothLeScanner();
-        doReturn(true).when(adapterMock).isEnabled();
-        sut = new BitgattLeScanner(contextMock, gattUtilsMock);
+        doReturn(scannerMock).when(mockBluetoothUtils).getBluetoothLeScanner(contextMock);
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
+        sut = new BitgattLeScanner(contextMock, mockBluetoothUtils);
     }
 
     @Test
@@ -84,7 +85,6 @@ public class BitgattLeScannerTest {
 
     @Test
     public void stopScanBtEnabledWithCB() {
-        doReturn(true).when(adapterMock).isEnabled();
         ScanCallback cb = mock(ScanCallback.class);
         sut.stopScan(cb);
         verify(scannerMock).stopScan(cb);
@@ -93,7 +93,6 @@ public class BitgattLeScannerTest {
     @Test
     public void stopScanBtEnabledWithPI() throws NoSuchFieldException, IllegalAccessException {
         new TestUtils().setStaticField(Build.VERSION.class.getField("SDK_INT"), Build.VERSION_CODES.O);
-        doReturn(true).when(adapterMock).isEnabled();
         PendingIntent pi = mock(PendingIntent.class);
         sut.stopScan(pi);
         verify(scannerMock).stopScan(pi);
@@ -102,7 +101,6 @@ public class BitgattLeScannerTest {
     @Test
     public void stopScanBtEnabledWithPreOreo() throws NoSuchFieldException, IllegalAccessException {
         new TestUtils().setStaticField(Build.VERSION.class.getField("SDK_INT"), Build.VERSION_CODES.N);
-        doReturn(true).when(adapterMock).isEnabled();
         PendingIntent pi = mock(PendingIntent.class);
         sut.stopScan(pi);
         verify(scannerMock, never()).stopScan(pi);
@@ -110,7 +108,6 @@ public class BitgattLeScannerTest {
 
     @Test
     public void testFlushPendingScanResults() throws NoSuchFieldException, IllegalAccessException {
-        doReturn(true).when(adapterMock).isEnabled();
         ScanCallback cb = mock(ScanCallback.class);
         sut.flushPendingScanResults(cb);
         verify(scannerMock).flushPendingScanResults(cb);
@@ -119,10 +116,9 @@ public class BitgattLeScannerTest {
     @Test
     public void testNoScannerNoExceptions() throws NoSuchFieldException, IllegalAccessException {
         new TestUtils().setStaticField(Build.VERSION.class.getField("SDK_INT"), Build.VERSION_CODES.O);
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(null).when(adapterMock).getBluetoothLeScanner();
+        doReturn(null).when(mockBluetoothUtils).getBluetoothLeScanner(contextMock);
 
-        BitgattLeScanner sut = new BitgattLeScanner(contextMock, gattUtilsMock);
+        BitgattLeScanner sut = new BitgattLeScanner(contextMock, mockBluetoothUtils);
 
         ScanCallback cb = mock(ScanCallback.class);
         ScanSettings settings = mock(ScanSettings.class);
@@ -136,16 +132,15 @@ public class BitgattLeScannerTest {
         sut.stopScan(intent);
         sut.flushPendingScanResults(cb);
 
-        verify(adapterMock, times(6)).getBluetoothLeScanner();
+        verify(mockBluetoothUtils, times(6)).getBluetoothLeScanner(contextMock);
         verifyNoMoreInteractions(scannerMock);
     }
 
     @Test
     public void testNoAdapterNoExceptions() throws NoSuchFieldException, IllegalAccessException {
         new TestUtils().setStaticField(Build.VERSION.class.getField("SDK_INT"), Build.VERSION_CODES.O);
-        doReturn(null).when(gattUtilsMock).getBluetoothAdapter(contextMock);
 
-        BitgattLeScanner sut = new BitgattLeScanner(contextMock, gattUtilsMock);
+        BitgattLeScanner sut = new BitgattLeScanner(contextMock, mockBluetoothUtils);
 
         ScanCallback cb = mock(ScanCallback.class);
         ScanSettings settings = mock(ScanSettings.class);
@@ -157,7 +152,7 @@ public class BitgattLeScannerTest {
         sut.stopScan(cb);
         sut.stopScan(intent);
         sut.flushPendingScanResults(cb);
-        assertFalse(sut.isBluetoothEnabled());
+        assertTrue(sut.isBluetoothEnabled());
     }
 
     @Test

@@ -9,8 +9,9 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
+
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -20,7 +21,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+
 import java.util.List;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
@@ -29,7 +32,7 @@ import timber.log.Timber;
  * It is important to remember that this class may be instantiated by the system, and we may
  * have been dead in the background, so no assumptions about runtime state should be made
  * by any calls herein.
- *
+ * <p>
  * This class needs to be public because we receive this as a global broadcast. Why can't we dynamically
  * register the receiver for this? Because dynamically registered receivers are only valid for as long
  * as their contexts are valid, if the app dies so does the receiver unless registered in the manifest,
@@ -39,12 +42,19 @@ import timber.log.Timber;
 public class HandleIntentBasedScanResult extends BroadcastReceiver {
 
 
-    private GattUtils gattUtils = new GattUtils();
-    private FitbitGatt fitbitGatt = FitbitGatt.getInstance();
+    private final BluetoothUtils bluetoothUtils;
+    private final FitbitGatt fitbitGatt;
 
-    @VisibleForTesting(otherwise = VisibleForTesting.NONE)
-    HandleIntentBasedScanResult(GattUtils gattUtils, FitbitGatt fitbitGatt) {
-        this.gattUtils = gattUtils;
+    public HandleIntentBasedScanResult() {
+        this(
+            new BluetoothUtils(),
+            FitbitGatt.getInstance()
+        );
+    }
+
+    @VisibleForTesting
+    HandleIntentBasedScanResult(BluetoothUtils bluetoothUtils, FitbitGatt fitbitGatt) {
+        this.bluetoothUtils = bluetoothUtils;
         this.fitbitGatt = fitbitGatt;
     }
 
@@ -140,12 +150,7 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
     }
 
     private boolean hasBluetoothAdapterEnabled(Context context) {
-        BluetoothAdapter adapter = gattUtils.getBluetoothAdapter(context);
-        if (adapter == null || !adapter.isEnabled()) {
-            Timber.w("Bluetooth is turned off, ignoring");
-            return false;
-        }
-        return true;
+        return bluetoothUtils.isBluetoothEnabled(context);
     }
 
 

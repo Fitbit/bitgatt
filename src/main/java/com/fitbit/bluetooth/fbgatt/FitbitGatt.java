@@ -22,6 +22,7 @@ import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.ClearServerServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
@@ -42,6 +43,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.ParcelUuid;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -187,8 +190,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             Timber.w("Bitgatt must not be started yet, so as far as we know BT is off.");
             return false;
         }
-        BluetoothAdapter adapter = dependencyProvider.getNewGattUtils().getBluetoothAdapter(appContext);
-        if (adapter == null || !adapter.isEnabled()) {
+        if (!dependencyProvider.getBluetoothUtils().isBluetoothEnabled(appContext)) {
             if (isBluetoothOn) {
                 isBluetoothOn = false;
             }
@@ -803,7 +805,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     @VisibleForTesting
     void addConnectedDeviceToConnectionMap(Context context, FitbitBluetoothDevice device) {
         Timber.v("Adding the new connected device");
-        BluetoothAdapter adapter = dependencyProvider.getNewGattUtils().getBluetoothAdapter(context);
+        BluetoothAdapter adapter = dependencyProvider.getBluetoothUtils().getBluetoothAdapter(context);
         if (adapter != null) {
             if (null == connectionMap.get(device)) {
                 Timber.v("Adding connected device named %s, with address %s", device.getName(), device.getAddress());
@@ -1426,7 +1428,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param callback The async callback for resolving the gatt server open
      */
     private synchronized void startServer(OpenGattServerCallback callback) {
-        BluetoothManager manager = dependencyProvider.getNewGattUtils().getBluetoothManager(this.appContext);
+        BluetoothManager manager = dependencyProvider.getBluetoothManagerProvider().get(this.appContext);
         if (manager != null && manager.getAdapter() != null) {
             /*
              * We've observed that the registration of the callback inside of the android

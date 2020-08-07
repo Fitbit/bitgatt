@@ -8,8 +8,9 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -19,9 +20,12 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
+
 import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -32,31 +36,28 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class HandleIntentBasedScanResultTest {
 
-    private GattUtils gattUtilsMock = mock(GattUtils.class);
+    private BluetoothUtils mockBluetoothUtils = mock(BluetoothUtils.class);
     private FitbitGatt fitbitGattMock = mock(FitbitGatt.class);
-    private BluetoothAdapter adapterMock = mock(BluetoothAdapter.class);
 
-    private HandleIntentBasedScanResult sut = new HandleIntentBasedScanResult(gattUtilsMock, fitbitGattMock);
+    private HandleIntentBasedScanResult sut = new HandleIntentBasedScanResult(mockBluetoothUtils, fitbitGattMock);
 
     private Context contextMock = mock(Context.class);
     private Intent intentMock = mock(Intent.class);
 
     @Test
     public void testBTOff() {
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(false).when(adapterMock).isEnabled();
+        doReturn(false).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
 
         sut.onReceive(contextMock, intentMock);
 
         verifyNoMoreInteractions(fitbitGattMock);
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verifyNoMoreInteractions(intentMock);
     }
 
     @Test
     public void testNoAdapter() {
-        doReturn(null).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(false).when(adapterMock).isEnabled();
+        doReturn(false).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
 
         sut.onReceive(contextMock, intentMock);
 
@@ -66,14 +67,13 @@ public class HandleIntentBasedScanResultTest {
 
     @Test
     public void testScanResultError() {
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
 
         sut.onReceive(contextMock, intentMock);
 
         verify(fitbitGattMock).isInitialized();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -84,15 +84,14 @@ public class HandleIntentBasedScanResultTest {
 
     @Test
     public void testEmptyScanResults() {
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(new ArrayList<ScanResult>()).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
 
         sut.onReceive(contextMock, intentMock);
 
         verify(fitbitGattMock).isInitialized();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -103,15 +102,14 @@ public class HandleIntentBasedScanResultTest {
 
     @Test
     public void testNullResultSet() {
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(null).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
 
         sut.onReceive(contextMock, intentMock);
 
         verify(fitbitGattMock).isInitialized();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -126,8 +124,7 @@ public class HandleIntentBasedScanResultTest {
         ArrayList<ScanResult> results = new ArrayList<>();
         results.add(mock(ScanResult.class));
 
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(results).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
         doReturn(null).when(fitbitGattMock).getClientCallback();
@@ -136,7 +133,7 @@ public class HandleIntentBasedScanResultTest {
 
         verify(fitbitGattMock).isInitialized();
         verify(fitbitGattMock).getClientCallback();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -155,8 +152,7 @@ public class HandleIntentBasedScanResultTest {
         GattClientCallback gattClientCallbackMock = mock(GattClientCallback.class);
 
 
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(results).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
         doReturn(gattClientCallbackMock).when(fitbitGattMock).getClientCallback();
@@ -166,7 +162,7 @@ public class HandleIntentBasedScanResultTest {
 
         verify(fitbitGattMock).isInitialized();
         verify(fitbitGattMock).getClientCallback();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -192,8 +188,7 @@ public class HandleIntentBasedScanResultTest {
         doReturn(device).when(scanResultMock).getDevice();
         doReturn(true).when(fitbitGattMock).isInitialized();
         doReturn(true).when(fitbitGattMock).isPendingIntentScanning();
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(results).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
         doReturn(gattClientCallbackMock).when(fitbitGattMock).getClientCallback();
@@ -211,7 +206,7 @@ public class HandleIntentBasedScanResultTest {
         verify(fitbitGattMock).isPendingIntentScanning();
         verify(fitbitGattMock).addBackgroundScannedDeviceConnection(any(FitbitBluetoothDevice.class));
         verify(fitbitGattMock).getClientCallback();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -239,8 +234,7 @@ public class HandleIntentBasedScanResultTest {
         doReturn(device).when(scanResultMock).getDevice();
         doReturn(true).when(fitbitGattMock).isInitialized();
         doReturn(false).when(fitbitGattMock).isPendingIntentScanning();
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(results).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
         doReturn(gattClientCallbackMock).when(fitbitGattMock).getClientCallback();
@@ -261,7 +255,7 @@ public class HandleIntentBasedScanResultTest {
         verify(fitbitGattMock).getClientCallback();
         verify(fitbitGattMock).getPeripheralScanner();
         verify(scannerMock).setIsPendingIntentScanning(true);
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -289,8 +283,7 @@ public class HandleIntentBasedScanResultTest {
         doReturn(true).when(fitbitGattMock).isInitialized();
         doReturn(true).when(fitbitGattMock).isInitialized();
         doReturn(false).when(fitbitGattMock).isPendingIntentScanning();
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(results).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
         doReturn(gattClientCallbackMock).when(fitbitGattMock).getClientCallback();
@@ -310,7 +303,7 @@ public class HandleIntentBasedScanResultTest {
         verify(fitbitGattMock).addBackgroundScannedDeviceConnection(any(FitbitBluetoothDevice.class));
         verify(fitbitGattMock).getClientCallback();
         verify(fitbitGattMock).getPeripheralScanner();
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
@@ -336,8 +329,7 @@ public class HandleIntentBasedScanResultTest {
         doReturn(device).when(scanResultMock).getDevice();
         doReturn(false).when(fitbitGattMock).isInitialized();
         doReturn(false).when(fitbitGattMock).isPendingIntentScanning();
-        doReturn(adapterMock).when(gattUtilsMock).getBluetoothAdapter(contextMock);
-        doReturn(true).when(adapterMock).isEnabled();
+        doReturn(true).when(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         doReturn(ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode()).when(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
         doReturn(results).when(intentMock).getParcelableArrayListExtra(BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT);
         doReturn(gattClientCallbackMock).when(fitbitGattMock).getClientCallback();
@@ -366,7 +358,7 @@ public class HandleIntentBasedScanResultTest {
         verify(fitbitGattMock).registerGattEventListener(any());
         verify(fitbitGattMock).getPeripheralScanner();
         verify(fitbitGattMock).unregisterGattEventListener(gattCallbackRef.get());
-        verify(adapterMock).isEnabled();
+        verify(mockBluetoothUtils).isBluetoothEnabled(contextMock);
         verify(intentMock).getAction();
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_CALLBACK_TYPE, ScanSettings.CALLBACK_TYPE_FIRST_MATCH);
         verify(intentMock).getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, ScanFailedReason.SCAN_SUCCESS_NO_ERROR.getCode());
