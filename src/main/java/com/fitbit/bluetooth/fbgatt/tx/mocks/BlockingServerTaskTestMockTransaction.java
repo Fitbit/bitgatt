@@ -11,6 +11,7 @@ package com.fitbit.bluetooth.fbgatt.tx.mocks;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattServerConnection;
+import com.fitbit.bluetooth.fbgatt.GattServerTransaction;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
@@ -23,7 +24,7 @@ import java.util.Objects;
 
 import timber.log.Timber;
 
-public class BlockingServerTaskTestMockTransaction extends GattTransaction {
+public class BlockingServerTaskTestMockTransaction extends GattServerTransaction {
 
     private static final String NAME = "BlockingServerTaskTestMockTransaction";
     private static final long OVERRIDE_TIMEOUT = 1000L;

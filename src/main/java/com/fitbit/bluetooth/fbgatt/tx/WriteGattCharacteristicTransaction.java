@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -27,11 +28,11 @@ import timber.log.Timber;
 /**
  * Will write a characteristic from a remote device and populate a transaction result with
  * response
- *
+ * <p>
  * Created by iowens on 12/4/17.
  */
 
-public class WriteGattCharacteristicTransaction extends GattTransaction {
+public class WriteGattCharacteristicTransaction extends GattClientTransaction {
 
     private static final String TAG = "WriteCharacteristicTransaction";
 

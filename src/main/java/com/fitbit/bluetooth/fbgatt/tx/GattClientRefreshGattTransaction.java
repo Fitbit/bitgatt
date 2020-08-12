@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -32,14 +33,15 @@ import timber.log.Timber;
  * why you are doing it and in the narrowest of circumstances when you know that it will help.
  */
 
-public class GattClientRefreshGattTransaction extends GattTransaction {
+public class GattClientRefreshGattTransaction extends GattClientTransaction {
 
     public static final String NAME = "GattClientRefreshGattTransaction";
     private final CountDownLatch cdl = new CountDownLatch(2);
 
     /**
      * The successful end state here will be {@link GattState#REFRESH_GATT_SUCCESS}
-     * @param connection The {@link GattConnection} upon which you wish to try refresh
+     *
+     * @param connection      The {@link GattConnection} upon which you wish to try refresh
      * @param successEndState The success end state of this transaction
      */
 

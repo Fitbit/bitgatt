@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -27,7 +28,7 @@ import static android.os.Build.VERSION_CODES.O;
  * will leave the connection in a usable state
  */
 
-public class ReadGattClientPhyTransaction extends GattTransaction {
+public class ReadGattClientPhyTransaction extends GattClientTransaction {
     public static final String NAME = "ReadGattClientPhyTransaction";
 
     public ReadGattClientPhyTransaction(GattConnection connection, GattState successEndState) {

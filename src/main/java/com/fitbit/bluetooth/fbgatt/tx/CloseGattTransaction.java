@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -21,12 +22,13 @@ import timber.log.Timber;
 
 /**
  * Will close the gatt server, on Marshmallow+ this will also release the client if
- *
+ * <p>
  * Created by iowens on 1/22/18.
  */
 
-public class CloseGattTransaction extends GattTransaction {
+public class CloseGattTransaction extends GattClientTransaction {
     private static final String NAME = "CloseGattTransaction";
+
     public CloseGattTransaction(@Nullable GattConnection connection, GattState successEndState) {
         super(connection, successEndState);
     }

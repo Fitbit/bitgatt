@@ -8,26 +8,16 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
-import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothGatt;
-import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
-
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -52,54 +42,37 @@ import timber.log.Timber;
  * <p>
  * Created by iowens on 10/17/17.
  */
-public abstract class GattTransaction extends GattServerCallback implements GattClientListener, GattServerListener {
+public abstract class GattTransaction<T extends GattTransaction<T>> {
     /*
      * We shouldn't allow any gatt transaction including
      */
     protected static final long DEFAULT_GATT_TRANSACTION_TIMEOUT = TimeUnit.SECONDS.toMillis(60);
-    private final GattConnection connection;
-    private final Handler timeoutHandler;
+
+    protected final Handler timeoutHandler;
     protected final Handler mainThreadHandler;
 
     private long timeout = DEFAULT_GATT_TRANSACTION_TIMEOUT;
 
     private GattState successEndState;
 
-    private final ArrayList<GattTransaction> preCommitHooks;
+    protected final ArrayList<T> preCommitHooks;
 
-    private final ArrayList<GattTransaction> postCommitHooks;
+    protected final ArrayList<T> postCommitHooks;
 
-    private Context appContext; //NOPMD
+    protected Context appContext; //NOPMD
     public GattTransactionCallback callback;
-    private GattServerConnection gattServer;
-    private AtomicBoolean taskHasStarted = new AtomicBoolean(false);
-    private AtomicInteger executedTransactions = new AtomicInteger(0);
-    private boolean haltChain = false;
+
+    protected AtomicBoolean taskHasStarted = new AtomicBoolean(false);
+    protected AtomicInteger executedTransactions = new AtomicInteger(0);
+    protected boolean haltChain = false;
     private final Object hookLock = new Object();
-    protected final CountDownLatch cdl = new CountDownLatch(1);
+    private final CountDownLatch cdl = new CountDownLatch(1);
     protected StrategyProvider strategyProvider = new StrategyProvider();
-    private GattUtils utils = new GattUtils();
 
-    public GattTransaction(GattServerConnection server, GattState successEndState) {
-        this((GattConnection) null, successEndState);
-        this.gattServer = server;
-    }
-
-    public GattTransaction(GattServerConnection server, GattState successEndState, long timeoutMillis) {
-        this(server, successEndState);
-        setTimeout(timeoutMillis);
-    }
-
-    public GattTransaction(@Nullable GattConnection connection, GattState successEndState, long timeoutMillis) {
-        this(connection, successEndState);
-        setTimeout(timeoutMillis);
-    }
-
-    public GattTransaction(@Nullable GattConnection connection, GattState successEndState) {
-        super();
+    public GattTransaction(GattState successEndState) {
         this.appContext = FitbitGatt.getInstance().getAppContext();
-        if(this.appContext == null) {
-            Timber.w("[%s] Bitgatt must not have been started, please start Bitgatt", (connection != null ) ? connection.getDevice() : "Unknown Device");
+        if (this.appContext == null) {
+            Timber.w("Bitgatt must not have been started, please start Bitgatt");
             throw new IllegalStateException("You must start Bitgatt before creating transactions");
         }
         // let's put the timeout on the main looper so that we don't end up
@@ -109,7 +82,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         // gatt request for consistency.
         this.mainThreadHandler = new Handler(this.appContext.getMainLooper());
         this.successEndState = successEndState;
-        this.connection = connection;
+
         /*
          * Often this will have no entries
          */
@@ -124,21 +97,12 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         this.timeout = timeout;
     }
 
-    protected long getTimeout() { return this.timeout; }
-
-    protected GattConnection getConnection() {
-        return connection;
+    protected long getTimeout() {
+        return this.timeout;
     }
 
-    protected GattServerConnection getGattServer() {
-        return this.gattServer;
-    }
-
-    @Override
-    public @Nullable
-    FitbitBluetoothDevice getDevice() {
-        return (connection != null) ? getConnection().getDevice() : null;
-    }
+    public abstract @Nullable
+    FitbitBluetoothDevice getDevice();
 
     /**
      * Used to determine if this transaction has already been run
@@ -162,55 +126,26 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
      */
     @VisibleForTesting( otherwise = VisibleForTesting.PACKAGE_PRIVATE)
     public void commit(GattTransactionCallback callback) {
-        // get main looper would only be null in a test, unless mocked
-        // we have to do all of this null checking for connection because of a contract with fbairlink
-        // that makes the transaction connection constructor accept null, we should review this
-        // contract after the launch of Golden Gate.
-        Looper mainLooper = this.appContext.getMainLooper();
-        if(getConnection() != null && getConnection().getClientTransactionQueueController() != null) {
-            if (mainLooper != null &&
-                    (Thread.currentThread().equals(mainLooper.getThread()))) {
-                throw new IllegalStateException(String.format(Locale.ENGLISH,
-                        "[%s] This transaction %s is not allowed to run on the %s thread",
-                        getDevice(),
-                        getName(),
-                        mainLooper.getThread()));
-            }
-        } else if(getGattServer() != null && getGattServer().getServerTransactionQueueController() != null) {
-            if (mainLooper != null &&
-                    (Thread.currentThread().equals(mainLooper.getThread()))) {
-                throw new IllegalStateException(String.format(Locale.ENGLISH,
-                        "[%s] This transaction %s is not allowed to run on the %s thread",
-                        getDevice(),
-                        getName(),
-                        mainLooper.getThread()));
-            }
-        } else {
-            throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] This transaction can not be run because there is no connection to support it", getDevice()));
-        }
+
         if (taskHasStarted.getAndSet(true)) {
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] This transaction was already started!", getDevice()));
         }
         // let's allocate the array to the proper size ( why let it grow and waste cycles )
-        ArrayList<GattTransaction> transactions = new ArrayList<>(preCommitHooks.size() + postCommitHooks.size() + 1);
+        ArrayList<T> transactions = new ArrayList<>(preCommitHooks.size() + postCommitHooks.size() + 1);
         // if this is a composite transaction, we will want to make sure that while intermediate callbacks can be called back
         // we hold a reference to the parent tx and call it on tx complete
         synchronized (hookLock) {
             this.callback = callback;
             transactions.addAll(preCommitHooks);
-            transactions.add(this);
+            transactions.add((T) this);
             transactions.addAll(postCommitHooks);
         }
         // the entire transaction must complete in {@link timeout} time.
-        scheduleTransactionTimeout(this, callback);
+        scheduleTransactionTimeout((T) this, callback);
         while (!transactions.isEmpty()) {
-            GattTransaction tx = transactions.remove(0);
+            T tx = (T) transactions.remove(0);
             if (!areConditionsValidForExecution(tx)) {
-                if (connection != null) {
-                    Timber.i("[%s] The transaction couldn't be run because the connection is in %s state", getDevice(), connection.getGattState());
-                } else {
-                    Timber.w("[%s] The transaction couldn't be run because there is no connection", getDevice());
-                }
+                Timber.w("[%s] The transaction conditions are not met", getDevice());
                 return;
             }
             if (this.haltChain) {
@@ -245,47 +180,14 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
      * @param tx The transaction to check
      * @return True if conditions are valid, false otherwise
      */
-    private boolean areConditionsValidForExecution(GattTransaction tx) {
-        GattConnection txConnection = tx.getConnection();
-        GattServerConnection txGattServer = tx.getGattServer();
-        // check if transaction entry conditions are valid
-        if (txConnection != null) {
-            if (txConnection.checkTransaction(tx).equals(GattStateTransitionValidator.GuardState.INVALID_TARGET_STATE)) {
-                TransactionResult transactionResult = new TransactionResult.Builder().transactionName(tx.getName())
-                        .gattState(tx.getConnection().getGattState())
-                        .resultStatus(TransactionResult.TransactionResultStatus.INVALID_STATE).build();
-                mainThreadHandler.post(() -> callback.onTransactionComplete(transactionResult));
-                release();
-                // we will dispose of all timeouts now because none of the other runnables
-                // will complete
-                timeoutHandler.removeCallbacksAndMessages(null);
-                return false;
-            }
-        } else if (txGattServer != null) {
-            if (txGattServer.checkTransaction(tx).equals(GattStateTransitionValidator.GuardState.INVALID_TARGET_STATE)) {
-                TransactionResult transactionResult = new TransactionResult.Builder().transactionName(tx.getName())
-                        .gattState(tx.getGattServer().getGattState())
-                        .resultStatus(TransactionResult.TransactionResultStatus.INVALID_STATE).build();
-                mainThreadHandler.post(() -> callback.onTransactionComplete(transactionResult));
-                release();
-                // we will dispose of all timeouts now because none of the other runnables
-                // will complete
-                timeoutHandler.removeCallbacksAndMessages(null);
-                return false;
-            }
-        } else {
-            throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] No gatt server or connection for this transaction", getDevice()));
-        }
-        return true;
-    }
+    protected abstract boolean areConditionsValidForExecution(T tx);
 
     /**
      * Will actually execute a given transaction
      *
      * @param tx The transaction to be executed
      */
-
-    private void executeTransaction(GattTransaction tx, GattTransactionCallback callback) {
+    private void executeTransaction(T tx, GattTransactionCallback callback) {
         if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
             Timber.v("[%s] Running transaction: %s", getDevice(), tx.getName());
         }
@@ -295,27 +197,9 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         tx.transaction(getGattTransactionCallback(tx, callback));
     }
 
-    private void unregisterListener(GattTransaction tx) {
-        GattClientCallback gattClientCallback = FitbitGatt.getInstance().getClientCallback();
-        if (gattClientCallback != null) {
-            gattClientCallback.removeListener(tx);
-        }
-        GattServerCallback serverCallback = FitbitGatt.getInstance().getServerCallback();
-        if (serverCallback != null) {
-            serverCallback.removeListener(tx);
-        }
-    }
+    protected abstract void unregisterListener(T tx);
 
-    private void registerListener(GattTransaction tx) {
-        GattClientCallback gattClientCallback = FitbitGatt.getInstance().getClientCallback();
-        if (gattClientCallback != null) {
-            gattClientCallback.addListener(tx);
-        }
-        GattServerCallback serverCallback = FitbitGatt.getInstance().getServerCallback();
-        if (serverCallback != null) {
-            serverCallback.addListener(tx);
-        }
-    }
+    protected abstract void registerListener(T tx);
 
     protected int getExecutedTransactions() {
         return executedTransactions.get();
@@ -339,7 +223,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         release();
     }
 
-    private ParentGattTransactionCallback getGattTransactionCallback(GattTransaction tx, GattTransactionCallback wrappedCallback) {
+    private ParentGattTransactionCallback getGattTransactionCallback(T tx, GattTransactionCallback wrappedCallback) {
         return new ParentGattTransactionCallback() {
             @Override
             public void onTransactionComplete(@NonNull TransactionResult result) {
@@ -382,11 +266,11 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         };
     }
 
-    private void scheduleTransactionTimeout(GattTransaction tx, GattTransactionCallback callback) {
+    private void scheduleTransactionTimeout(T tx, GattTransactionCallback callback) {
         timeoutHandler.postDelayed(() -> handleTimeout(tx, callback), timeout);
     }
 
-    private void handleTimeout(GattTransaction tx, GattTransactionCallback callback) {
+    protected void handleTimeout(T tx, GattTransactionCallback callback) {
         // for the purpose of caching so that we don't leak in the instance of an illegal state
         // exception
         final GattTransactionCallback localCallback;
@@ -396,27 +280,9 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         this.haltChain = true;
         // some things will have locked using the connection object
         timeoutHandler.removeCallbacksAndMessages(null);
-        GattConnection txConnection = tx.getConnection();
-        GattServerConnection txGattServer = tx.getGattServer();
-        TransactionResult transactionResult;
-        if (txConnection != null) {
-            // tell the transaction that it timed out, so that in the case that it is blocking
-            // the thread, it knows to release
-            tx.onGattClientTransactionTimeout(txConnection);
+        TransactionResult transactionResult = getTimeoutTransactionResult(tx);
+        if (transactionResult == null) {
             transactionResult = new TransactionResult.Builder().transactionName(tx.getName())
-                    .gattState(txConnection.getGattState())
-                    .resultStatus(TransactionResult.TransactionResultStatus.TIMEOUT).build();
-        } else if (txGattServer != null) {
-            // tell the transaction that it timed out, so that in the case that it is blocking
-            // the thread, it knows to release
-            tx.onGattServerTransactionTimeout(txGattServer);
-            transactionResult = new TransactionResult.Builder().transactionName(tx.getName())
-
-                    .gattState(getGattServer().getGattState())
-                    .resultStatus(TransactionResult.TransactionResultStatus.TIMEOUT).build();
-        } else {
-            transactionResult = new TransactionResult.Builder().transactionName(tx.getName())
-                    .gattState(getGattServer().getGattState())
                     .resultStatus(TransactionResult.TransactionResultStatus.INVALID_STATE).build();
             localCallback.onTransactionComplete(transactionResult);
             unregisterListener(tx);
@@ -429,8 +295,10 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         Timber.v("[%s] The transaction timed out and the callbacks have already been notified, going to idle state", getDevice());
     }
 
+    protected abstract TransactionResult getTimeoutTransactionResult(T tx);
+
     @Deprecated
-    public void addPreCommitHook(GattTransaction preCommitHook) {
+    public void addPreCommitHook(T preCommitHook) {
         if (taskHasStarted.get()) {
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] You can't add hooks after task has started", getDevice()));
         }
@@ -444,7 +312,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
     }
 
     @Deprecated
-    public void removePreCommitHook(GattTransaction preCommitHook) {
+    public void removePreCommitHook(T preCommitHook) {
         if (taskHasStarted.get()) {
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] You can't remove hooks after task has started", getDevice()));
         }
@@ -454,7 +322,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
     }
 
     @Deprecated
-    public void addPostCommitHook(GattTransaction postCommitHook) {
+    public void addPostCommitHook(T postCommitHook) {
         if (taskHasStarted.get()) {
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] You can't add hooks after task has started", getDevice()));
         }
@@ -464,7 +332,7 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
     }
 
     @Deprecated
-    public void removePostCommitHook(GattTransaction postCommitHook) {
+    public void removePostCommitHook(T postCommitHook) {
         if (taskHasStarted.get()) {
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] You can't remove hooks after task has started", getDevice()));
         }
@@ -475,13 +343,13 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
 
     @VisibleForTesting
     @SuppressWarnings("unused") // API Method
-    public ArrayList<GattTransaction> getPreCommitHooks() {
+    public ArrayList<T> getPreCommitHooks() {
         return preCommitHooks;
     }
 
     @VisibleForTesting
     @SuppressWarnings("unused") // API Method
-    public ArrayList<GattTransaction> getPostCommitHooks() {
+    public ArrayList<T> getPostCommitHooks() {
         return postCommitHooks;
     }
 
@@ -509,138 +377,12 @@ public abstract class GattTransaction extends GattServerCallback implements Gatt
         return successEndState;
     }
 
-    @Override
-    public void onServerConnectionStateChange(BluetoothDevice device, int status, int newState) {
-        Timber.v("[%s] onServerConnectionStateChange not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerServiceAdded(int status, BluetoothGattService service) {
-        Timber.v("[%s] onServerServiceAdded not handled in tx: %s", Build.MODEL, getName());
-    }
-
-    @Override
-    public void onServerCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristicCopy characteristic) {
-        Timber.v("[%s] onServerCharacteristicReadRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerCharacteristicWriteRequest(BluetoothDevice device, int requestId, BluetoothGattCharacteristicCopy characteristic, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        Timber.v("[%s] onServerCharacteristicWriteRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerDescriptorReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattDescriptorCopy descriptor) {
-        Timber.v("[%s] onServerDescriptorReadRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptorCopy descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
-        Timber.v("[%s] onServerDescriptorWriteRequest not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerExecuteWrite(BluetoothDevice device, int requestId, boolean execute) {
-        Timber.v("[%s] onServerExecuteWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerNotificationSent(BluetoothDevice device, int status) {
-        Timber.v("[%s] onServerNotificationSent not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerMtuChanged(BluetoothDevice device, int mtu) {
-        Timber.v("[%s] onServerMtuChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerPhyUpdate(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onServerPhyUpdate not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onServerPhyRead(BluetoothDevice device, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onServerPhyRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
-    }
-
-    @Override
-    public void onPhyUpdate(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onPhyUpdate not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
-        Timber.v("[%s] onPhyRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-        Timber.v("[%s] onPhyRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-        Timber.v("[%s] onServicesDiscovered not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
-        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
-            Timber.v("[%s] onCharacteristicRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-        }
-    }
-
-    @Override
-    public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
-        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
-            Timber.v("[%s] onCharacteristicWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-        }
-    }
-
-    @Override
-    public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic) {
-        if (FitbitGatt.getInstance().isSlowLoggingEnabled()) {
-            Timber.v("[%s] onCharacteristicChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-        }
-    }
-
-    @Override
-    public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptorCopy descriptor, int status) {
-        Timber.v("[%s] onDescriptorRead not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptorCopy descriptor, int status) {
-        Timber.v("[%s] onDescriptorWrite not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onReliableWriteCompleted(BluetoothGatt gatt, int status) {
-        Timber.v("[%s] onReliableWriteCompleted not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status) {
-        Timber.v("[%s] onReadRemoteRssi not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
-    @Override
-    public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
-        Timber.v("[%s] onMtuChanged not handled in tx: %s", utils.debugSafeGetBtDeviceName(gatt), getName());
-    }
-
     /**
      * @return a String suitable for logging that contains a dump of the state of this transaction
      */
     @SuppressWarnings("unused") // API Method
     public String getStateDump() {
-        return "Connection: [" +
-                getConnection() +
-                "] Server Connection: [" +
-                getGattServer() +
-                "] Callback: " +
-                callback +
+        return callback +
                 " taskHasStarted: " +
                 taskHasStarted.get() +
                 " haltChain: " +

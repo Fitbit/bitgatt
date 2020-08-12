@@ -123,7 +123,7 @@ public class CompositeClientTransactionTests {
                 new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, someData, false);
         WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransactionTwo =
                 new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, someData, false);
-        ArrayList<GattTransaction> txList = new ArrayList<>(2);
+        ArrayList<GattClientTransaction> txList = new ArrayList<>(2);
         txList.add(writeGattCharacteristicMockTransaction);
         txList.add(writeGattCharacteristicMockTransactionTwo);
         CompositeClientTransaction compositeClientTransaction = new CompositeClientTransaction(conn, txList);
@@ -145,7 +145,7 @@ public class CompositeClientTransactionTests {
                 new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, someData, false);
         WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransactionTwo =
                 new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, someData, true);
-        ArrayList<GattTransaction> txList = new ArrayList<>(2);
+        ArrayList<GattClientTransaction> txList = new ArrayList<>(2);
         txList.add(writeGattCharacteristicMockTransaction);
         txList.add(writeGattCharacteristicMockTransactionTwo);
         CompositeClientTransaction compositeClientTransaction = new CompositeClientTransaction(conn, txList);

@@ -24,6 +24,7 @@ import android.os.Looper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -265,6 +266,7 @@ public class GattConnectDisconnectTests {
     }
 
     @Test
+    @Ignore("flakey")
     public void testIsConnectedWhenStateIsConnecting() {
         // started
         FitbitGatt.getInstance().startGattClient(mockContext);

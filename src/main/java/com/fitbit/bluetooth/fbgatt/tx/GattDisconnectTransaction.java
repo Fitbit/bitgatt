@@ -10,6 +10,7 @@ package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -25,11 +26,11 @@ import timber.log.Timber;
 
 /**
  * Will disconnect from the gatt connection
- *
+ * <p>
  * Created by iowens on 11/10/17.
  */
 
-public class GattDisconnectTransaction extends GattTransaction {
+public class GattDisconnectTransaction extends GattClientTransaction {
 
     public static final String NAME = "GattDisconnectionTransaction";
 

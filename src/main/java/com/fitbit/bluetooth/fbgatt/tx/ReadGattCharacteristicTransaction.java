@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -26,11 +27,11 @@ import timber.log.Timber;
 
 /**
  * Will read the contents of a characteristic
- *
+ * <p>
  * Created by iowens on 11/17/17.
  */
 
-public class ReadGattCharacteristicTransaction extends GattTransaction {
+public class ReadGattCharacteristicTransaction extends GattClientTransaction {
     public static final String NAME = "ReadGattCharacteristicTransaction";
     private final BluetoothGattCharacteristic characteristic;
 

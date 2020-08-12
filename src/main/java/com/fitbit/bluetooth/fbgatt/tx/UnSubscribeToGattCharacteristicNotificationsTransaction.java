@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.AndroidDevice;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -27,11 +28,11 @@ import timber.log.Timber;
 
 /**
  * Will unsubscribe from notifications on a remote gatt characteristic
- *
+ * <p>
  * Created by iowens on 12/7/17.
  */
 
-public class UnSubscribeToGattCharacteristicNotificationsTransaction extends GattTransaction {
+public class UnSubscribeToGattCharacteristicNotificationsTransaction extends GattClientTransaction {
     public static final String NAME = "UnSubscribeToGattCharacteristicNotificationsTransaction";
     private BluetoothGattCharacteristic characteristic;
 

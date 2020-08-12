@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -25,11 +26,11 @@ import static android.os.Build.VERSION_CODES.LOLLIPOP;
 
 /**
  * Request a new MTU
- *
+ * <p>
  * Created by iowens on 12/14/17.
  */
 
-public class RequestMtuGattTransaction extends GattTransaction {
+public class RequestMtuGattTransaction extends GattClientTransaction {
 
     public static final String NAME = "RequestMtuGattTransaction";
 

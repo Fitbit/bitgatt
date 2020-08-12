@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.AndroidDevice;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -31,7 +32,7 @@ import timber.log.Timber;
  * Created by iowens on 12/7/17.
  */
 
-public class SubscribeToCharacteristicNotificationsTransaction extends GattTransaction {
+public class SubscribeToCharacteristicNotificationsTransaction extends GattClientTransaction {
     public static final String NAME = "SubscribeToCharacteristicNotificationsTransaction";
     private final BluetoothGattCharacteristic characteristic;
 
