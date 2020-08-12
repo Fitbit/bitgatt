@@ -45,10 +45,7 @@ public class TransactionQueueControllerTest {
     public void controllerIsAbleToRestart() throws InterruptedException {
         CountDownLatch cdl = new CountDownLatch(1);
         assertTrue(sut.isQueueThreadStopped());
-
-        sut.queueTransaction(cdl::countDown);
         sut.stop();
-        assertEquals(1, cdl.getCount());
         assertTrue(sut.isQueueThreadStopped());
 
         sut.queueTransaction(cdl::countDown);
