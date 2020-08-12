@@ -11,6 +11,7 @@ package com.fitbit.bluetooth.fbgatt.tx.mocks;
 import android.bluetooth.BluetoothGattCharacteristic;
 
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -23,7 +24,7 @@ import java.util.Objects;
 
 import timber.log.Timber;
 
-public class BlockingTaskTestMockTransaction extends GattTransaction {
+public class BlockingTaskTestMockTransaction extends GattClientTransaction {
 
     private static final String NAME = "BlockingTaskTestMockTransaction";
     private static final long OVERRIDE_TIMEOUT = 1000L;

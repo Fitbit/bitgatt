@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -34,10 +35,11 @@ import static android.os.Build.VERSION_CODES.LOLLIPOP;
  * Created by iowens on 12/16/17.
  */
 
-public class RequestGattConnectionIntervalTransaction extends GattTransaction {
+public class RequestGattConnectionIntervalTransaction extends GattClientTransaction {
 
     private static final String NAME = "RequestGattConnectionIntervalTransaction";
     private final Speed speed;
+
     public RequestGattConnectionIntervalTransaction(@Nullable GattConnection connection, GattState successEndState, Speed connectionSpeed) {
         super(connection, successEndState);
         this.speed = connectionSpeed;

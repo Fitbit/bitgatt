@@ -77,7 +77,7 @@ public class NotifyGattServerCharacteristicTransaction extends GattServerTransac
                 // we want to apply this strategy to every phone, so we will provide an empty target android
                 // device
                 Strategy strategy = strategyProvider.
-                        getStrategyForPhoneAndGattConnection(null, getConnection(),
+                        getStrategyForPhoneAndGattConnection(null, null,
                                 Situation.TRACKER_WENT_AWAY_DURING_GATT_OPERATION);
                 if(strategy != null) {
                     strategy.applyStrategy();

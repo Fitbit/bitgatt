@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -22,11 +23,11 @@ import timber.log.Timber;
 
 /**
  * Will discover services on a gatt client
- *
+ * <p>
  * Created by iowens on 12/19/17.
  */
 
-public class GattClientDiscoverServicesTransaction extends GattTransaction {
+public class GattClientDiscoverServicesTransaction extends GattClientTransaction {
     public static final String NAME = "GattClientDiscoverServices";
 
     public GattClientDiscoverServicesTransaction(@Nullable GattConnection connection, GattState successEndState) {

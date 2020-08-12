@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -25,7 +26,7 @@ import timber.log.Timber;
  * a non-gatt library strategy to use this transaction appropriately.
  */
 
-public class SetClientConnectionStateTransaction extends GattTransaction {
+public class SetClientConnectionStateTransaction extends GattClientTransaction {
 
     private static final String NAME = "SetClientConnectionStateTransaction";
     private GattState destinationState;

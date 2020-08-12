@@ -10,6 +10,7 @@ package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -39,7 +40,7 @@ import timber.log.Timber;
  * <p>
  * Created by iowens on 8/28/18.
  */
-public class CreateBondTransaction extends GattTransaction {
+public class CreateBondTransaction extends GattClientTransaction {
     /**
      * The transaction name
      */

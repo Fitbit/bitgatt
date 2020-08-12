@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx;
 
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -26,11 +27,11 @@ import timber.log.Timber;
 
 /**
  * Obtain a connected gatt instance.
- *
+ * <p>
  * Created by iowens on 11/6/17.
  */
 
-public class GattConnectTransaction extends GattTransaction {
+public class GattConnectTransaction extends GattClientTransaction {
 
     public static final String NAME = "GattConnectTransaction";
     private static final long CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(30);

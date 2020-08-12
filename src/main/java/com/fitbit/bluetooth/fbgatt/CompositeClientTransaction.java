@@ -26,15 +26,15 @@ import timber.log.Timber;
  * Created by iowens on 04/25/19.
  */
 
-public class CompositeClientTransaction extends GattTransaction implements Closeable {
+public class CompositeClientTransaction extends GattClientTransaction implements Closeable {
     public static final String NAME = "CompositeClientTransaction";
-    private List<GattTransaction> transactionList;
+    private List<GattClientTransaction> transactionList;
     private GattTransactionCallback finalCallback;
     private ArrayList<TransactionResult> results = new ArrayList<>();
     private AtomicInteger transactionIndex = new AtomicInteger(0);
     private TransactionQueueController compositeClientQueueController;
 
-    public CompositeClientTransaction(@Nullable GattConnection connection, @NonNull List<GattTransaction> transactionList) {
+    public CompositeClientTransaction(@Nullable GattConnection connection, @NonNull List<GattClientTransaction> transactionList) {
         super(connection, GattState.IDLE);
         this.transactionList = transactionList;
         // setting the transaction timeout to the aggregate
