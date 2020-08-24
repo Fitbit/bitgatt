@@ -47,6 +47,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * Responsible for testing the {@link FitbitGatt} api
@@ -237,6 +238,7 @@ public class FitbitGattTest {
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
         GattServerConnection prevConnection = mock(GattServerConnection.class);
         GattServerConnection newConnection = mock(GattServerConnection.class);
+        when(newConnection.getGattState()).thenReturn(GattState.IDLE);
         doAnswer(invocation -> {
             TransactionResult tr = new TransactionResult.Builder()
                 .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
