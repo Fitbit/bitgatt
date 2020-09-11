@@ -1078,7 +1078,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         return this.serverCallback;
     }
 
-    @SuppressWarnings("WeakerAccess") // API Method
     @Nullable
     public GattClientCallback getClientCallback() {
         return this.clientCallback;
