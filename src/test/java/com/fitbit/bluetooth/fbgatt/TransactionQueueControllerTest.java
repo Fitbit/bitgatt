@@ -46,9 +46,9 @@ public class TransactionQueueControllerTest {
         CountDownLatch cdl = new CountDownLatch(1);
         assertTrue(sut.isQueueThreadStopped());
 
-        sut.queueTransaction(cdl::countDown);
+        sut.start();
+        assertFalse(sut.isQueueThreadStopped());
         sut.stop();
-        assertEquals(1, cdl.getCount());
         assertTrue(sut.isQueueThreadStopped());
 
         sut.queueTransaction(cdl::countDown);
