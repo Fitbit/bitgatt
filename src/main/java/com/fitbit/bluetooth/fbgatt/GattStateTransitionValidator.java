@@ -25,7 +25,7 @@ import static com.fitbit.bluetooth.fbgatt.GattStateTransitionValidator.GuardStat
  * Created by iowens on 11/12/17.
  */
 
-class GattStateTransitionValidator {
+class GattStateTransitionValidator<T extends GattTransaction<T>>  {
 
     enum GuardState {
         OK,
@@ -41,7 +41,7 @@ class GattStateTransitionValidator {
      */
 
     @NonNull
-    GuardState checkTransaction(GattState currentState, GattTransaction transaction) {
+    GuardState checkTransaction(GattState currentState, T transaction) {
         GuardState state;
         GattState successState = transaction.getSuccessState();
         if(currentState.equals(GattState.BT_OFF)) {

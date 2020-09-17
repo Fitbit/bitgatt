@@ -197,7 +197,7 @@ public class TxPreCommitTests {
         WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
         SubscribeToCharacteristicNotificationsMockTransaction subscribe = new SubscribeToCharacteristicNotificationsMockTransaction(conn, GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, characteristic, fakeData, false);
         WriteGattDescriptorMockTransaction writeDescriptor = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
-        ArrayList<GattTransaction> transactions = new ArrayList<>(3);
+        ArrayList<GattClientTransaction> transactions = new ArrayList<>(3);
         transactions.add(writeGattCharacteristicMockTransaction);
         transactions.add(subscribe);
         transactions.add(writeDescriptor);
@@ -233,7 +233,7 @@ public class TxPreCommitTests {
         WriteGattCharacteristicMockTransaction writeGattCharacteristicMockTransaction = new WriteGattCharacteristicMockTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic, fakeData, false);
         SubscribeToCharacteristicNotificationsMockTransaction subscribe = new SubscribeToCharacteristicNotificationsMockTransaction(conn, GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_SUCCESS, characteristic, fakeData, true);
         WriteGattDescriptorMockTransaction writeDescriptor = new WriteGattDescriptorMockTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor, fakeData, false);
-        ArrayList<GattTransaction> transactions = new ArrayList<>(3);
+        ArrayList<GattClientTransaction> transactions = new ArrayList<>(3);
         transactions.add(writeGattCharacteristicMockTransaction);
         transactions.add(subscribe);
         transactions.add(writeDescriptor);

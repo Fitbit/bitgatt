@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -26,11 +27,11 @@ import timber.log.Timber;
 
 /**
  * Performs a write gatt descriptor transaction
- *
+ * <p>
  * Created by iowens on 12/7/17.
  */
 
-public class WriteGattDescriptorTransaction extends GattTransaction {
+public class WriteGattDescriptorTransaction extends GattClientTransaction {
 
     private static final String NAME = "WriteGattDescriptorTransaction";
 

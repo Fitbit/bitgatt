@@ -13,6 +13,7 @@ import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.ReadGattServerCharacteristicDescriptorValueTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.ReadGattServerCharacteristicValueTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.MockNoOpTransaction;
+import com.fitbit.bluetooth.fbgatt.tx.mocks.MockServerNoOpTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.NotifyGattServerCharacteristicMockTransaction;
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
@@ -210,7 +211,7 @@ public class GattServerTests {
             @Override
             public void onGattServerStarted(GattServerConnection serverConnection) {
                 super.onGattServerStarted(serverConnection);
-                MockNoOpTransaction firstBlockingTx = new MockNoOpTransaction(serverConnection, GattState.IDLE, 200);
+                MockServerNoOpTransaction firstBlockingTx = new MockServerNoOpTransaction(serverConnection, GattState.IDLE, 200);
                 serverConnection.setIntraTransactionDelay(200);
                 txStart[0] = System.currentTimeMillis();
                 serverConnection.runTx(firstBlockingTx, result -> {

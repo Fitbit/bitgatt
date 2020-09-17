@@ -116,7 +116,6 @@ public class ShutDownFitbitGattTest {
         InOrder scannerOder = inOrder(scanner);
         callbackOrder.verify(cb).onGattClientStarted();
         callbackOrder.verify(cb).onScanStarted();
-        verify(cb).onBluetoothPeripheralDiscovered(any());
         callbackOrder.verify(cb).onGattServerStarted(any());
 
         scannerOder.verify(scanner, times(1)).setDeviceNameFilters(filters);

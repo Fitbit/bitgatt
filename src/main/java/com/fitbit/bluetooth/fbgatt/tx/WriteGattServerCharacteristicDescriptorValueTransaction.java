@@ -94,7 +94,7 @@ public class WriteGattServerCharacteristicDescriptorValueTransaction extends Gat
             Timber.w(ex,"[%s] We are going to fail this tx due to the stack NPE, this is probably poor peripheral behavior, this should become a FW bug.", getDevice());
             respondWithError(localCharacteristic, localDescriptor, callback);
             Strategy strategy = strategyProvider.
-                    getStrategyForPhoneAndGattConnection(null, getConnection(),
+                    getStrategyForPhoneAndGattConnection(null, null,
                             Situation.TRACKER_WENT_AWAY_DURING_GATT_OPERATION);
             if (strategy != null) {
                 strategy.applyStrategy();

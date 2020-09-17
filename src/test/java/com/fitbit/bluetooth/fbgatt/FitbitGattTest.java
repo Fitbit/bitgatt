@@ -47,6 +47,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * Responsible for testing the {@link FitbitGatt} api
@@ -200,7 +201,7 @@ public class FitbitGattTest {
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
 
         fitbitGatt.registerGattEventListener(cb);
-        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock, null);
         startGattServer.run();
 
         verify(cb, times(1)).onGattServerStarted(any());
@@ -219,7 +220,7 @@ public class FitbitGattTest {
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
 
         fitbitGatt.registerGattEventListener(cb);
-        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock, null);
         startGattServer.run();
 
         verify(cb, never()).onGattServerStarted(any());
@@ -236,26 +237,30 @@ public class FitbitGattTest {
         FitbitGatt.OpenGattServerCallback openServerCB = mock(FitbitGatt.OpenGattServerCallback.class);
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
         GattServerConnection prevConnection = mock(GattServerConnection.class);
+        GattServerConnection newConnection = mock(GattServerConnection.class);
+        when(newConnection.getGattState()).thenReturn(GattState.IDLE);
         doAnswer(invocation -> {
             TransactionResult tr = new TransactionResult.Builder()
                 .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
             GattTransactionCallback gattServerCallback = invocation.getArgument(1);
             gattServerCallback.onTransactionComplete(tr);
             return tr;
-        }).when(prevConnection).runTx(any(ClearServerServicesTransaction.class), any());
+        }).when(newConnection).runTx(any(ClearServerServicesTransaction.class), any());
 
         fitbitGatt.setGattServerConnection(prevConnection);
         fitbitGatt.setAppContext(contextMock);
         fitbitGatt.registerGattEventListener(cb);
 
-        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock, newConnection);
         startGattServer.run();
 
-        verify(prevConnection).runTx(any(ClearServerServicesTransaction.class), any());
+        verify(prevConnection).close();
+        verify(newConnection).runTx(any(ClearServerServicesTransaction.class), any());
         verify(cb, times(1)).onGattServerStarted(any());
         verify(openServerCB, times(1)).onGattServerStatus(true);
         verifyNoMoreInteractions(cb);
         verifyNoMoreInteractions(openServerCB);
+        assertSame(newConnection, fitbitGatt.getServer());
         assertSame(GattState.IDLE, fitbitGatt.getServer().getGattState());
     }
 

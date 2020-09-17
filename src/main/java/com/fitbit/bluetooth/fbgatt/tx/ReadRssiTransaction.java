@@ -11,6 +11,7 @@ package com.fitbit.bluetooth.fbgatt.tx;
 import android.bluetooth.BluetoothGatt;
 import androidx.annotation.Nullable;
 
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -20,11 +21,11 @@ import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 
 /**
  * To read the RSSI from a remote device
- *
+ * <p>
  * Created by iowens on 12/14/17.
  */
 
-public class ReadRssiTransaction extends GattTransaction {
+public class ReadRssiTransaction extends GattClientTransaction {
 
     public static final String NAME = "ReadRssiTransaction";
 

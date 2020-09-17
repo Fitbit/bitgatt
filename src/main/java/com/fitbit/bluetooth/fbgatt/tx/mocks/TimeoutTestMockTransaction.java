@@ -9,6 +9,7 @@
 package com.fitbit.bluetooth.fbgatt.tx.mocks;
 
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -26,7 +27,7 @@ import timber.log.Timber;
  * should only be used in instrumented tests, or runtime tests
  */
 
-public class TimeoutTestMockTransaction extends GattTransaction {
+public class TimeoutTestMockTransaction extends GattClientTransaction {
 
     private static final String NAME = "TimeoutTestMockTransaction";
     private static final long OVERRIDE_TIMEOUT = 1000L;
