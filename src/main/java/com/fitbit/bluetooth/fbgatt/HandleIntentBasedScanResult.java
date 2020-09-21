@@ -13,7 +13,6 @@ import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
 
 import android.annotation.TargetApi;
-import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
@@ -47,8 +46,8 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
 
     public HandleIntentBasedScanResult() {
         this(
-            new BluetoothUtils(),
-            FitbitGatt.getInstance()
+                new BluetoothUtils(),
+                FitbitGatt.getInstance()
         );
     }
 
@@ -92,36 +91,19 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
 
     private void processResults(List<ScanResult> results) {
         if (results != null && !results.isEmpty()) {
-            // there are callback results, so now we should do something with this, it's
-            // not OK to do this on the main thread so we'll jump onto a scheduler
-            for (ScanResult result : results) {
-                GattClientCallback callbackClient = fitbitGatt.getClientCallback();
-                if (callbackClient != null) {
-                    callbackClient.getClientCallbackHandler().post(() -> {
-                        addDevice(getFitbitBluetoothDevice(result));
-                    });
-                }
+            GattClientCallback callbackClient = fitbitGatt.getClientCallback();
+            if (callbackClient != null && fitbitGatt.isInitialized()) {
+                callbackClient.getClientCallbackHandler().post(() -> {
+                    for (ScanResult result : results) {
+                        if (callbackClient != null) {
+                            addToBitGatt(getFitbitBluetoothDevice(result));
+                        }
+                    }
+                });
+            } else {
+                Timber.w("Bitgatt is not started adding results for processing at start");
+                fitbitGatt.registerGattEventListener(new HandleIntentGattCallback(results));
             }
-        } else {
-            Timber.w("Scan callback with no results");
-        }
-    }
-
-    private void addDevice(FitbitBluetoothDevice fitbitBluetoothDevice) {
-        /*
-         * If bitgatt is started, then we need to determine whether we are still
-         * pending intent scanning from a different start and set the correct
-         * state internally.  If we are not started, then is pending intent scanning
-         * will be false because the scanner will have been null, so the next scan event
-         * we will enter is started and is pending intent scanning false, so we will
-         * update the state.
-         */
-        if (fitbitGatt.isInitialized()) {
-            addToBitGatt(fitbitBluetoothDevice);
-        } else {
-            Timber.w("Bitgatt is not started, or we aren't pending intent scanning, let's try starting for %s", fitbitBluetoothDevice);
-            // this will take us off of the main thread
-            fitbitGatt.registerGattEventListener(new HandleIntentGattCallback(fitbitBluetoothDevice));
         }
     }
 
@@ -157,10 +139,10 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
     private class HandleIntentGattCallback implements FitbitGatt.FitbitGattCallback {
 
 
-        private FitbitBluetoothDevice device;
+        private final List<ScanResult> results;
 
-        HandleIntentGattCallback(FitbitBluetoothDevice device) {
-            this.device = device;
+        HandleIntentGattCallback(List<ScanResult> results) {
+            this.results = results;
         }
 
         @Override
@@ -231,7 +213,7 @@ public class HandleIntentBasedScanResult extends BroadcastReceiver {
 
         @Override
         public void onGattClientStarted() {
-            addToBitGatt(device);
+            processResults(results);
             //we added the device we unregister the callback
             fitbitGatt.unregisterGattEventListener(this);
         }
