@@ -56,7 +56,7 @@ public class GattConnectTransaction extends GattClientTransaction {
 
     private void failWithNoResources(){
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattStatus.GATT_NO_RESOURCES.getCode());
+        builder.responseStatus(GattStatus.GATT_NO_RESOURCES);
         getConnection().setState(GattState.DISCONNECTED);
         builder.rssi(getConnection().getDevice().getRssi())
                 .gattState(getConnection().getGattState())
@@ -77,7 +77,7 @@ public class GattConnectTransaction extends GattClientTransaction {
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(newState).ordinal());
+        builder.disconnectReason(GattDisconnectReason.getReasonForCode(status));
         if(newState == BluetoothProfile.STATE_DISCONNECTED) {
             getConnection().setState(GattState.DISCONNECTED);
                     builder.rssi(getConnection().getDevice().getRssi())

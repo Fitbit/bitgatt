@@ -15,6 +15,7 @@ import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattService;
@@ -55,7 +56,7 @@ public class AddGattServerServiceTransaction extends GattServerTransaction {
             mainThreadHandler.post(() -> {
                 TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
                 Timber.w("The GATT Server was not started yet, did you start the gatt?");
-                builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
+                builder.disconnectReason(GattDisconnectReason.GATT_CONN_NO_RESOURCES);
                 getGattServer().setState(GattState.ADD_SERVICE_FAILURE);
                 Timber.e("The gatt service could not be added: %s", service.getUuid());
                 builder.gattState(getGattServer().getGattState())
@@ -66,7 +67,7 @@ public class AddGattServerServiceTransaction extends GattServerTransaction {
         } else {
             if(doesGattServerServiceAlreadyExist(service)) {
                 TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-                builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
+                builder.disconnectReason(GattDisconnectReason.GATT_CONN_NO_RESOURCES);
                 getGattServer().setState(GattState.ADD_SERVICE_FAILURE);
                 Timber.w("The gatt service %s, is a duplicate, and could not be added to server", service.getUuid());
                 builder.gattState(getGattServer().getGattState())
@@ -87,7 +88,7 @@ public class AddGattServerServiceTransaction extends GattServerTransaction {
             }
             if(!success) {
                 TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-                builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
+                builder.disconnectReason(GattDisconnectReason.GATT_CONN_NO_RESOURCES);
                 getGattServer().setState(GattState.ADD_SERVICE_FAILURE);
                 Timber.w("The gatt service %s, failed to be added at the gatt level, try again later.", service.getUuid());
                 builder.gattState(getGattServer().getGattState())
@@ -102,7 +103,7 @@ public class AddGattServerServiceTransaction extends GattServerTransaction {
     @Override
     public void onServerServiceAdded(int status, BluetoothGattService service) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal());
+        builder.responseStatus(GattStatus.getStatusForCode(status));
         if (status == BluetoothGatt.GATT_SUCCESS) {
             getGattServer().setState(GattState.ADD_SERVICE_SUCCESS);
             Timber.v("Gatt service was added to the gatt server successfully");

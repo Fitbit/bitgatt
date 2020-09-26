@@ -177,7 +177,7 @@ public class CreateBondTransaction extends GattClientTransaction {
         getConnection().setState(GattState.CREATE_BOND_SUCCESS);
         builder.transactionName(NAME)
                 .gattState(getConnection().getGattState())
-                .responseStatus(GattStatus.GATT_SUCCESS.ordinal())
+                .responseStatus(GattStatus.GATT_SUCCESS)
                 .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
         if (callback != null) {
             callCallbackWithTransactionResultAndRelease(callback, builder.build());
@@ -197,7 +197,7 @@ public class CreateBondTransaction extends GattClientTransaction {
         getConnection().setState(GattState.CREATE_BOND_FAILURE);
         builder.transactionName(NAME)
                 .gattState(getConnection().getGattState())
-                .responseStatus(GattStatus.GATT_INTERNAL_ERROR.ordinal())
+                .responseStatus(GattStatus.GATT_INTERNAL_ERROR)
                 .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
         if (callback != null) {
             callCallbackWithTransactionResultAndRelease(callback, builder.build());

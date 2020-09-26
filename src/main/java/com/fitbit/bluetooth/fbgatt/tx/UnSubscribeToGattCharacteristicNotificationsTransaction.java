@@ -108,11 +108,10 @@ public class UnSubscribeToGattCharacteristicNotificationsTransaction extends Gat
         } else {
             // no need for strategy, it failed.
             getConnection().setState(GattState.DISABLE_CHARACTERISTIC_NOTIFICATION_FAILURE);
-            builder.responseStatus(GattDisconnectReason.getReasonForCode(GattStatus.GATT_UNKNOWN.getCode()).ordinal())
-                    .characteristicUuid(characteristic.getUuid())
+            builder.characteristicUuid(characteristic.getUuid())
                     .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
                     .gattState(getConnection().getGattState())
-                    .responseStatus(GattStatus.GATT_UNKNOWN.ordinal())
+                    .responseStatus(GattStatus.GATT_UNKNOWN)
                     .data(characteristic.getValue())
                     .serviceUuid(characteristic.getService().getUuid());
             mainThreadHandler.post(() -> {

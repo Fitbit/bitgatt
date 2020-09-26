@@ -10,9 +10,9 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
@@ -23,13 +23,11 @@ import android.bluetooth.BluetoothProfile;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -112,7 +110,7 @@ class GattServerCallback extends BluetoothGattServerCallback {
                         // success because we received this data
                         TransactionResult result = new TransactionResult.Builder()
                                 .gattState(conn.getGattState())
-                                .responseStatus(status)
+                                .disconnectReason(GattDisconnectReason.getReasonForCode(status))
                                 .resultStatus(TransactionResult.TransactionResultStatus.FAILURE).build();
                         handler.post(() -> asyncListener.onServerConnectionStateChanged(device, result, conn));
                     }
@@ -127,7 +125,6 @@ class GattServerCallback extends BluetoothGattServerCallback {
                         // success because we received this data
                         TransactionResult result = new TransactionResult.Builder()
                                 .gattState(conn.getGattState())
-                                .responseStatus(status)
                                 .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS).build();
                         handler.post(() -> asyncListener.onServerConnectionStateChanged(device, result, conn));
                     }
@@ -395,7 +392,7 @@ class GattServerCallback extends BluetoothGattServerCallback {
         ArrayList<GattServerListener> copy = new ArrayList<>(listeners.size());
         copy.addAll(listeners);
         for (GattServerListener listener : copy) {
-            handler.post(() -> listener.onServerNotificationSent(device, GattStatus.getStatusForCode(status).ordinal()));
+            handler.post(() -> listener.onServerNotificationSent(device, GattStatus.getStatusForCode(status)));
         }
     }
 

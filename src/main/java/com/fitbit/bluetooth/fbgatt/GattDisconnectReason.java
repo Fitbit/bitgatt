@@ -15,6 +15,7 @@ package com.fitbit.bluetooth.fbgatt;
  * Created by iowens on 8/10/17.
  */
 
+@Deprecated
 enum GattDisconnectReason {
     GATT_CONN_UNKNOWN(0),
     GATT_CONN_NO_RESOURCES(4),              /* connection fail for l2cap resource failure */

@@ -49,17 +49,16 @@ public class GattConnectMockTransaction extends GattConnectTransaction {
         getConnection().setState(GattState.CONNECTING);
         mainHandler.postDelayed(() -> {
             TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-            builder.responseStatus(GattDisconnectReason.getReasonForCode(shouldFail ? BluetoothGatt.GATT_FAILURE : BluetoothGatt.GATT_SUCCESS).ordinal());
+            builder.responseStatus(shouldFail ? GattStatus.GATT_UNKNOWN : GattStatus.GATT_SUCCESS);
             if(shouldFail) {
                 getConnection().setState(GattState.DISCONNECTED);
-                builder.responseStatus(GattDisconnectReason.GATT_CONN_TIMEOUT.getCode())
+                builder.disconnectReason(GattDisconnectReason.GATT_CONN_TIMEOUT)
                         .gattState(getConnection().getGattState())
                         .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());
             } else {
                 getConnection().setState(GattState.CONNECTED);
                 builder.gattState(getConnection().getGattState())
-                        .responseStatus(0)
                         .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());
                 getConnection().setState(GattState.IDLE);
@@ -69,7 +68,7 @@ public class GattConnectMockTransaction extends GattConnectTransaction {
 
     private void failWithNoResources(){
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattStatus.GATT_NO_RESOURCES.getCode());
+        builder.responseStatus(GattStatus.GATT_NO_RESOURCES);
         getConnection().setState(GattState.DISCONNECTED);
         builder.rssi(getConnection().getDevice().getRssi())
                 .gattState(getConnection().getGattState())

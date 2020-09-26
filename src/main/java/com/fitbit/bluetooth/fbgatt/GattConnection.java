@@ -294,7 +294,7 @@ public class GattConnection implements Closeable {
                 asyncConnListener.onClientConnectionStateChanged(new TransactionResult.Builder()
                         .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
                         .gattState(getGattState())
-                        .responseStatus(GattStatus.GATT_UNKNOWN.ordinal()).build(), this);
+                        .responseStatus(GattStatus.GATT_UNKNOWN).build(), this);
             }
         } else {
             throw new IllegalStateException(String.format(Locale.ENGLISH, "[%s] You can't simulate a disconnection if you are not in mock mode", getDevice()));

@@ -82,7 +82,7 @@ public class GattDisconnectTransaction extends GattClientTransaction {
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal());
+        builder.disconnectReason(GattDisconnectReason.getReasonForCode(status));
         if(status != BluetoothGatt.GATT_SUCCESS) {
             Timber.e("[%s] The gatt connection changed in error", getDevice());
         }

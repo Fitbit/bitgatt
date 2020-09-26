@@ -9,18 +9,17 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.Bytes;
+import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * A class to encapsulate the range of possible data to be returned from the transactions and the
@@ -56,7 +55,13 @@ public class TransactionResult {
     /**
      * The gatt operation response status
      */
-    private final int responseStatus;
+    private final GattStatus responseStatus;
+
+    /**
+     * The gatt disconnect reason
+     */
+    @Nullable
+    private final GattDisconnectReason disconnectReason;
     /**
      * If handling a gatt server read or write request, the requestId for ensuring proper response
      */
@@ -146,7 +151,7 @@ public class TransactionResult {
      * @param newTransactionName The new transaction name
      */
     TransactionResult(TransactionResult result, String newTransactionName) {
-        this(result.resultState, result.resultStatus, result.responseStatus, result.rssi,
+        this(result.resultState, result.resultStatus, result.responseStatus, result.disconnectReason, result.rssi,
                 result.mtu, result.requestId, result.characteristicUuid, result.serviceUuid,
                 result.descriptorUuid, result.data, result.offset, result.gattServerServices,
                 result.preparedWrite, result.responseRequired, result.transactionName, result.txPhy,
@@ -178,7 +183,7 @@ public class TransactionResult {
      * @param responseRequired Whether a response is required for a given write request
      * @param transactionName The transaction name to get around obfuscation in logging
      */
-    TransactionResult(GattState state, TransactionResultStatus status, int responseStatus, int rssi,
+    TransactionResult(GattState state, TransactionResultStatus status, GattStatus responseStatus, GattDisconnectReason disconnectReason, int rssi,
                       int mtu, int requestId, UUID characteristicUuid, UUID serviceUuid,
                       UUID descriptorUuid, byte[] data, int offset, List<BluetoothGattService> services, boolean preparedWrite, boolean responseRequired, String transactionName, int txPhy, int rxPhy, List<TransactionResult> transactionResults) {
         this.resultState = state;
@@ -199,6 +204,7 @@ public class TransactionResult {
         this.txPhy = txPhy;
         this.rxPhy = rxPhy;
         this.transactionResults = new ArrayList<>(transactionResults);
+        this.disconnectReason = disconnectReason;
     }
 
     /**
@@ -335,8 +341,17 @@ public class TransactionResult {
      * transaction response
      * @return The gatt status enum for the ordinal
      */
-    public String getResponseCodeString(){
-        return GattStatus.values()[this.responseStatus].name();
+    public String getResponseCodeString() {
+        return this.responseStatus != null ? this.responseStatus.name() : "null";
+    }
+
+    /**
+     * Get the disconnect reason if there is one.
+     * @return The disconnect reason if there is one
+     */
+    @Nullable
+    public GattDisconnectReason getDisconnectReason() {
+        return this.disconnectReason;
     }
 
     /**
@@ -370,7 +385,7 @@ public class TransactionResult {
      */
     public static class Builder {
 
-        private int responseStatus;
+        private GattStatus responseStatus;
         private int requestId;
         private UUID characteristicUuid;
         private UUID serviceUuid;
@@ -388,6 +403,7 @@ public class TransactionResult {
         private boolean responseRequired;
         private String transactionName = "Unknown";
         private ArrayList<TransactionResult> results = new ArrayList<>();
+        private GattDisconnectReason disconnectReason;
 
         public Builder() {
 
@@ -435,11 +451,21 @@ public class TransactionResult {
 
         /**
          * Adds the response status to this builder
-         * @param code The repsonse status ordinal
+         * @param status The response status ordinal
          * @return This builder
          */
-        public Builder responseStatus(int code) {
-            this.responseStatus = code;
+        public Builder responseStatus(GattStatus status) {
+            this.responseStatus = status;
+            return this;
+        }
+
+        /**
+         * Adds the disconnect reason to this builder
+         * @param reason The disconnect reason
+         * @return This builder
+         */
+        public Builder disconnectReason(GattDisconnectReason reason) {
+            this.disconnectReason = reason;
             return this;
         }
 
@@ -581,7 +607,7 @@ public class TransactionResult {
          * @return the {@link TransactionResult} with the properties described in the builder
          */
         public TransactionResult build() {
-            return new TransactionResult(resultState, resultStatus, responseStatus, rssi,
+            return new TransactionResult(resultState, resultStatus, responseStatus, disconnectReason, rssi,
                     mtu, requestId, characteristicUuid, serviceUuid,
                     descriptorUuid, data, offset, services, preparedWrite, responseRequired, transactionName, txPhy, rxPhy, results);
         }
@@ -590,6 +616,6 @@ public class TransactionResult {
 
     @Override
     public String toString() {
-        return String.format(Locale.ENGLISH, "Transaction Name: %s, Gatt State: %s, Transaction Result Status: %s, Response Status: %s, rssi: %d, mtu: %d, Characteristic UUID: %s, Service UUID: %s, Descriptor UUID: %s, Data: %s, Offset: %d, txPhy: %d, rxPhy: %d, transaction results: %s", this.transactionName, this.resultState, this.resultStatus, GattStatus.getStatusForCode(this.responseStatus), this.rssi, this.mtu, this.characteristicUuid, this.serviceUuid, this.descriptorUuid, Bytes.byteArrayToHexString(this.data), this.offset, this.txPhy, this.rxPhy, this.transactionResults);
+        return String.format(Locale.ENGLISH, "Transaction Name: %s, Gatt State: %s, Transaction Result Status: %s, Response Status: %s, rssi: %d, mtu: %d, Characteristic UUID: %s, Service UUID: %s, Descriptor UUID: %s, Data: %s, Offset: %d, txPhy: %d, rxPhy: %d, transaction results: %s", this.transactionName, this.resultState, this.resultStatus, this.responseStatus, this.rssi, this.mtu, this.characteristicUuid, this.serviceUuid, this.descriptorUuid, Bytes.byteArrayToHexString(this.data), this.offset, this.txPhy, this.rxPhy, this.transactionResults);
     }
 }

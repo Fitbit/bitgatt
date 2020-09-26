@@ -55,7 +55,7 @@ public class NotifyGattServerCharacteristicMockTransaction extends NotifyGattSer
                     // we want to apply this strategy to every phone, so we will provide an empty target android
                     // device
                     TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-                    builder.responseStatus(GattDisconnectReason.getReasonForCode(GattStatus.GATT_INTERNAL_ERROR.getCode()).ordinal());
+                    builder.responseStatus(GattStatus.GATT_INTERNAL_ERROR);
                     if(this.characteristic != null) {
                         builder.characteristicUuid(this.characteristic.getUuid());
                         builder.data(this.characteristic.getValue());
@@ -71,10 +71,10 @@ public class NotifyGattServerCharacteristicMockTransaction extends NotifyGattSer
                     }
                     callCallbackWithTransactionResultAndRelease(callback, builder.build());
                 } else {
-                    onServerNotificationSent(null, GattStatus.GATT_INTERNAL_ERROR.ordinal());
+                    onServerNotificationSent(null, GattStatus.GATT_INTERNAL_ERROR);
                 }
             } else {
-                onServerNotificationSent(null, BluetoothGatt.GATT_SUCCESS);
+                onServerNotificationSent(null, GattStatus.GATT_SUCCESS);
             }
         }, REASONABLE_AMOUNT_OF_TIME_FOR_NOTIFY);
     }

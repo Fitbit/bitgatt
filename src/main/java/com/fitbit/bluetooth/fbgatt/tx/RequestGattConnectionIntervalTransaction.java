@@ -83,7 +83,7 @@ public class RequestGattConnectionIntervalTransaction extends GattClientTransact
             }
             if(!success) {
                 getConnection().setState(GattState.REQUEST_CONNECTION_INTERVAL_FAILURE);
-                builder.responseStatus(GattStatus.GATT_NO_RESOURCES.getCode());
+                builder.responseStatus(GattStatus.GATT_NO_RESOURCES);
                 builder.gattState(getConnection().getGattState());
                 mainThreadHandler.post(() -> {
                     callCallbackWithTransactionResultAndRelease(callback, builder.build());
@@ -102,7 +102,7 @@ public class RequestGattConnectionIntervalTransaction extends GattClientTransact
             }
         } else {
             getConnection().setState(GattState.REQUEST_CONNECTION_INTERVAL_FAILURE);
-            builder.responseStatus(GattStatus.GATT_NO_RESOURCES.getCode());
+            builder.responseStatus(GattStatus.GATT_NO_RESOURCES);
             builder.gattState(getConnection().getGattState());
             mainThreadHandler.post(() -> {
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());

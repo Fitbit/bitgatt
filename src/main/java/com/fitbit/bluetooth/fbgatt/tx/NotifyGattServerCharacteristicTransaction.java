@@ -87,15 +87,15 @@ public class NotifyGattServerCharacteristicTransaction extends GattServerTransac
     }
 
     @Override
-    public void onServerNotificationSent(BluetoothDevice device, int status) {
-        Timber.d("[%s] Notification sent response with status: %s", getDevice(), GattStatus.values()[status].name());
+    public void onServerNotificationSent(BluetoothDevice device, GattStatus status) {
+        Timber.d("[%s] Notification sent response with status: %s", getDevice(), status.name());
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal());
+        builder.responseStatus(status);
         if(this.characteristic != null) {
             builder.characteristicUuid(this.characteristic.getUuid());
             builder.data(this.characteristic.getValue());
         }
-        if(status == BluetoothGatt.GATT_SUCCESS) {
+        if(status == GattStatus.GATT_SUCCESS) {
             getGattServer().setState(GattState.NOTIFY_CHARACTERISTIC_SUCCESS);
             builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
             callCallbackWithTransactionResultAndRelease(callback, builder.build());

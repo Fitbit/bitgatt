@@ -17,6 +17,7 @@ import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.tx.GattDisconnectTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import java.util.concurrent.TimeUnit;
 
@@ -45,17 +46,16 @@ public class GattDisconnectMockTransaction extends GattDisconnectTransaction {
         this.callback = callback;
         mainHandler.postDelayed(() -> {
             TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-            builder.responseStatus(GattDisconnectReason.getReasonForCode(shouldFail ? BluetoothGatt.GATT_FAILURE : BluetoothGatt.GATT_SUCCESS).ordinal());
+            builder.responseStatus(shouldFail ? GattStatus.GATT_UNKNOWN : GattStatus.GATT_SUCCESS);
             if(shouldFail) {
                 getConnection().setState(GattState.CONNECTED);
-                builder.responseStatus(GattDisconnectReason.GATT_CONN_TIMEOUT.getCode())
+                builder.disconnectReason(GattDisconnectReason.GATT_CONN_TIMEOUT)
                         .gattState(getConnection().getGattState())
                         .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());
             } else {
                 getConnection().setState(GattState.DISCONNECTED);
                 builder.gattState(getConnection().getGattState())
-                        .responseStatus(0)
                         .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());
             }

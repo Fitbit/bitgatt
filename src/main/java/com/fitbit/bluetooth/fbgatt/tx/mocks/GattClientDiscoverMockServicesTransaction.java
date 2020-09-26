@@ -47,13 +47,13 @@ public class GattClientDiscoverMockServicesTransaction extends GattClientDiscove
             TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
             if(shouldFail) {
                 getConnection().setState(GattState.DISCOVERY_FAILURE);
-                builder.responseStatus(GattStatus.GATT_ERROR.ordinal());
+                builder.responseStatus(GattStatus.GATT_ERROR);
                 builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
                 builder.gattState(getConnection().getGattState());
                 callCallbackWithTransactionResultAndRelease(callback, builder.build());
             } else {
                 getConnection().setState(GattState.DISCOVERY_FAILURE);
-                builder.responseStatus(GattStatus.GATT_SUCCESS.ordinal());
+                builder.responseStatus(GattStatus.GATT_SUCCESS);
                 builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
                 builder.serverServices(this.services);
                 builder.gattState(getConnection().getGattState());
