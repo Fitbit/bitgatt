@@ -201,7 +201,29 @@ public class FitbitGattTest {
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
 
         fitbitGatt.registerGattEventListener(cb);
-        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock, null);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
+        startGattServer.run();
+
+        verify(cb, times(1)).onGattServerStarted(any());
+        verify(serverMock, never()).clearServices();
+        verify(openServerCB, times(1)).onGattServerStatus(true);
+        verifyNoMoreInteractions(cb);
+        verifyNoMoreInteractions(openServerCB);
+        assertSame(GattState.IDLE, fitbitGatt.getServer().getGattState());
+    }
+
+    @Test
+    public void startingTheGattServerWithCachedServices() {
+        BluetoothGattServer serverMock = mock(BluetoothGattServer.class);
+        ArrayList<BluetoothGattService> services = new ArrayList<BluetoothGattService>();
+        services.add(mock(BluetoothGattService.class));
+        doReturn(services).when(serverMock).getServices();
+        doReturn(serverMock).when(managerMock).openGattServer(eq(contextMock), any());
+        FitbitGatt.OpenGattServerCallback openServerCB = mock(FitbitGatt.OpenGattServerCallback.class);
+        FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
+
+        fitbitGatt.registerGattEventListener(cb);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
         startGattServer.run();
 
         verify(cb, times(1)).onGattServerStarted(any());
@@ -220,7 +242,7 @@ public class FitbitGattTest {
         FitbitGatt.FitbitGattCallback cb = mock(FitbitGatt.FitbitGattCallback.class);
 
         fitbitGatt.registerGattEventListener(cb);
-        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock, null);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
         startGattServer.run();
 
         verify(cb, never()).onGattServerStarted(any());
@@ -251,16 +273,15 @@ public class FitbitGattTest {
         fitbitGatt.setAppContext(contextMock);
         fitbitGatt.registerGattEventListener(cb);
 
-        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock, newConnection);
+        Runnable startGattServer = fitbitGatt.tryAndStartGattServer(contextMock, openServerCB, managerMock);
         startGattServer.run();
 
         verify(prevConnection).close();
-        verify(newConnection).runTx(any(ClearServerServicesTransaction.class), any());
         verify(cb, times(1)).onGattServerStarted(any());
         verify(openServerCB, times(1)).onGattServerStatus(true);
         verifyNoMoreInteractions(cb);
         verifyNoMoreInteractions(openServerCB);
-        assertSame(newConnection, fitbitGatt.getServer());
+        assertNotSame(prevConnection, fitbitGatt.getServer());
         assertSame(GattState.IDLE, fitbitGatt.getServer().getGattState());
     }
 

@@ -1438,7 +1438,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
              * application's data in the application list with system apps shown.  The gatt
              * cache is probably corrupt
              */
-            fitbitGattAsyncOperationHandler.post(tryAndStartGattServer(this.appContext, callback, manager, null));
+            fitbitGattAsyncOperationHandler.post(tryAndStartGattServer(this.appContext, callback, manager));
         } else {
             Timber.w("No bluetooth manager, we must be simulating, or BT is off!!!");
             callback.onGattServerStatus(false);
@@ -1447,7 +1447,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
 
     @NonNull
     @VisibleForTesting
-    Runnable tryAndStartGattServer(Context context, OpenGattServerCallback callback, BluetoothManager manager, GattServerConnection newGattServerConnection) {
+    Runnable tryAndStartGattServer(Context context, OpenGattServerCallback callback, BluetoothManager manager) {
         return () -> {
             synchronized (FitbitGatt.this) {
                 //may have been started already in another thread in parallel trough another post
@@ -1460,23 +1460,21 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
                 for (int openServerRetryCount = 0; openServerRetryCount < OPEN_GATT_SERVER_RETRY_COUNT; openServerRetryCount++) {
                     gattServer = manager.openGattServer(context, serverCallback);
                     if (gattServer != null) {
+                        if(gattServer.getServices().size() != 0) {
+                            Timber.w("We have services on a fresh gatt server instance");
+                            gattServer.clearServices();
+                        }
                         if (serverConnection != null) {
                             // We have a new server instance we need to replace it in the GattServerConnection
-                            replaceServerConnection(context, newGattServerConnection);
-                            // let's try to run a clear tx since we already have a server connection
-                            ClearServerServicesTransaction clearServices = new ClearServerServicesTransaction(serverConnection,
-                                    GattState.CLEAR_GATT_SERVER_SERVICES_SUCCESS);
-                            serverConnection.runTx(clearServices, getGattClearServicesTransactionCallback(context, callback));
-                            return;
-                        } else {
-                            gattServer.clearServices();
-                            setGattServerConnection(new GattServerConnection(gattServer, context.getMainLooper()));
+                            serverConnection.close();
                             serverConnection.setState(GattState.IDLE);
-                            callback.onGattServerStatus(true);
-                            isGattServerStarting.set(false);
-                            Timber.tag("FitbitGattServer").v("Gatt server successfully opened");
-                            return;
                         }
+                        setGattServerConnection(new GattServerConnection(gattServer, context.getMainLooper()));
+                        serverConnection.setState(GattState.IDLE);
+                        callback.onGattServerStatus(true);
+                        isGattServerStarting.set(false);
+                        Timber.tag("FitbitGattServer").v("Gatt server successfully opened");
+                        return;
                     }
                 }
                 isGattServerStarting.set(false);
@@ -1486,28 +1484,6 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         };
     }
 
-    private void replaceServerConnection(Context context, GattServerConnection newGattServerConnection) {
-        if (serverConnection != null) {
-            serverConnection.close();
-        }
-        if (newGattServerConnection != null) {
-            setGattServerConnection(newGattServerConnection);
-        } else {
-            setGattServerConnection(new GattServerConnection(gattServer, context.getMainLooper()));
-        }
-        serverConnection.setState(GattState.IDLE);
-    }
-
-    @NonNull
-    private GattTransactionCallback getGattClearServicesTransactionCallback(Context context, OpenGattServerCallback callback) {
-        return result -> {
-            // whether this succeeds or not, we want to proceed
-            Timber.v("The gatt server services were cleared %s", result.resultStatus);
-            serverConnection.setState(GattState.IDLE);
-            callback.onGattServerStatus(true);
-            isGattServerStarting.set(false);
-        };
-    }
 
     /**
      * Will add a device that was discovered via the background scan in a provided scan result to
