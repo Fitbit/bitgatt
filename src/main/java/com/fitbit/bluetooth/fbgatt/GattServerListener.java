@@ -10,6 +10,7 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -117,7 +118,7 @@ interface GattServerListener {
      * @param device The bluetooth device
      * @param status The status
      */
-    void onServerNotificationSent(BluetoothDevice device, int status);
+    void onServerNotificationSent(BluetoothDevice device, GattStatus status);
 
     /**
      * *DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING!!!* library internal method for notifying the {@link FitbitGatt} that the server

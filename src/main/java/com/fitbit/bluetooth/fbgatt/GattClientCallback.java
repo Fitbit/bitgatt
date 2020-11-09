@@ -13,9 +13,9 @@ import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.tx.GattClientDiscoverServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.RequestGattClientPhyChangeTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.RequestMtuGattTransaction;
+import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -25,13 +25,11 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.os.Handler;
 import android.os.Looper;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
 import timber.log.Timber;
 
 /**
@@ -123,7 +121,7 @@ public class GattClientCallback extends BluetoothGattCallback {
                         .txPhy(txPhy)
                         .rxPhy(rxPhy)
                         .gattState(conn.getGattState())
-                        .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
+                        .responseStatus(GattStatus.getStatusForCode(status)).build(), conn);
                 }
             });
         }
@@ -224,7 +222,7 @@ public class GattClientCallback extends BluetoothGattCallback {
                             asyncConnListener.onClientConnectionStateChanged(new TransactionResult.Builder()
                                     .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
                                     .gattState(conn.getGattState())
-                                    .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
+                                    .disconnectReason(GattDisconnectReason.getReasonForCode(status)).build(), conn);
                         }
                     }, HOT_QUEUE_EMPTYING_TIME);
                 } else {
@@ -256,8 +254,7 @@ public class GattClientCallback extends BluetoothGattCallback {
                     for(ConnectionEventListener asyncConnListener : conn.getConnectionEventListeners()) {
                         handler.post(() -> asyncConnListener.onClientConnectionStateChanged(new TransactionResult.Builder()
                             .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS)
-                            .gattState(conn.getGattState())
-                            .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn));
+                            .gattState(conn.getGattState()).build(), conn));
                     }
                 });
                 break;
@@ -298,7 +295,7 @@ public class GattClientCallback extends BluetoothGattCallback {
                         .transactionName(GattClientDiscoverServicesTransaction.NAME)
                         .serverServices(discoveredServices)
                         .gattState(conn.getGattState())
-                        .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build(), conn);
+                        .responseStatus(GattStatus.getStatusForCode(status)).build(), conn);
                 }
             });
         }
@@ -473,7 +470,7 @@ public class GattClientCallback extends BluetoothGattCallback {
                     .transactionName(RequestMtuGattTransaction.NAME)
                     .mtu(mtu)
                     .gattState(conn.getGattState())
-                    .responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal()).build();
+                    .responseStatus(GattStatus.getStatusForCode(status)).build();
             // since this is one of the events that could happen asynchronously, we will
             // need to iterate through our connection listeners
             handler.post(() -> {

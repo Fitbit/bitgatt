@@ -18,6 +18,7 @@ import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -95,7 +96,7 @@ public class ReadGattCharacteristicTransaction extends GattClientTransaction {
     @Override
     public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristicCopy characteristic, int status) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal());
+        builder.responseStatus(GattStatus.getStatusForCode(status));
         if(status == BluetoothGatt.GATT_SUCCESS) {
             getConnection().setState(GattState.READ_CHARACTERISTIC_SUCCESS);
             builder.data(characteristic.getValue())

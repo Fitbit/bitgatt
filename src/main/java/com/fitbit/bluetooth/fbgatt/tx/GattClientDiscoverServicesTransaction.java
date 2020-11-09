@@ -74,7 +74,7 @@ public class GattClientDiscoverServicesTransaction extends GattClientTransaction
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
         builder.serverServices(gatt.getServices());
-        builder.responseStatus(GattStatus.getStatusForCode(status).ordinal());
+        builder.responseStatus(GattStatus.getStatusForCode(status));
         if(status == BluetoothGatt.GATT_SUCCESS) {
             getConnection().setState(GattState.DISCOVERY_SUCCESS);
             builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);

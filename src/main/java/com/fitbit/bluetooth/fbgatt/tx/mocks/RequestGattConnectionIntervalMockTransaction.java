@@ -49,7 +49,7 @@ public class RequestGattConnectionIntervalMockTransaction extends RequestGattCon
                 callCallbackWithTransactionResultAndRelease(callback, new TransactionResult.Builder().
                         transactionName(getName()).
                         resultStatus(TransactionResult.TransactionResultStatus.FAILURE).
-                        responseStatus(GattStatus.GATT_INSUF_RESOURCE.getCode()).build());
+                        responseStatus(GattStatus.GATT_INSUF_RESOURCE).build());
             } else {
                 callCallbackWithTransactionResultAndRelease(callback, new TransactionResult.Builder().
                         transactionName(getName()).

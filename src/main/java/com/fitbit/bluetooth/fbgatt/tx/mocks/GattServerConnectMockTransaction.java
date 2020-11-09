@@ -15,6 +15,7 @@ import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.tx.GattServerConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothGatt;
 import android.os.Handler;
@@ -41,7 +42,7 @@ public class GattServerConnectMockTransaction extends GattServerConnectTransacti
         getGattServer().setState(GattState.CONNECTING);
         mainHandler.postDelayed(() -> {
             TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-            builder.responseStatus(GattDisconnectReason.getReasonForCode(shouldFail ? BluetoothGatt.GATT_FAILURE : BluetoothGatt.GATT_SUCCESS).ordinal());
+            builder.responseStatus(shouldFail ? GattStatus.GATT_UNKNOWN : GattStatus.GATT_SUCCESS);
             if(shouldFail) {
                 getGattServer().setState(GattState.FAILURE_CONNECTING);
                 builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE)

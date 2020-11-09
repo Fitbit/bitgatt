@@ -55,10 +55,10 @@ public class GattServerDisconnectTransaction extends GattServerTransaction {
 
     @Override
     public void onServerConnectionStateChange(BluetoothDevice device, int status, int newState) {
-        Timber.d("[%s] Gatt State %s, Disconnect Reason : %s", getDevice(), GattStatus.values()[status].name(),
-                GattDisconnectReason.getReasonForCode(newState));
+        Timber.d("[%s] Disconnect Reason %s, New State : %s", getDevice(), GattDisconnectReason.getReasonForCode(status).name(),
+                newState == BluetoothProfile.STATE_CONNECTED ? "Connected" : "Disconnected");
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal());
+        builder.disconnectReason(GattDisconnectReason.getReasonForCode(status));
         if (status == BluetoothGatt.GATT_SUCCESS) {
             if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 getGattServer().setState(GattState.DISCONNECTED);

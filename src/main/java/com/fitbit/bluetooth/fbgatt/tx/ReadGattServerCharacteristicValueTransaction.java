@@ -58,7 +58,7 @@ public class ReadGattServerCharacteristicValueTransaction extends GattServerTran
         byte[] value = localCharacteristic.getValue();
         if(null != value) {
             // success
-            builder.responseStatus(GattStatus.GATT_SUCCESS.ordinal());
+            builder.responseStatus(GattStatus.GATT_SUCCESS);
                 getGattServer().setState(GattState.READ_CHARACTERISTIC_SUCCESS);
                 builder.data(value)
                         .gattState(getGattServer().getGattState())
@@ -75,7 +75,7 @@ public class ReadGattServerCharacteristicValueTransaction extends GattServerTran
 
     private void respondWithError(@Nullable BluetoothGattCharacteristic characteristic, GattTransactionCallback callback) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattStatus.GATT_ERROR.ordinal());
+        builder.responseStatus(GattStatus.GATT_ERROR);
         getGattServer().setState(GattState.READ_CHARACTERISTIC_FAILURE);
         builder.data(characteristic == null ? new byte[0] : characteristic.getValue())
                 .gattState(getGattServer().getGattState())

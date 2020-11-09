@@ -65,7 +65,7 @@ public class AddGattServerServiceCharacteristicDescriptorTransaction extends Gat
                 if(null != serviceChar) {
                     if(doesDescriptorAlreadyExist(serviceChar, descriptor)) {
                         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-                        builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
+                        builder.disconnectReason(GattDisconnectReason.GATT_CONN_NO_RESOURCES);
                         getGattServer().setState(GattState.ADD_SERVICE_CHARACTERISTIC_DESCRIPTOR_FAILURE);
                         Timber.w("The gatt service characteristic descriptor %s, is a duplicate, and could not be added to characteristic: %s, on service: %s",
                                 serviceChar.getUuid(), descriptor.getUuid(), service.getUuid());
@@ -83,7 +83,7 @@ public class AddGattServerServiceCharacteristicDescriptorTransaction extends Gat
                         builder.serviceUuid(serverService.getUuid())
                                 .characteristicUuid(characteristic.getUuid())
                                 .descriptorUuid(descriptor.getUuid());
-                        builder.responseStatus(GattStatus.GATT_SUCCESS.getCode());
+                        builder.responseStatus(GattStatus.GATT_SUCCESS);
                         getGattServer().setState(GattState.ADD_SERVICE_CHARACTERISTIC_DESCRIPTOR_SUCCESS);
                         Timber.e("The gatt service characteristic descriptor could not be added: %s", service.getUuid());
                         builder.gattState(getGattServer().getGattState())
@@ -105,7 +105,7 @@ public class AddGattServerServiceCharacteristicDescriptorTransaction extends Gat
     private void respondWithError(String message, GattTransactionCallback callback) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
         Timber.w(message);
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(GattDisconnectReason.GATT_CONN_NO_RESOURCES.getCode()).ordinal());
+        builder.disconnectReason(GattDisconnectReason.GATT_CONN_NO_RESOURCES);
         getGattServer().setState(GattState.ADD_SERVICE_CHARACTERISTIC_DESCRIPTOR_FAILURE);
         Timber.e("The gatt service characteristic descriptor could not be added: %s", service.getUuid());
         builder.gattState(getGattServer().getGattState())

@@ -73,7 +73,7 @@ public class SendGattServerResponseTransaction extends GattServerTransaction {
             getGattServer().setState(GattState.SEND_SERVER_RESPONSE_SUCCESS);
             builder.gattState(getGattServer().getGattState());
             builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
-            builder.responseStatus(GattStatus.getStatusForCode(status).ordinal());
+            builder.responseStatus(GattStatus.getStatusForCode(status));
             builder.data(value).
                     requestId(requestId).
                     offset(offset);
@@ -85,7 +85,7 @@ public class SendGattServerResponseTransaction extends GattServerTransaction {
             getGattServer().setState(GattState.SEND_SERVER_RESPONSE_FAILURE);
             builder.gattState(getGattServer().getGattState());
             builder.resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
-            builder.responseStatus(GattStatus.getStatusForCode(status).ordinal());
+            builder.responseStatus(GattStatus.getStatusForCode(status));
             builder.data(value).
                     requestId(requestId).
                     offset(offset);

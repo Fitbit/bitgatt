@@ -10,6 +10,7 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattService;
@@ -162,7 +163,7 @@ public class GattServerTransaction extends GattTransaction<GattServerTransaction
     }
 
     @Override
-    public void onServerNotificationSent(BluetoothDevice device, int status) {
+    public void onServerNotificationSent(BluetoothDevice device, GattStatus status) {
         Timber.v("[%s] onServerNotificationSent not handled in tx: %s", utils.debugSafeGetBtDeviceName(device), getName());
     }
 

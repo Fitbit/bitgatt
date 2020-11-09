@@ -14,6 +14,7 @@ import com.fitbit.bluetooth.fbgatt.tx.mocks.AddGattServerServiceMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.SendGattServerResponseMockTransaction;
 import com.fitbit.bluetooth.fbgatt.util.BluetoothManagerProvider;
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 
 import android.bluetooth.BluetoothAdapter;
@@ -159,7 +160,7 @@ public class GattServerTests {
             }
 
             @Override
-            public void onServerNotificationSent(BluetoothDevice device, int status) {
+            public void onServerNotificationSent(BluetoothDevice device, GattStatus status) {
 
             }
 

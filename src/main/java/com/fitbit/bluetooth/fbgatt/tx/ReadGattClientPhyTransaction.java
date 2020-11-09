@@ -16,6 +16,7 @@ import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
+import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 
 import android.bluetooth.BluetoothGatt;
 
@@ -69,7 +70,7 @@ public class ReadGattClientPhyTransaction extends GattClientTransaction {
     public void onPhyRead(BluetoothGatt gatt, int txPhy, int rxPhy, int status) {
         Timber.i("[%s] The actual txPhy: %d, rxPhy: %d", getDevice(), txPhy, rxPhy);
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattDisconnectReason.getReasonForCode(status).ordinal());
+        builder.responseStatus(GattStatus.getStatusForCode(status));
         if(status == BluetoothGatt.GATT_SUCCESS) {
             getConnection().setState(GattState.READ_CURRENT_PHY_SUCCESS);
             builder.resultStatus(TransactionResult.TransactionResultStatus.SUCCESS)

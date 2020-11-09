@@ -57,7 +57,7 @@ public class SubscribeToCharacteristicNotificationsTransaction extends GattClien
             getConnection().setState(GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_FAILURE);
             builder.characteristicUuid(characteristic.getUuid())
                 .gattState(getConnection().getGattState())
-                .responseStatus(GattStatus.GATT_UNKNOWN.ordinal())
+                .responseStatus(GattStatus.GATT_UNKNOWN)
                 .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
                 .data(characteristic.getValue())
                 .serviceUuid(characteristic.getService().getUuid());
@@ -70,14 +70,14 @@ public class SubscribeToCharacteristicNotificationsTransaction extends GattClien
                 builder.characteristicUuid(characteristic.getUuid())
                         .gattState(getConnection().getGattState())
                         .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS)
-                        .responseStatus(GattStatus.GATT_SUCCESS.ordinal())
+                        .responseStatus(GattStatus.GATT_SUCCESS)
                         .data(characteristic.getValue())
                         .serviceUuid(characteristic.getService().getUuid());
             } else {
                 getConnection().setState(GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_FAILURE);
                 builder.characteristicUuid(characteristic.getUuid())
                         .gattState(getConnection().getGattState())
-                        .responseStatus(GattStatus.GATT_UNKNOWN.ordinal())
+                        .responseStatus(GattStatus.GATT_UNKNOWN)
                         .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
                         .data(characteristic.getValue())
                         .serviceUuid(characteristic.getService().getUuid());
@@ -110,11 +110,10 @@ public class SubscribeToCharacteristicNotificationsTransaction extends GattClien
             // we want to apply this strategy to every phone, so we will provide an empty target android
             // device
             getConnection().setState(GattState.ENABLE_CHARACTERISTIC_NOTIFICATION_FAILURE);
-            builder.responseStatus(GattDisconnectReason.getReasonForCode(GattStatus.GATT_UNKNOWN.getCode()).ordinal())
-                    .characteristicUuid(characteristic.getUuid())
+            builder.characteristicUuid(characteristic.getUuid())
                     .resultStatus(TransactionResult.TransactionResultStatus.FAILURE)
                     .gattState(getConnection().getGattState())
-                    .responseStatus(GattStatus.GATT_UNKNOWN.ordinal())
+                    .responseStatus(GattStatus.GATT_UNKNOWN)
                     .data(characteristic.getValue())
                     .serviceUuid(characteristic.getService().getUuid());
             mainThreadHandler.post(() -> {

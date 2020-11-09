@@ -69,7 +69,7 @@ public class ReadGattServerCharacteristicDescriptorValueTransaction extends Gatt
         byte[] value = localDescriptor.getValue();
         if(value != null) {
             // success
-            builder.responseStatus(GattStatus.GATT_SUCCESS.ordinal());
+            builder.responseStatus(GattStatus.GATT_SUCCESS);
                 getGattServer().setState(GattState.READ_DESCRIPTOR_SUCCESS);
                 builder.data(localCharacteristic.getValue())
                         .gattState(getGattServer().getGattState())
@@ -88,7 +88,7 @@ public class ReadGattServerCharacteristicDescriptorValueTransaction extends Gatt
 
     private void respondWithError(@Nullable BluetoothGattCharacteristic characteristic, @Nullable BluetoothGattDescriptor descriptor, GattTransactionCallback callback) {
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(getName());
-        builder.responseStatus(GattStatus.GATT_ERROR.ordinal());
+        builder.responseStatus(GattStatus.GATT_ERROR);
         getGattServer().setState(GattState.READ_DESCRIPTOR_FAILURE);
         builder.data(descriptor == null ? new byte[0] : descriptor.getValue())
                 .gattState(getGattServer().getGattState())
