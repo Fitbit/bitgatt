@@ -10,11 +10,12 @@ package com.fitbit.bluetooth.fbgatt;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
+
 import android.bluetooth.BluetoothGatt;
 import android.os.Looper;
-import java.util.ArrayList;
+
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
@@ -26,7 +27,7 @@ import timber.log.Timber;
  * {@link GattClientTransaction} registration lifecycle
  */
 public class GattClientTransaction extends GattTransaction<GattClientTransaction> implements GattClientListener {
-    private GattUtils utils = new GattUtils();
+    private final GattUtils utils = new GattUtils();
     private final GattConnection connection;
 
     public GattClientTransaction(@Nullable GattConnection connection, GattState successEndState) {
@@ -40,7 +41,7 @@ public class GattClientTransaction extends GattTransaction<GattClientTransaction
         setTimeout(timeoutMillis);
     }
 
-    protected GattConnection getConnection() {
+    public GattConnection getConnection() {
         return connection;
     }
 
