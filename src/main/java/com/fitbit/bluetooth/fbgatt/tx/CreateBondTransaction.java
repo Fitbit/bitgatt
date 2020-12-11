@@ -84,9 +84,7 @@ public class CreateBondTransaction extends GattClientTransaction {
                             Timber.w("[%s] Bond state changed to NONE",getDevice());
                             // if we are here, we should go ahead and release the lock
                             // failure
-                            synchronized (NAME) {
-                                NAME.notify();
-                            }
+                            bondFailure();
                             break;
                         case BluetoothDevice.BOND_BONDING:
                             Timber.d("[%s] Bond state changed to BONDING",getDevice());
