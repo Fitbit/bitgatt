@@ -11,8 +11,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
+/**
+ * BroadcastReceiver responsible for handling the updates of the BondState of a device.
+ */
 public class CreateBondTransactionBroadcastReceiver extends BroadcastReceiver {
     private final CreateBondTransactionInterface createBondTransactionInterface;
     private final GattUtils gattUtils;
@@ -23,6 +27,7 @@ public class CreateBondTransactionBroadcastReceiver extends BroadcastReceiver {
         this(createBondTransactionInterface, new GattUtils(), new BluetoothDeviceProvider(), new DeviceMatcher());
     }
 
+    @VisibleForTesting
     public CreateBondTransactionBroadcastReceiver(CreateBondTransactionInterface createBondTransactionInterface, GattUtils gattUtils, BluetoothDeviceProviderInterface deviceProvider, DeviceMatcher deviceMatcher) {
         this.createBondTransactionInterface = createBondTransactionInterface;
         this.gattUtils = gattUtils;

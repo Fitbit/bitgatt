@@ -5,6 +5,9 @@ import android.content.Intent;
 
 import javax.annotation.Nullable;
 
+/**
+ * Main implementation of the [BluetoothDeviceProviderInterface].
+ */
 public class BluetoothDeviceProvider implements BluetoothDeviceProviderInterface{
     @Nullable
     @Override
