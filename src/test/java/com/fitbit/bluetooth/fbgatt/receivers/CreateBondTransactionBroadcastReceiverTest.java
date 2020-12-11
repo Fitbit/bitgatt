@@ -57,6 +57,7 @@ public class CreateBondTransactionBroadcastReceiverTest {
 
     @Test
     public void shouldNotifyCallerOfFailures() {
+        when(mockIntent.getIntExtra(eq(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE), anyInt())).thenReturn(BluetoothDevice.BOND_BONDING);
         when(mockIntent.getIntExtra(eq(BluetoothDevice.EXTRA_BOND_STATE), anyInt())).thenReturn(BluetoothDevice.BOND_NONE);
 
         sut.onReceive(mockContext, mockIntent);
@@ -68,6 +69,21 @@ public class CreateBondTransactionBroadcastReceiverTest {
     @Test
     public void shouldNotNotifyCallerOfBondingState() {
         when(mockIntent.getIntExtra(eq(BluetoothDevice.EXTRA_BOND_STATE), anyInt())).thenReturn(BluetoothDevice.BOND_BONDING);
+
+        sut.onReceive(mockContext, mockIntent);
+
+        verify(mockBondTransactionInterface, never()).bondSuccess();
+        verify(mockBondTransactionInterface, never()).bondFailure();
+    }
+
+    /**
+     * Do not notify changes for [BluetoothDevice.BOND_NONE] when
+     * last state was also [BluetoothDevice.BOND_NONE].
+     */
+    @Test
+    public void shouldNotNotifyFailureForEdgeCase() {
+        when(mockIntent.getIntExtra(eq(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE), anyInt())).thenReturn(BluetoothDevice.BOND_NONE);
+        when(mockIntent.getIntExtra(eq(BluetoothDevice.EXTRA_BOND_STATE), anyInt())).thenReturn(BluetoothDevice.BOND_NONE);
 
         sut.onReceive(mockContext, mockIntent);
 

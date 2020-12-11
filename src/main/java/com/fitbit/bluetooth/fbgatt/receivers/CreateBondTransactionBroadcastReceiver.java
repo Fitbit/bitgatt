@@ -61,7 +61,10 @@ public class CreateBondTransactionBroadcastReceiver extends BroadcastReceiver {
                         Timber.w("[%s] Bond state changed to NONE", createBondTransactionInterface.getDevice());
                         // if we are here, we should go ahead and release the lock
                         // failure
-                        createBondTransactionInterface.bondFailure();
+                        if (newState != oldState) {
+                            //  Only notify failures for different states.
+                            createBondTransactionInterface.bondFailure();
+                        }
                         break;
                     case BluetoothDevice.BOND_BONDING:
                         Timber.d("[%s] Bond state changed to BONDING", createBondTransactionInterface.getDevice());
