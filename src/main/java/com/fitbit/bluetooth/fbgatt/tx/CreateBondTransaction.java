@@ -13,22 +13,20 @@ import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
+import com.fitbit.bluetooth.fbgatt.receivers.CreateBondTransactionBroadcastReceiver;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
-import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 
 /**
@@ -40,7 +38,7 @@ import timber.log.Timber;
  * <p>
  * Created by iowens on 8/28/18.
  */
-public class CreateBondTransaction extends GattClientTransaction {
+public class CreateBondTransaction extends GattClientTransaction implements CreateBondTransactionInterface {
     /**
      * The transaction name
      */
@@ -56,55 +54,8 @@ public class CreateBondTransaction extends GattClientTransaction {
      * Receiver for {@link BluetoothDevice#ACTION_BOND_STATE_CHANGED}
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(intent.getAction())) {
-                BluetoothDevice extraDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                /*
-                 * equals handled inside of {@link FitbitBluetoothDevice} for comparison to an
-                 * {@link BluetoothDevice}
-                 */
-                //noinspection EqualsBetweenInconvertibleTypes
-                if (getConnection().getDevice().equals(extraDevice)) {
-                    int oldState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.BOND_NONE);
-                    int newState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE);
-                    GattUtils util = new GattUtils();
-                    Timber.d("[%s] Bond state changed from %s to %s",
-                            getConnection().getDevice(),
-                            util.getBondStateDescription(oldState),
-                            util.getBondStateDescription(newState));
-                    switch (newState) {
-                        case BluetoothDevice.BOND_BONDED:
-                            Timber.d("[%s] Bond state changed to BONDED",getDevice());
-                            // success
-                            bondSuccess();
-                            break;
-                        case BluetoothDevice.BOND_NONE:
-                            Timber.w("[%s] Bond state changed to NONE",getDevice());
-                            // if we are here, we should go ahead and release the lock
-                            // failure
-                            synchronized (NAME) {
-                                NAME.notify();
-                            }
-                            break;
-                        case BluetoothDevice.BOND_BONDING:
-                            Timber.d("[%s] Bond state changed to BONDING",getDevice());
-                            // in progress
-                            break;
-                        default:
-                            Timber.w("[%s] Bond state changed to UNKNOWN",getDevice());
-                            // could be error, but perhaps not, we don't know
-                            break;
-                    }
-                } else {
-                    Timber.i("[%s] Received Bond result, but for %s",
-                            getConnection().getDevice(),
-                            extraDevice);
-                }
-            }
-        }
-    };
+    private final BroadcastReceiver receiver = new CreateBondTransactionBroadcastReceiver(this);
+
     /**
      * The transaction builder
      */
@@ -150,7 +101,7 @@ public class CreateBondTransaction extends GattClientTransaction {
     private void createBond(Context context) {
         FitbitBluetoothDevice device = getDevice();
         if (device == null) {
-            Timber.w("[%s] Couldn't create the bond because device was null", device);
+            Timber.w("Couldn't create the bond because device was null");
             bondFailure();
         } else {
             createBond(context, device);
@@ -171,14 +122,15 @@ public class CreateBondTransaction extends GattClientTransaction {
         device.getBtDevice().createBond();
     }
 
+    @Override
     @VisibleForTesting
-    void bondSuccess() {
+    public void bondSuccess() {
         Timber.v("[%s] The bond attempt succeeded", getDevice());
         getConnection().setState(GattState.CREATE_BOND_SUCCESS);
         builder.transactionName(NAME)
-                .gattState(getConnection().getGattState())
-                .responseStatus(GattStatus.GATT_SUCCESS.ordinal())
-                .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
+            .gattState(getConnection().getGattState())
+            .responseStatus(GattStatus.GATT_SUCCESS.ordinal())
+            .resultStatus(TransactionResult.TransactionResultStatus.SUCCESS);
         if (callback != null) {
             callCallbackWithTransactionResultAndRelease(callback, builder.build());
         }
@@ -192,13 +144,14 @@ public class CreateBondTransaction extends GattClientTransaction {
 
     }
 
-    private void bondFailure() {
+    @Override
+    public void bondFailure() {
         Timber.v("[%s] The bond attempt failed", getDevice());
         getConnection().setState(GattState.CREATE_BOND_FAILURE);
         builder.transactionName(NAME)
-                .gattState(getConnection().getGattState())
-                .responseStatus(GattStatus.GATT_INTERNAL_ERROR.ordinal())
-                .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
+            .gattState(getConnection().getGattState())
+            .responseStatus(GattStatus.GATT_INTERNAL_ERROR.ordinal())
+            .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
         if (callback != null) {
             callCallbackWithTransactionResultAndRelease(callback, builder.build());
         }
