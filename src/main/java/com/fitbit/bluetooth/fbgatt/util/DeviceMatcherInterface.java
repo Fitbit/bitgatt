@@ -4,8 +4,8 @@ import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 
 import android.bluetooth.BluetoothDevice;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Util interface to be used for matching a [FitbitBluetoothDevice] to
@@ -21,5 +21,5 @@ public interface DeviceMatcherInterface {
      *
      * @return true if they represent the same object, false otherwise.
      */
-    boolean matchDevices(@Nonnull FitbitBluetoothDevice fitbitBtDevice, @Nullable BluetoothDevice btDevice);
+    boolean matchDevices(@NonNull FitbitBluetoothDevice fitbitBtDevice, @Nullable BluetoothDevice btDevice);
 }

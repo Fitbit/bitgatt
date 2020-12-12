@@ -3,7 +3,7 @@ package com.fitbit.bluetooth.fbgatt.util;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 
-import javax.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * Main implementation of the [BluetoothDeviceProviderInterface].
