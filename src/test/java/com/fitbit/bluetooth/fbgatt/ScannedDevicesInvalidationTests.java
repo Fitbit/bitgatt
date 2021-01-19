@@ -68,7 +68,7 @@ public class ScannedDevicesInvalidationTests {
         doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
         doReturn(adapterMock).when(utilsMock).getBluetoothAdapter(mockContext);
-        doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(mockContext), any());
+        doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(gatt), any());
         doReturn(true).when(adapterMock).isEnabled();
         Handler mockHandler = mock(Handler.class);
         Looper mockLooper = mock(Looper.class);

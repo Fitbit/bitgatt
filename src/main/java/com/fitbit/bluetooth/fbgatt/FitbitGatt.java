@@ -36,6 +36,7 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
@@ -872,6 +873,15 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         startServer(getOpenGattServerCallback(services));
     }
 
+
+    public void setScanSettings(ScanSettings scanSettings) {
+        if(this.peripheralScanner != null) {
+            this.peripheralScanner.setScanSettings(scanSettings);
+        } else {
+          Timber.w("Scanner was not initialized so we are not updating settings");
+        }
+    }
+
     @NonNull
     @VisibleForTesting
     OpenGattServerCallback getOpenGattServerCallback(@Nullable List<BluetoothGattService> services) {
@@ -902,7 +912,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
         if (!isInitialized.get()) {
             Timber.v("Starting fitbit gatt");
             appContext = context.getApplicationContext();
-            peripheralScanner = dependencyProvider.getNewPeripheralScanner(this.appContext, this);
+            peripheralScanner = dependencyProvider.getNewPeripheralScanner(this, this);
             connectionCleanup = new Handler(context.getMainLooper());
 
             Timber.v("Initializing the always connected scanner for one device, and that it should stop scanning when it finds one, if you wish to change this, please configure it.");

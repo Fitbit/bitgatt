@@ -25,6 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
+import static com.fitbit.bluetooth.fbgatt.FitbitGatt.atLeastSDK;
 
 /**
  * Concrete implementation of the Android scanner
@@ -78,7 +79,7 @@ class BitgattLeScanner implements ScannerInterface {
     @Override
     public int startScan(@Nullable List<ScanFilter> filters, @Nullable ScanSettings settings, @NonNull PendingIntent callbackIntent) {
         BluetoothLeScanner leScanner = getScanner();
-        if (leScanner == null || !FitbitGatt.atLeastSDK(Build.VERSION_CODES.O)) {
+        if (leScanner == null || !atLeastSDK(Build.VERSION_CODES.O)) {
             Timber.w("The scanner was null, context or adapter was null");
             return ScanCallback.SCAN_FAILED_INTERNAL_ERROR;
         }
@@ -99,7 +100,7 @@ class BitgattLeScanner implements ScannerInterface {
     @Override
     public void stopScan(PendingIntent callbackIntent) {
         BluetoothLeScanner leScanner = getScanner();
-        if (leScanner == null || !FitbitGatt.atLeastSDK(Build.VERSION_CODES.O)) {
+        if (leScanner == null || !atLeastSDK(Build.VERSION_CODES.O)) {
             Timber.w("The scanner was null, the context or adapter must have been null");
             return;
         }

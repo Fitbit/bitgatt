@@ -21,6 +21,7 @@ import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -99,6 +100,17 @@ public class FitbitGattTest {
         FitbitGatt.getInstance().shutdown();
         FitbitGatt.setInstance(null);
     }
+
+    @Test
+    public void testSetScanSettings() {
+        ScanSettings mock = mock(ScanSettings.class);
+        fitbitGatt.setPeripheralScanner(scannerMock);
+
+        fitbitGatt.setScanSettings(mock);
+
+        verify(scannerMock).setScanSettings(mock);
+    }
+
 
     @Test
     public void testGattStartWithBluetoothOn() {
