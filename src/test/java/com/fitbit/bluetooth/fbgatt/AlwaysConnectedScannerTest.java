@@ -81,7 +81,7 @@ public class AlwaysConnectedScannerTest {
         doReturn(bluetoothRadioStatusListenerMock).when(dependencyProviderMock).getNewBluetoothRadioStatusListener(mockContext, false);
         doReturn(utilsMock).when(dependencyProviderMock).getBluetoothUtils();
         doReturn(lowEnergyAclListenerMock).when(dependencyProviderMock).getNewLowEnergyAclListener();
-        doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(eq(mockContext), any());
+        doCallRealMethod().when(dependencyProviderMock).getNewPeripheralScanner(any(), any());
         doReturn(true).when(utilsMock).isBluetoothEnabled(mockContext);
 
         Looper mockMainThreadLooper = mock(Looper.class);

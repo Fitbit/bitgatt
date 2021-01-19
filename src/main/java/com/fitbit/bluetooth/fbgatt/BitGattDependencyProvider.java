@@ -29,8 +29,8 @@ import static com.fitbit.bluetooth.fbgatt.PeripheralScanner.BACKGROUND_SCAN_REQU
  */
 class BitGattDependencyProvider {
 
-    PeripheralScanner getNewPeripheralScanner(@NonNull Context context, @NonNull PeripheralScanner.TrackerScannerListener listener) {
-        return new PeripheralScanner(context, listener);
+    PeripheralScanner getNewPeripheralScanner(@NonNull PeripheralScanner.TrackerScannerListener listener, @NonNull FitbitGatt fbGatt) {
+        return new PeripheralScanner(listener, fbGatt);
     }
 
     GattUtils getNewGattUtils() {
