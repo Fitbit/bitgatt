@@ -11,11 +11,14 @@ package com.fitbit.bluetooth.fbgatt.tx;
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 
 import androidx.annotation.Nullable;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import timber.log.Timber;
 
@@ -29,15 +32,22 @@ import timber.log.Timber;
 public class SetClientConnectionStateTransaction extends GattClientTransaction {
 
     private static final String NAME = "SetClientConnectionStateTransaction";
-    private GattState destinationState;
+    private final GattState destinationState;
+    private final List<GattState> notAllowedTransitionFrom = Collections.unmodifiableList(
+            Arrays.asList(GattState.DISCONNECTED,
+                    GattState.DISCONNECTING,
+                    GattState.FAILURE_CONNECTING,
+                    GattState.CLOSED)
+    );
 
     /**
      * For the purposes of this transaction the end state should be {@link GattState#GATT_CONNECTION_STATE_SET_SUCCESSFULLY}.  Achieving this state
      * does not mean that this is the system state, it means that the transaction completed properly, the callback will deliver this state upon success
      * assuming the entry criteria is correct and then set the system to this state.  Present state in the transaction response will not match the actual
      * state.  This is to prevent setting the system to a failure state when the intent is to fix a failure state.
-     * @param connection The {@link GattConnection} to perform this operation upon
-     * @param successEndState The success end state, in this case {@link GattState#GATT_CONNECTION_STATE_SET_SUCCESSFULLY}
+     *
+     * @param connection       The {@link GattConnection} to perform this operation upon
+     * @param successEndState  The success end state, in this case {@link GattState#GATT_CONNECTION_STATE_SET_SUCCESSFULLY}
      * @param destinationState The state to set the connection to in the end.  Probably {@link GattState#IDLE} or {@link GattState#DISCONNECTED}
      */
 
@@ -57,8 +67,9 @@ public class SetClientConnectionStateTransaction extends GattClientTransaction {
         GattState previousState = getConnection().getGattState();
         getConnection().setState(GattState.GATT_CONNECTION_STATE_SET_IN_PROGRESS);
         TransactionResult.Builder builder = new TransactionResult.Builder().transactionName(NAME);
-        if(previousState.equals(destinationState)) {
-            Timber.w("[%s] The system is already in this state, can't transition to it, failing tx and returning state to previous.", getDevice());
+        //We should not reset a disconnecting/disconnected state directly as it may leave the stack to believe it is still connected
+        if (previousState.equals(destinationState) || notAllowedTransitionFrom.contains(previousState)) {
+            Timber.w("[%s] Cannot set state [%s]  while in [%s]", getDevice(), destinationState, previousState);
             builder.gattState(GattState.GATT_CONNECTION_STATE_SET_FAILURE)
                     .resultStatus(TransactionResult.TransactionResultStatus.FAILURE);
             getConnection().setState(previousState);
