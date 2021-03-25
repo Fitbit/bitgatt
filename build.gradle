@@ -37,9 +37,7 @@ if (releaseTag != null && !releaseTag.isEmpty()) {
     println("Releasing with version " + version);
 }
 
-def isJitPack =  System.getenv('JITPACK') ? System.getenv('JITPACK').toBoolean() : false
 def artifactPath = "$buildDir/outputs/aar"
-def libPrefix = project.name
 
 
 android {
@@ -65,11 +63,6 @@ android {
             consumerProguardFiles 'proguard-rules.pro'
         }
         debug {
-            testCoverageEnabled false
-        }
-        library {
-            debuggable true
-            minifyEnabled false
             testCoverageEnabled false
         }
     }
@@ -131,15 +124,13 @@ android.libraryVariants.all { variant ->
 
 publishing {
     publications {
-        android.libraryVariants.all { variant ->
-            "${variant.name.capitalize()}Aar"(MavenPublication) {
-                from components.findByName("android${variant.name.capitalize()}")
-                groupId group
-                artifactId 'bitgatt'
-                version "$version-${variant.name}"
-                artifact("$artifactPath/${variant.name}.aar")  {
-                    builtBy tasks.getByName("build")
-                }
+        release (MavenPublication) {
+            from components.findByName("androidRelease")
+            groupId  group
+            artifactId 'bitgatt'
+            version "$version-release"
+            artifact("$artifactPath/release.aar")  {
+                builtBy tasks.getByName("build")
             }
         }
     }
