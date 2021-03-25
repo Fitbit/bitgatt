@@ -25,6 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -127,6 +129,55 @@ public class SetClientConnectionStateTransactionTest {
         assertEquals(GattState.GATT_CONNECTION_STATE_SET_FAILURE, txResult[0].getResultState());
         assertEquals(GattState.CONNECTED, conn.getGattState());
     }
+
+
+    @Test
+    public void testSetStateDuringDisconnection() throws Exception {
+        final TransactionResult[] txResult = new TransactionResult[1];
+        SetClientConnectionStateTransaction setClientConnectionStateTransaction =
+                new SetClientConnectionStateTransaction(conn,
+                        GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
+                        GattState.IDLE);
+
+        CountDownLatch cdl = new CountDownLatch(1);
+        conn.setState(GattState.DISCONNECTING);
+        conn.runTx(setClientConnectionStateTransaction, getGattTransactionCallback(txResult, cdl));
+
+        cdl.await(1, TimeUnit.SECONDS);
+        assertEquals(TransactionResult.TransactionResultStatus.FAILURE, txResult[0].getResultStatus());
+        assertEquals(GattState.GATT_CONNECTION_STATE_SET_FAILURE, txResult[0].getResultState());
+        assertEquals(GattState.DISCONNECTING, conn.getGattState());
+    }
+
+    @Test
+    public void testSetStateDuringInvalidTransition() throws Exception {
+
+
+        final List<GattState> notAllowedTransitions = Collections.unmodifiableList(
+                Arrays.asList(GattState.DISCONNECTED,
+                        GattState.DISCONNECTING,
+                        GattState.FAILURE_CONNECTING,
+                        GattState.CLOSED)
+        );
+
+        for(GattState state: notAllowedTransitions) {
+            final TransactionResult[] txResult = new TransactionResult[1];
+            SetClientConnectionStateTransaction setClientConnectionStateTransaction = new SetClientConnectionStateTransaction(conn,
+                            GattState.GATT_CONNECTION_STATE_SET_SUCCESSFULLY,
+                            GattState.IDLE);
+            CountDownLatch cdl = new CountDownLatch(1);
+            conn.setState(state);
+            conn.runTx(setClientConnectionStateTransaction, getGattTransactionCallback(txResult, cdl));
+            cdl.await(1, TimeUnit.SECONDS);
+
+            assertEquals("Should not be able to set idle while in state: "+state,TransactionResult.TransactionResultStatus.FAILURE, txResult[0].getResultStatus());
+            assertEquals(GattState.GATT_CONNECTION_STATE_SET_FAILURE, txResult[0].getResultState());
+            assertEquals(state, conn.getGattState());
+        }
+
+
+    }
+
 
     @NotNull
     private GattTransactionCallback getGattTransactionCallback(TransactionResult[] txResult, CountDownLatch cdl) {
