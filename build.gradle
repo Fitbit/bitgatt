@@ -61,9 +61,11 @@ android {
         release {
             minifyEnabled false
             consumerProguardFiles 'proguard-rules.pro'
+            buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
         }
         debug {
-            testCoverageEnabled false
+            testCoverageEnabled true
+            buildConfigField("String","VERSION_NAME","\"${defaultConfig.versionName}\"")
         }
     }
     testOptions {
