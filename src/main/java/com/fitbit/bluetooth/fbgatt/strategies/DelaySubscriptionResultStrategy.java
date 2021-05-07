@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.fitbit.bluetooth.fbgatt.AndroidDevice;
+import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransaction;
@@ -28,7 +29,7 @@ import androidx.annotation.Nullable;
  */
 public class DelaySubscriptionResultStrategy extends Strategy {
     private static final int NON_GATT_OPERATION_INTERACTION_DELAY_MS = 50;
-    private GattTransaction tx;
+    private GattClientTransaction tx;
     private Handler mainThreadHandler;
     private TransactionResult result;
     private GattTransactionCallback gattTransactionCallback;
@@ -45,7 +46,7 @@ public class DelaySubscriptionResultStrategy extends Strategy {
     }
 
     @Override
-    public void applyStrategy(GattTransaction tx, TransactionResult result, GattTransactionCallback callback) {
+    public void applyStrategy(GattClientTransaction tx, TransactionResult result, GattTransactionCallback callback) {
         this.tx = tx;
         this.result = result;
         this.gattTransactionCallback = callback;

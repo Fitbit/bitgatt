@@ -11,9 +11,9 @@ package com.fitbit.bluetooth.fbgatt.logging;
 import android.os.Build;
 import android.util.Log;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**
@@ -23,7 +23,7 @@ import timber.log.Timber;
 public class BitgattDebugTree extends Timber.DebugTree {
     private static final int MAX_LOG_LENGTH = 4000;
     @Override
-    protected void log(int priority, @Nullable String tag, @NotNull String message, @Nullable Throwable t) {
+    protected void log(int priority, @Nullable String tag, @NonNull String message, @Nullable Throwable t) {
         // Workaround for devices that doesn't show lower priority logs
         if(Build.MANUFACTURER == null) {
             return;

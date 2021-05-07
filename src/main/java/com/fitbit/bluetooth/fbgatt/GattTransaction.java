@@ -125,6 +125,7 @@ public abstract class GattTransaction<T extends GattTransaction<T>> {
      * operation, they will have to make that transition themselves.
      */
     @VisibleForTesting( otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+    @SuppressWarnings("unchecked")
     public void commit(GattTransactionCallback callback) {
 
         if (taskHasStarted.getAndSet(true)) {

@@ -19,7 +19,6 @@ import com.fitbit.bluetooth.fbgatt.util.NoOpGattCallback;
 import android.content.Context;
 import android.os.ParcelUuid;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import static org.junit.Assert.*;
@@ -179,7 +179,7 @@ public class SetClientConnectionStateTransactionTest {
     }
 
 
-    @NotNull
+    @NonNull
     private GattTransactionCallback getGattTransactionCallback(TransactionResult[] txResult, CountDownLatch cdl) {
         return result -> {
             txResult[0] = result;

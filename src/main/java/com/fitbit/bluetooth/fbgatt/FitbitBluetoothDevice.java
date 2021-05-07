@@ -142,11 +142,15 @@ public class FitbitBluetoothDevice {
         return scanRecord;
     }
 
+
+
+    public boolean equals(BluetoothDevice obj) {
+        return ((BluetoothDevice) obj).getAddress().equals(this.bluetoothAddress);
+    }
+
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof BluetoothDevice) {
-            return ((BluetoothDevice) obj).getAddress().equals(this.bluetoothAddress);
-        } else if (obj instanceof FitbitBluetoothDevice){
+        if (obj instanceof FitbitBluetoothDevice){
             return ((FitbitBluetoothDevice)obj).getAddress().equals(this.bluetoothAddress);
         } else {
             throw new RuntimeException("Can't compare this kind of thing and FitbitBluetoothDevice");

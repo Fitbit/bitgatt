@@ -12,18 +12,16 @@ import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattCharacteristicCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattDescriptorCopy;
 import com.fitbit.bluetooth.fbgatt.btcopies.BluetoothGattServiceCopy;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
-
 import org.junit.Assert;
 import org.junit.Test;
-
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
-
 import static junit.framework.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,7 +31,7 @@ import static org.mockito.Mockito.when;
  *
  * Created by iowens on 6/5/18.
  */
-
+@RunWith(JUnit4.class)
 public class GattUtilsTest {
     @Test
     public void testCopyCharacteristic(){

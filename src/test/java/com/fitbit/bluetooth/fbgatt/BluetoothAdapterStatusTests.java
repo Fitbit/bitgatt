@@ -12,13 +12,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
  *
  * Created by iowens on 8/27/18.
  */
+@RunWith(JUnit4.class)
 public class BluetoothAdapterStatusTests {
 
     BluetoothRadioStatusListener mockStatusListener;
