@@ -1022,7 +1022,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     }
 
     @RestrictTo(RestrictTo.Scope.LIBRARY)
-    synchronized boolean isInitialized() {
+    boolean isInitialized() {
         return isInitialized.get();
     }
 
