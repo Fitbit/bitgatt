@@ -11,11 +11,8 @@
 package com.fitbit.bluetooth.fbgatt.tools;
 
 import com.fitbit.bluetooth.fbgatt.logger.PluginLoggerInterface;
-
 import com.facebook.stetho.dumpapp.DumperContext;
-
 import org.json.JSONObject;
-
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -52,7 +49,7 @@ class DumperConsumer implements ConsumerInterface {
         String exceptionAsString = sw.toString();
         String error = "\u001B[31m " + exceptionAsString + " \u001B[0m";
 
-        logger.logMsg("Dumped error: " + error);
+        logger.logError(e);
 
         errStream.println(error);
         errStream.flush();
