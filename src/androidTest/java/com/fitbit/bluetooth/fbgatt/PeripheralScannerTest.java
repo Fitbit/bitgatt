@@ -18,7 +18,6 @@ import android.os.HandlerThread;
 import android.os.ParcelUuid;
 import android.os.SystemClock;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -126,7 +125,7 @@ public class PeripheralScannerTest {
         FitbitGatt.getInstance().getPeripheralScanner().startHighPriorityScan(appContext);
     }
 
-    private void verifyCountDown(@NotNull CountDownLatch cdl, long seconds) {
+    private void verifyCountDown(@NonNull CountDownLatch cdl, long seconds) {
         long initialCountDown = cdl.getCount();
         try {
             cdl.await(seconds, TimeUnit.SECONDS);
@@ -138,7 +137,7 @@ public class PeripheralScannerTest {
         }
     }
 
-    private void verifyCountDown(@NotNull CountDownLatch cdl) {
+    private void verifyCountDown(@NonNull CountDownLatch cdl) {
         verifyCountDown(cdl, 1);
     }
 

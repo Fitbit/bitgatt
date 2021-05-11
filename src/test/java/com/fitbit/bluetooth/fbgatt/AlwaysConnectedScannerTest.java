@@ -10,31 +10,28 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
-
 import android.bluetooth.le.ScanFilter;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
-
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doReturn;
@@ -44,6 +41,7 @@ import static org.mockito.Mockito.when;
 /**
  * Will test the behavior of the always connected scanner with the mock lollipop scanner
  */
+@RunWith(JUnit4.class)
 public class AlwaysConnectedScannerTest {
 
     private static MockLollipopScanner mockScanner;
@@ -53,6 +51,7 @@ public class AlwaysConnectedScannerTest {
     private AlwaysConnectedScanner alwaysConnectedScanner;
     private Handler mockHandler;
     private ScheduledExecutorService singleThreadExecutor = Executors.newSingleThreadScheduledExecutor();
+    @SuppressWarnings("FutureReturnValueIgnored")
     private Answer<Boolean> handlerPostAnswer = invocation -> {
         Long delay = 0L;
         if (invocation.getArguments().length > 1) {

@@ -43,7 +43,7 @@ public class GattConnection implements Closeable {
     private FitbitBluetoothDevice device;
     private @Nullable volatile BluetoothGatt gatt;
     private GattState state;
-    private GattStateTransitionValidator guard;
+    private GattStateTransitionValidator<GattClientTransaction> guard;
     private final ConcurrentHashMap<ConnectionEventListener, Boolean> asynchronousEventListeners = new ConcurrentHashMap<>();
     private boolean mockMode;
     private List<BluetoothGattService> mockServices;
@@ -53,7 +53,7 @@ public class GattConnection implements Closeable {
 
     public GattConnection(FitbitBluetoothDevice device, Looper mainLooper) {
         this.device = device;
-        this.guard = new GattStateTransitionValidator();
+        this.guard = new GattStateTransitionValidator<GattClientTransaction>();
         this.mockServices = new ArrayList<>(1);
         this.clientQueue = new TransactionQueueController(this);
         this.state = GattState.DISCONNECTED;
@@ -210,7 +210,7 @@ public class GattConnection implements Closeable {
         return device;
     }
 
-    synchronized GattStateTransitionValidator.GuardState checkTransaction(GattTransaction tx) {
+    synchronized GattStateTransitionValidator.GuardState checkTransaction(GattClientTransaction tx) {
         return guard.checkTransaction(getGattState(), tx);
     }
 
@@ -514,7 +514,7 @@ public class GattConnection implements Closeable {
      * @param callback    The gatt transaction callback
      */
 
-    public void runTx(GattTransaction transaction, GattTransactionCallback callback) {
+    public void runTx(GattClientTransaction transaction, GattTransactionCallback callback) {
         Timber.v("[%s] Received transaction: %s", getDevice(), transaction.getName());
         resetDisconnectedTTL();
         if (intraTransactionDelay.get() == 0) {
@@ -532,7 +532,7 @@ public class GattConnection implements Closeable {
         }
     }
 
-    private void queueTransaction(GattTransaction transaction, GattTransactionCallback callback) {
+    private void queueTransaction(GattClientTransaction transaction, GattTransactionCallback callback) {
         clientQueue.queueTransaction(() -> transaction.commit(callback));
     }
 

@@ -10,7 +10,6 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
@@ -18,26 +17,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
-
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import androidx.annotation.NonNull;
-
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doReturn;
@@ -49,6 +45,7 @@ import static org.mockito.Mockito.when;
  *
  * Created by iowens on 9/4/18.
  */
+@RunWith(JUnit4.class)
 public class PeripheralScannerTest {
 
     private MockLollipopScanner mockScanner;
@@ -58,6 +55,7 @@ public class PeripheralScannerTest {
     private PeripheralScanner peripheralScanner;
     private Handler mockHandler;
     private ScheduledExecutorService singleThreadExecutor = Executors.newSingleThreadScheduledExecutor();
+    @SuppressWarnings("FutureReturnValueIgnored")
     private Answer<Boolean> handlerPostAnswer = invocation -> {
         Long delay = 0L;
         if (invocation.getArguments().length > 1) {

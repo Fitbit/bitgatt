@@ -10,7 +10,6 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanRecord;
@@ -19,14 +18,13 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
-
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -36,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @SuppressWarnings("ResultOfMethodCallIgnored")
+@RunWith(JUnit4.class)
 public class HandleIntentBasedScanResultTest {
 
     private final BluetoothUtils mockBluetoothUtils = mock(BluetoothUtils.class);
@@ -336,10 +335,10 @@ public class HandleIntentBasedScanResultTest {
         doReturn(mock(ScanRecord.class)).when(scanResultMock).getScanRecord();
         doReturn(-60).when(scanResultMock).getRssi();
         doReturn(device).when(scanResultMock).getDevice();
-        doAnswer(new Answer() {
+        doAnswer(new Answer<Boolean>() {
             private int count = 0;
 
-            public Object answer(InvocationOnMock invocation) {
+            public Boolean answer(InvocationOnMock invocation) {
                 return count++ > 1;
             }
         }).when(fitbitGattMock).isInitialized();

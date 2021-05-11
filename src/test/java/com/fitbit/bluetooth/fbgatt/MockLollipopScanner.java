@@ -37,9 +37,7 @@ import android.os.Parcelable;
 import android.os.SystemClock;
 import android.os.WorkSource;
 import android.util.Log;
-
 import org.mockito.stubbing.Answer;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,11 +45,8 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import timber.log.Timber;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
@@ -76,6 +71,8 @@ public class MockLollipopScanner implements ScannerInterface {
     private Handler mockHandler;
 
     private static ScheduledExecutorService singleThreadExecutor = Executors.newSingleThreadScheduledExecutor();
+
+    @SuppressWarnings("FutureReturnValueIgnored")
     private Answer<Boolean> handlerPostAnswer = invocation -> {
         Long delay = 0L;
         if (invocation.getArguments().length > 1) {
@@ -316,7 +313,6 @@ public class MockLollipopScanner implements ScannerInterface {
                     ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED);
             }
             if (!isHardwareResourcesAvailableForScan(settings)) {
-                Timber.e("Actually scan failed out of hardware resources");
                 return postCallbackErrorOrReturn(callback,
                     5);
             }
@@ -441,6 +437,7 @@ public class MockLollipopScanner implements ScannerInterface {
             }
         };
 
+        @SuppressWarnings("FutureReturnValueIgnored")
         public void startScanForIntent(PendingIntent callbackIntent, ScanSettings settings, List<ScanFilter> filters, String packageName) {
             singleThreadExecutor.schedule(resultsRunnable, TIME_BETWEEN_RESULTS, TimeUnit.MILLISECONDS);
             if (settings.getScanMode() == ScanSettings.SCAN_MODE_LOW_LATENCY) {
@@ -468,7 +465,6 @@ public class MockLollipopScanner implements ScannerInterface {
             Set<BleScanCallbackWrapper> keys = scanners.keySet();
             for (BleScanCallbackWrapper key : keys) {
                 if (key.mScannerId == scannerId) {
-                    Timber.v("Cancelling scanner with id: %d", scannerId);
                     scanners.remove(key);
                 }
             }
@@ -482,7 +478,6 @@ public class MockLollipopScanner implements ScannerInterface {
             } else if (mSettings.getScanMode() == ScanSettings.SCAN_MODE_LOW_POWER) {
                 currentScanState = ScanState.HIGH_LATENCY;
             }
-            Timber.v("Current scan state: %s", currentScanState);
             SystemClock.sleep(TIME_BETWEEN_RESULTS);
             resultsRunnable.run();
         }
@@ -511,7 +506,6 @@ public class MockLollipopScanner implements ScannerInterface {
             Set<Integer> keys = startedScanners.keySet();
             for (Integer key : keys) {
                 if (key == scanId) {
-                    Timber.v("Cancelling scanner with id: %d", scanId);
                     startedScanners.remove(scanId);
                 }
             }
@@ -521,8 +515,7 @@ public class MockLollipopScanner implements ScannerInterface {
             Set<BleScanCallbackWrapper> keys = scanners.keySet();
             for (BleScanCallbackWrapper key : keys) {
                 if (key.mScannerId == scannerId) {
-                    Timber.v("Unregistering scanner with id: %d", scannerId);
-                    scanners.remove(scannerId);
+                    scanners.remove(key);
                 }
             }
         }
@@ -583,7 +576,6 @@ public class MockLollipopScanner implements ScannerInterface {
                     mBluetoothGatt.registerScanner(this, mWorkSource);
                     wait(REGISTRATION_CALLBACK_TIMEOUT_MILLIS);
                 } catch (InterruptedException e) {
-                    Timber.tag(TAG).e(e, "application registration exception");
                     postCallbackError(mScanCallback, ScanCallback.SCAN_FAILED_INTERNAL_ERROR);
                 }
                 if (mScannerId > 0) {
@@ -775,7 +767,6 @@ public class MockLollipopScanner implements ScannerInterface {
     }
 
     private boolean isHardwareResourcesAvailableForScan(ScanSettings settings) {
-        Timber.v("Settings: %s", settings);
         return true;
     }
 }

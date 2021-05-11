@@ -14,17 +14,16 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
@@ -34,12 +33,14 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@RunWith(JUnit4.class)
 public class BluetoothRadioStatusListenerTest {
 
     private BluetoothRadioStatusListener statusListener;
     private ScheduledExecutorService singleThreadExecutor = Executors.newSingleThreadScheduledExecutor();
     private Context ctx;
     private Handler mockHandler;
+    @SuppressWarnings("FutureReturnValueIgnored")
     private Answer<Boolean> handlerPostAnswer = invocation -> {
         Long delay = 0L;
         if (invocation.getArguments().length > 1) {
@@ -111,7 +112,7 @@ public class BluetoothRadioStatusListenerTest {
         boolean onOrOff = false;
         for(int i=0; i <= 4; i++) {
             result = statusListener.shouldScheduleCallback(onOrOff ? BluetoothAdapter.STATE_ON : BluetoothAdapter.STATE_OFF,
-                onOrOff ? BluetoothAdapter.STATE_OFF : BluetoothAdapter.STATE_ON);
+                    onOrOff ? BluetoothAdapter.STATE_OFF : BluetoothAdapter.STATE_ON);
             assertFalse(result);
             onOrOff = !onOrOff;
         }
@@ -125,7 +126,7 @@ public class BluetoothRadioStatusListenerTest {
         boolean onOrOff = true;
         for(int i=0; i <= 2; i++) {
             result = statusListener.shouldScheduleCallback(onOrOff ? BluetoothAdapter.STATE_ON : BluetoothAdapter.STATE_OFF,
-                onOrOff ? BluetoothAdapter.STATE_OFF : BluetoothAdapter.STATE_ON);
+                    onOrOff ? BluetoothAdapter.STATE_OFF : BluetoothAdapter.STATE_ON);
             statusListener.setLastEvent(SystemClock.elapsedRealtimeNanos() - BluetoothRadioStatusListener.MIN_TURNING_ON_CALLBACK_DELAY);
             onOrOff = !onOrOff;
         }
@@ -140,8 +141,8 @@ public class BluetoothRadioStatusListenerTest {
         boolean onOrOff = true;
         for(int i=0; i <= 2; i++) {
             result = statusListener.shouldScheduleCallback(onOrOff ? BluetoothAdapter.STATE_ON : BluetoothAdapter.STATE_OFF,
-                onOrOff ? BluetoothAdapter.STATE_OFF : BluetoothAdapter.STATE_ON);
-            statusListener.setLastEvent(SystemClock.elapsedRealtimeNanos() - ( BluetoothRadioStatusListener.MIN_TURNING_OFF_CALLBACK_DELAY - (BluetoothRadioStatusListener.MIN_TURNING_OFF_CALLBACK_DELAY / 2 )));
+                    onOrOff ? BluetoothAdapter.STATE_OFF : BluetoothAdapter.STATE_ON);
+            statusListener.setLastEvent(SystemClock.elapsedRealtimeNanos() - (BluetoothRadioStatusListener.MIN_TURNING_OFF_CALLBACK_DELAY - (BluetoothRadioStatusListener.MIN_TURNING_OFF_CALLBACK_DELAY / 2)));
             onOrOff = !onOrOff;
         }
         assertFalse(result);

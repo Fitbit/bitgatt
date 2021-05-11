@@ -12,14 +12,13 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
-
 import androidx.annotation.NonNull;
-
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -32,7 +31,7 @@ import static org.mockito.Mockito.when;
  *
  * Created by iowens on 12/2/17.
  */
-
+@RunWith(JUnit4.class)
 public class GattRegisterEventListenerTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";

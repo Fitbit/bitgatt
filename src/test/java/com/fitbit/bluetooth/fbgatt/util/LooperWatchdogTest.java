@@ -10,9 +10,9 @@ package com.fitbit.bluetooth.fbgatt.util;
 
 import android.os.Looper;
 import android.os.Message;
-
 import org.junit.Test;
-
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.verify;
  *
  * Created by iowens on 10/10/19.
  */
-
+@RunWith(JUnit4.class)
 public class LooperWatchdogTest {
 
     private static final int MESSAGE_QUEUE_STILL_ALIVE = 25341;

@@ -228,6 +228,11 @@ public class AndroidDevice {
         }
     }
 
+    @Override
+    public int hashCode() {
+        return  androidProperties.hashCode();
+    }
+
     @NonNull
     @Override
     public String toString() {
