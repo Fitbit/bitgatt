@@ -37,6 +37,8 @@ import static android.bluetooth.le.ScanCallback.SCAN_FAILED_ALREADY_STARTED;
 import static android.bluetooth.le.ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED;
 import static android.bluetooth.le.ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED;
 import static android.bluetooth.le.ScanCallback.SCAN_FAILED_INTERNAL_ERROR;
+import static android.os.Build.VERSION_CODES.M;
+import static android.os.Build.VERSION_CODES.O;
 import static com.fitbit.bluetooth.fbgatt.FitbitGatt.atLeastSDK;
 
 /**
@@ -239,6 +241,9 @@ class PeripheralScanner {
     /**
      * This will start a high priority scan
      *
+     * This will copy  report delay, callback type, legacy
+     * and will run using scan mode low latency as scan scan settings
+     *
      * @return true if scan started, false if not
      */
     synchronized boolean startHighPriorityScan(@Nullable Context context) {
@@ -249,8 +254,19 @@ class PeripheralScanner {
         if (isScanning.get()) {
             cancelScan(context);
         }
+
+
+        ScanSettings.Builder builder = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setReportDelay(scanSettings.getReportDelayMillis());
+        if(atLeastSDK(M)) {
+            builder.setCallbackType(scanSettings.getCallbackType());
+        }
+        if(atLeastSDK(O)) {
+            builder.setLegacy(scanSettings.getLegacy());
+        }
         Timber.d("Start High priority Scan");
-        return startScan(context);
+        return startScan(context, builder.build());
     }
 
     /**
@@ -758,7 +774,7 @@ class PeripheralScanner {
         }
     }
 
-    private synchronized boolean startScan(@Nullable Context context) {
+    private synchronized boolean startScan(@Nullable Context context, ScanSettings scanSettings) {
         ArrayList<ScanFilter> filters;
         synchronized (scanFilters) {
             filters = new ArrayList<>(scanFilters);
@@ -777,7 +793,7 @@ class PeripheralScanner {
         mHandler.removeCallbacks(periodicRunnable);
         //start scan
         if (!isScanning.getAndSet(true)) {
-            ScanSettings settings = this.scanSettings;
+            ScanSettings settings = scanSettings;
             if (bleUtils.getBluetoothAdapter(context) == null) {
                 // we should just use a basic one if we are in mock mode
                 settings = new ScanSettings.Builder().build();
@@ -823,6 +839,10 @@ class PeripheralScanner {
             Timber.w("Already scanning, will not start a new scan");
             return false;
         }
+    }
+
+    private synchronized boolean startScan(@Nullable Context context) {
+       return  startScan(context, scanSettings);
     }
 
     /**

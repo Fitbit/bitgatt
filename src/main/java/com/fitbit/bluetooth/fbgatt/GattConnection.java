@@ -458,6 +458,7 @@ public class GattConnection implements Closeable {
         if (localGatt != null) {
             closeClientIf(localGatt);
             gatt = null;
+            setState(GattState.DISCONNECTED);
         }
         clientQueue.stop();
         asynchronousEventListeners.clear();
@@ -471,6 +472,7 @@ public class GattConnection implements Closeable {
         if (localGatt != null) {
             closeClientIf(localGatt);
             gatt = null;
+            setState(GattState.DISCONNECTED);
         }
     }
 
@@ -494,7 +496,12 @@ public class GattConnection implements Closeable {
      */
 
     public boolean isConnected() {
-        return !getGattState().equals(GattState.DISCONNECTED) && !getGattState().equals(GattState.DISCONNECTING) && !getGattState().equals(GattState.BT_OFF) && !getGattState().equals(GattState.CONNECTING);
+        return !getGattState().equals(GattState.DISCONNECTED)
+                && !getGattState().equals(GattState.DISCONNECTING)
+                && !getGattState().equals(GattState.BT_OFF)
+                && !getGattState().equals(GattState.CONNECTING)
+                && !getGattState().equals(GattState.FAILURE_CONNECTING)
+                && !getGattState().equals(GattState.FAILURE_CONNECTING_WITH_SYSTEM_CRASH);
     }
 
     /**
@@ -581,6 +588,7 @@ public class GattConnection implements Closeable {
         if (localGatt != null) {
             closeClientIf(localGatt);
             gatt = null;
+            setState(GattState.DISCONNECTED);
         } else {
             Timber.w("[%s] The gatt was null when trying to release, the logic is busted or you are suffering from an Android bug, look into a strategy.", getDevice());
         }
