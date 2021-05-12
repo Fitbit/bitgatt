@@ -401,6 +401,9 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * to find devices and rely on the device discovery callbacks or polling the connection cache
      * {@link FitbitGatt#getMatchingConnectionsForDeviceNames(List)} or {@link FitbitGatt#getMatchingConnectionsForServices(List)}
      *
+     * This will copy  report delay, callback type, legacy
+     * and will run using scan mode low latency as scan scan settings
+     *
      * @param context The android context for providing to the scanner
      * @return True if the scan started, false if it did not
      */
