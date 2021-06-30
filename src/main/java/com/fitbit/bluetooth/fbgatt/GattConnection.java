@@ -333,6 +333,24 @@ public class GattConnection implements Closeable {
         }
     }
 
+    /**
+     * This method is called only for devices that are already connected on Gatt Profile
+     * {@link android.bluetooth.BluetoothManager#getConnectedDevices(int)}
+     * <p>
+     * Will perform a gatt connect on the device, to initialise [BluetoothGatt]
+     * for this connection and set the state to [GattState.CONNECTED]
+     * because no connection change callback will happen
+     */
+    void initGattForConnectedDevice() {
+        Timber.v("[%s] already connected, init BluetoothGatt ", device);
+        if (isConnected()) {
+            return;
+        }
+        if (ifGattHasNeverBeenInstantiatedConnect(device)) {
+            setState(GattState.CONNECTED);
+        }
+    }
+
     private boolean connectionInstanceAlreadyExists(FitbitBluetoothDevice device) {
         GattConnection cachedConnection = FitbitGatt.getInstance().getConnectionMap().get(device);
         if (cachedConnection != null && !cachedConnection.equals(this)) {
