@@ -25,10 +25,9 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
- * Will provide somewhat random mock {@link android.bluetooth.le.ScanResult} values to test the
+ * Will provide somewhat random mock {@link ScanResult} values to test the
  * filtering provided by the scanner
  *
  * Created by iowens on 9/4/18.

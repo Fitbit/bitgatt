@@ -22,10 +22,8 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
-
 import java.util.Arrays;
 import java.util.List;
-
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 

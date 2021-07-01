@@ -17,7 +17,6 @@ import com.fitbit.bluetooth.fbgatt.Situation;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import timber.log.Timber;
 
 /**

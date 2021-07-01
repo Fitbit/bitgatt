@@ -5,10 +5,8 @@ import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattServerConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-
 import android.bluetooth.BluetoothGattServer;
 import android.os.Handler;
-
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 

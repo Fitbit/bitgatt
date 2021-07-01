@@ -8,40 +8,37 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import androidx.test.core.app.ApplicationProvider;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerConnectMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.GattServerDisconnectMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.SubscribeToCharacteristicNotificationsMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattCharacteristicMockTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattDescriptorMockTransaction;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.mockito.internal.matchers.Any;
-import org.mockito.stubbing.Answer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.shadows.ShadowBluetoothDevice;
+
 import static android.bluetooth.BluetoothGattCharacteristic.PROPERTY_WRITE;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
 public class TxPreCommitTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
@@ -49,36 +46,16 @@ public class TxPreCommitTest {
 
     @Before
     public void before() {
-        Context mockContext = mock(Context.class);
-        when(mockContext.getSystemService(Any.class)).thenReturn(null);
-        when(mockContext.getApplicationContext()).thenReturn(mockContext);
+        Context context = ApplicationProvider.getApplicationContext();
         FitbitGatt.getInstance().setStarted();
-        FitbitGatt.getInstance().setAppContext(mockContext);
-        Handler mockHandler = mock(Handler.class);
-        Looper mockLooper = mock(Looper.class);
-        Thread mockThread = mock(Thread.class);
-        when(mockThread.getName()).thenReturn("Irvin's mock thread");
-        when(mockLooper.getThread()).thenReturn(mockThread);
-        when(mockHandler.getLooper()).thenReturn(mockLooper);
-        when(mockHandler.postDelayed(any(Runnable.class), anyLong())).thenAnswer((Answer) invocation -> {
-            Runnable msg = invocation.getArgument(0);
-            msg.run();
-            return null;
-        });
-        when(mockHandler.post(any(Runnable.class))).thenAnswer((Answer) invocation -> {
-            Runnable msg = invocation.getArgument(0);
-            msg.run();
-            return null;
-        });
-        device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice", mock(BluetoothDevice.class));
-        GattConnection conn = spy(new GattConnection(device, mockLooper));
+        FitbitGatt.getInstance().setAppContext(context);
+
+        device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice", ShadowBluetoothDevice.newInstance(MOCK_ADDRESS));
+        GattConnection conn = spy(new GattConnection(device, context.getMainLooper()));
         conn.setMockMode(true);
-        // you are mocking get connection handler, but runTx uses the property
-        when(conn.getMainHandler()).thenReturn(mockHandler);
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
-        GattServerConnection serverConnection = spy(new GattServerConnection(null, mockLooper));
+        GattServerConnection serverConnection = spy(new GattServerConnection(null, context.getMainLooper()));
         serverConnection.setMockMode(true);
-        when(serverConnection.getMainHandler()).thenReturn(mockHandler);
         FitbitGatt.getInstance().setGattServerConnection(serverConnection);
     }
 

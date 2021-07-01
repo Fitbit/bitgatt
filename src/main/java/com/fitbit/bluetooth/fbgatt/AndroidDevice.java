@@ -8,11 +8,10 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.util.HashMap;
 import java.util.Locale;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * An android device, which is an encapsulation of the build variables in a simple comparable

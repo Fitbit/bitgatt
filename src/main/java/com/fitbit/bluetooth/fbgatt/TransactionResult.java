@@ -10,17 +10,15 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.Bytes;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * A class to encapsulate the range of possible data to be returned from the transactions and the
@@ -100,7 +98,7 @@ public class TransactionResult {
      */
     final TransactionResultStatus resultStatus;
     /**
-     * The data payload copied out of the {@link android.bluetooth.BluetoothGattDescriptor} or the {@link android.bluetooth.BluetoothGattCharacteristic}
+     * The data payload copied out of the {@link android.bluetooth.BluetoothGattDescriptor} or the {@link BluetoothGattCharacteristic}
      * this needs to be copied because the value attribute of these objects is a dereferenced pointer
      * to the underlying data structure which can change as something else writes to that gatt item
      * this is not final because we don't ever want for this to be null, but we don't know what the
@@ -166,7 +164,7 @@ public class TransactionResult {
      * @param characteristicUuid The characteristic UUID involving the transaction that generated this result
      * @param serviceUuid The service UUID involving the transaction that generated this result
      * @param descriptorUuid The descriptor UUID involving the transaction that generated this result
-     * @param data The data payload copied out of the {@link android.bluetooth.BluetoothGattDescriptor} or the {@link android.bluetooth.BluetoothGattCharacteristic}
+     * @param data The data payload copied out of the {@link android.bluetooth.BluetoothGattDescriptor} or the {@link BluetoothGattCharacteristic}
      *       this needs to be copied because the value attribute of these objects is a dereferenced pointer
      *       to the underlying data structure which can change as something else writes to that gatt item
      *       this is not final because we don't ever want for this to be null, but we don't know what the

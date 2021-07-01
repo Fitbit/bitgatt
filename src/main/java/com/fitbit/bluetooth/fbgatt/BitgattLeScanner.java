@@ -9,7 +9,6 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
-
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -18,9 +17,7 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Build;
-
 import java.util.List;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;

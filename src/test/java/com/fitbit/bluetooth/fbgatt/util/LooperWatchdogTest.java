@@ -8,15 +8,15 @@
 
 package com.fitbit.bluetooth.fbgatt.util;
 
-import android.os.Looper;
-import android.os.Message;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+
+import android.os.Message;
+import androidx.test.core.app.ApplicationProvider;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
 /**
  * Sadly, it's hard to test loopers & handlers, will build this out further as we go, but I wanted
@@ -24,15 +24,14 @@ import static org.mockito.Mockito.verify;
  *
  * Created by iowens on 10/10/19.
  */
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
 public class LooperWatchdogTest {
 
     private static final int MESSAGE_QUEUE_STILL_ALIVE = 25341;
 
     @Test
     public void testAlertClearedIfMessageReceived() {
-        Looper mockLooper = mock(Looper.class);
-        LooperWatchdog dog = spy(new LooperWatchdog(mockLooper));
+        LooperWatchdog dog = spy(new LooperWatchdog(ApplicationProvider.getApplicationContext().getMainLooper()));
         Message m = new Message();
         m.what = MESSAGE_QUEUE_STILL_ALIVE;
         dog.handleMessage(m);

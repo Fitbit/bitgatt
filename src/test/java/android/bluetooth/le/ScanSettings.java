@@ -249,7 +249,7 @@ public final class ScanSettings implements Parcelable {
         return 0;
     }
 
-    public static final Parcelable.Creator<ScanSettings> CREATOR =
+    public static final Creator<ScanSettings> CREATOR =
         new Creator<ScanSettings>() {
             @Override
             public ScanSettings[] newArray(int size) {
@@ -398,7 +398,7 @@ public final class ScanSettings implements Parcelable {
 
         /**
          * Set the Physical Layer to use during this scan.
-         * This is used only if {@link ScanSettings.Builder#setLegacy}
+         * This is used only if {@link Builder#setLegacy}
          * is set to false.
          * {@link android.bluetooth.BluetoothAdapter#isLeCodedPhySupported}
          * may be used to check whether LE Coded phy is supported by calling

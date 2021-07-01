@@ -10,16 +10,13 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.util.Bytes;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanRecord;
+import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
-
-import java.util.Locale;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import timber.log.Timber;
 
 /**

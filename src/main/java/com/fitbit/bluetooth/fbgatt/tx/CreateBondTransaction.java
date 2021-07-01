@@ -17,14 +17,11 @@ import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.receivers.CreateBondTransactionBroadcastReceiver;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
-
 import java.util.concurrent.TimeUnit;
-
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;

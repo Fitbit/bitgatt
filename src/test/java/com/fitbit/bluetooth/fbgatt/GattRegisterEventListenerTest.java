@@ -8,30 +8,25 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
-import android.bluetooth.BluetoothDevice;
-import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
+import androidx.test.core.app.ApplicationProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.mockito.stubbing.Answer;
 import androidx.annotation.NonNull;
+import org.robolectric.RobolectricTestRunner;
+
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 /**
  * Evaluate gatt listener for transaction events
  *
  * Created by iowens on 12/2/17.
  */
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
 public class GattRegisterEventListenerTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
@@ -39,32 +34,11 @@ public class GattRegisterEventListenerTest {
 
     @Before
     public void before() {
-        // Context
-        Context appContext = mock(Context.class);
-        when(appContext.getSystemService(any(String.class))).thenReturn(null);
-        when(appContext.getApplicationContext()).thenReturn(appContext);
         // started
         FitbitGatt.getInstance().setStarted();
-        Handler mockHandler = mock(Handler.class);
-        Looper mockLooper = mock(Looper.class);
-        Thread mockThread = mock(Thread.class);
-        when(mockThread.getName()).thenReturn("Irvin's mock thread");
-        when(mockLooper.getThread()).thenReturn(mockThread);
-        when(mockHandler.getLooper()).thenReturn(mockLooper);
-        when(mockHandler.postDelayed(any(Runnable.class), anyLong())).thenAnswer((Answer) invocation -> {
-            Runnable msg = invocation.getArgument(0);
-            msg.run();
-            return null;
-        });
-        when(mockHandler.post(any(Runnable.class))).thenAnswer((Answer) invocation -> {
-            Runnable msg = invocation.getArgument(0);
-            msg.run();
-            return null;
-        });
-        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice", mock(BluetoothDevice.class));
-        conn = spy(new GattConnection(device, mockLooper));
+        FitbitBluetoothDevice device = mock(FitbitBluetoothDevice.class);
+        conn = spy(new GattConnection(device, ApplicationProvider.getApplicationContext().getMainLooper()));
         conn.setMockMode(true);
-        when(conn.getMainHandler()).thenReturn(mockHandler);
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
     }
 

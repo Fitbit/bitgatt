@@ -12,10 +12,9 @@ import android.app.PendingIntent;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanSettings;
+import java.util.List;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import java.util.List;
 
 /**
  * We place the scanner behind an interface so that we can replace the android scanner with a mock

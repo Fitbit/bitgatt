@@ -9,32 +9,24 @@
 package com.fitbit.bluetooth.fbgatt;
 
 import android.bluetooth.BluetoothDevice;
-import android.content.Context;
 import android.os.Looper;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import java.util.ArrayList;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.shadows.ShadowBluetoothDevice;
 
-@RunWith(JUnit4.class)
+import static org.mockito.Mockito.mock;
+import static org.robolectric.Shadows.shadowOf;
+
+@RunWith(RobolectricTestRunner.class)
 public class GattConnectionComparisonTest {
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
     private static final String MOCK_ADDRESS_2 = "04:00:00:00:00:00";
     private static final String FOO_1 = "foo1";
     private static final String FOO_2 = "foo2";
-    private Looper mockLooper;
-
-    @Before
-    public void beforeTest() {
-        mockLooper = mock(Looper.class);
-        Context mockContext = mock(Context.class);
-        when(mockContext.getMainLooper()).thenReturn(mockLooper);
-    }
 
     @After
     public void afterTest(){
@@ -45,9 +37,9 @@ public class GattConnectionComparisonTest {
     public void testConnectionsNotEqualSameFitbitBluetoothDevice(){
         BluetoothDevice mockDevice = getMockDeviceFor();
         FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(mockDevice);
-        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         conn1.setMockMode(true);
-        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         conn2.setMockMode(true);
         Assert.assertNotEquals("The two connections should not be equal because they are different instances", conn1, conn2);
     }
@@ -56,10 +48,10 @@ public class GattConnectionComparisonTest {
     public void testAddDifferentInstanceSameBluetoothDevice(){
         BluetoothDevice mockDevice = getMockDeviceFor();
         FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(mockDevice);
-        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         conn1.setMockMode(true);
         FitbitGatt.getInstance().putConnectionIntoDevices(fitbitBluetoothDevice, conn1);
-        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         FitbitGatt.getInstance().putConnectionIntoDevices(fitbitBluetoothDevice, conn2);
         conn2.setMockMode(true);
         ArrayList<String> deviceNames = new ArrayList<>();
@@ -73,9 +65,9 @@ public class GattConnectionComparisonTest {
         BluetoothDevice mockDevice2 = getMockDeviceFor();
         FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(mockDevice);
         FitbitBluetoothDevice fitbitBluetoothDevice1 = new FitbitBluetoothDevice(mockDevice2);
-        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         conn1.setMockMode(true);
-        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice1, mockLooper);
+        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice1, Looper.getMainLooper());
         conn2.setMockMode(true);
         Assert.assertNotEquals("The two connections should not be equal because they are different instances", conn1, conn2);
     }
@@ -85,9 +77,9 @@ public class GattConnectionComparisonTest {
         BluetoothDevice mockDevice = getMockDeviceFor();
         FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(mockDevice);
         FitbitBluetoothDevice fitbitBluetoothDevice1 = new FitbitBluetoothDevice(mockDevice);
-        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn1 = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         conn1.setMockMode(true);
-        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice1, mockLooper);
+        GattConnection conn2 = new GattConnection(fitbitBluetoothDevice1, Looper.getMainLooper());
         conn2.setMockMode(true);
         Assert.assertNotEquals("The two connections should not be equal because they are different instances", conn1, conn2);
     }
@@ -145,7 +137,7 @@ public class GattConnectionComparisonTest {
     public void testConnectionMapGetWithDevice(){
         BluetoothDevice mockDevice = getMockDeviceFor();
         FitbitBluetoothDevice fitbitBluetoothDevice = new FitbitBluetoothDevice(MOCK_ADDRESS, FOO_1, mockDevice);
-        GattConnection conn = new GattConnection(fitbitBluetoothDevice, mockLooper);
+        GattConnection conn = new GattConnection(fitbitBluetoothDevice, Looper.getMainLooper());
         conn.setMockMode(true);
         conn.setState(GattState.DISCONNECTED);
         FitbitGatt.getInstance().getConnectionMap().put(fitbitBluetoothDevice, conn);
@@ -153,9 +145,8 @@ public class GattConnectionComparisonTest {
     }
 
     private BluetoothDevice getMockDeviceFor() {
-        BluetoothDevice mockDevice = mock(BluetoothDevice.class);
-        when(mockDevice.getAddress()).thenReturn(GattConnectionComparisonTest.MOCK_ADDRESS);
-        when(mockDevice.getName()).thenReturn(GattConnectionComparisonTest.FOO_1);
-        return mockDevice;
+        BluetoothDevice bluetoothDevice = ShadowBluetoothDevice.newInstance(MOCK_ADDRESS);
+        shadowOf(bluetoothDevice).setName(FOO_1);
+        return bluetoothDevice;
     }
 }

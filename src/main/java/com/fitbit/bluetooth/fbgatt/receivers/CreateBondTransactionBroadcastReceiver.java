@@ -5,12 +5,10 @@ import com.fitbit.bluetooth.fbgatt.util.BluetoothDeviceProvider;
 import com.fitbit.bluetooth.fbgatt.util.BluetoothDeviceProviderInterface;
 import com.fitbit.bluetooth.fbgatt.util.DeviceMatcher;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 

@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import androidx.test.core.app.ApplicationProvider;
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
 import android.bluetooth.BluetoothAdapter;
@@ -21,15 +22,18 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import androidx.annotation.NonNull;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,11 +49,15 @@ import static org.mockito.Mockito.when;
  *
  * Created by iowens on 9/4/18.
  */
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
+@Config(
+    minSdk = 21
+)
+@Ignore("We need to emulate the ble scanner under robolectric")
 public class PeripheralScannerTest {
 
     private MockLollipopScanner mockScanner;
-    private Looper mockLooper = mock(Looper.class);
+    private Looper mockLooper = ApplicationProvider.getApplicationContext().getMainLooper();
     public Context mockContext;
     private FitbitGatt gatt;
     private PeripheralScanner peripheralScanner;

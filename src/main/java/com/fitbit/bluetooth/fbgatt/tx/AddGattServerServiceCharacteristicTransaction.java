@@ -17,13 +17,9 @@ import com.fitbit.bluetooth.fbgatt.descriptors.CharacteristicNamespaceDescriptor
 import com.fitbit.bluetooth.fbgatt.descriptors.CharacteristicNotificationDescriptor;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
-
-import java.util.List;
-
 import timber.log.Timber;
 
 /**

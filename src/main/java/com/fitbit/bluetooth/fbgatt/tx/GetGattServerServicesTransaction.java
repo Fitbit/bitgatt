@@ -13,9 +13,7 @@ import com.fitbit.bluetooth.fbgatt.GattServerTransaction;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-
 import android.bluetooth.BluetoothGattService;
-
 import java.util.List;
 
 /**

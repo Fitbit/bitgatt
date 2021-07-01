@@ -14,26 +14,25 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import androidx.test.core.app.ApplicationProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.stubbing.Answer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.robolectric.RobolectricTestRunner;
+
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
 public class BluetoothRadioStatusListenerTest {
 
     private BluetoothRadioStatusListener statusListener;
@@ -55,17 +54,8 @@ public class BluetoothRadioStatusListenerTest {
 
     @Before
     public void before(){
-        Looper mockMainThreadLooper = mock(Looper.class);
-        Thread mockMainThread = mock(Thread.class);
-        when(mockMainThread.getName()).thenReturn("Irvin's mock thread");
-        when(mockMainThreadLooper.getThread()).thenReturn(mockMainThread);
-        ctx = mock(Context.class);
-        when(ctx.getApplicationContext()).thenReturn(ctx);
-        when(ctx.getMainLooper()).thenReturn(mockMainThreadLooper);
-        mockHandler = mock(Handler.class);
-        doAnswer(handlerPostAnswer).when(mockHandler).post(any(Runnable.class));
-        doAnswer(handlerPostAnswer).when(mockHandler).postDelayed(any(Runnable.class), anyLong());
-        when(mockHandler.getLooper()).thenReturn(mockMainThreadLooper);
+        Looper mockMainThreadLooper = Looper.myLooper();
+        ctx = ApplicationProvider.getApplicationContext();
         statusListener = new BluetoothRadioStatusListener(ctx, false, mockMainThreadLooper);
     }
 

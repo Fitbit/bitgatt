@@ -9,7 +9,6 @@
 package com.fitbit.bluetooth.fbgatt.descriptors;
 
 import android.bluetooth.BluetoothGattDescriptor;
-
 import java.util.UUID;
 
 public class CharacteristicNamespaceDescriptor extends BluetoothGattDescriptor {

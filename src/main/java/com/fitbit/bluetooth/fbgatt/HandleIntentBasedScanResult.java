@@ -11,7 +11,6 @@ package com.fitbit.bluetooth.fbgatt;
 import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
 import com.fitbit.bluetooth.fbgatt.util.BluetoothUtils;
 import com.fitbit.bluetooth.fbgatt.util.ScanFailedReason;
-
 import android.annotation.TargetApi;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanResult;
@@ -20,9 +19,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-
 import java.util.List;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;

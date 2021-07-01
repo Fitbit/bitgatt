@@ -13,9 +13,7 @@ import com.fitbit.bluetooth.fbgatt.GattServerTransaction;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-
 import androidx.annotation.Nullable;
-
 import timber.log.Timber;
 
 /**
@@ -35,7 +33,7 @@ public class SetServerConnectionStateTransaction extends GattServerTransaction {
      * does not mean that this is the system state, it means that the transaction completed properly, the callback will deliver this state upon success
      * assuming the entry criteria is correct and then set the system to this state.  Present state in the transaction response will not match the actual
      * state.  This is to prevent setting the system to a failure state when the intent is to fix a failure state.
-     * @param connection The {@link com.fitbit.bluetooth.fbgatt.GattServerConnection} to perform this operation upon
+     * @param connection The {@link GattServerConnection} to perform this operation upon
      * @param successEndState The success end state, in this case {@link GattState#GATT_CONNECTION_STATE_SET_SUCCESSFULLY}
      * @param destinationState The state to set the connection to in the end.  Probably {@link GattState#IDLE} or {@link GattState#DISCONNECTED}
      */

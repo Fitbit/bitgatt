@@ -20,8 +20,8 @@ import com.fitbit.bluetooth.fbgatt.strategies.BluetoothOffClearGattServerStrateg
 import com.fitbit.bluetooth.fbgatt.strategies.Strategy;
 import com.fitbit.bluetooth.fbgatt.tx.AddGattServerServiceTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
+import com.fitbit.bluetooth.fbgatt.util.BluetoothManagerFacade;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.PendingIntent;
@@ -43,7 +43,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.ParcelUuid;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,7 +55,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -421,7 +419,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     }
 
     /**
-     * Upon setting up your scan filters, this call will start to periodically scan for matching devices, it will notify via the {@link FitbitGatt.FitbitGattCallback}
+     * Upon setting up your scan filters, this call will start to periodically scan for matching devices, it will notify via the {@link FitbitGattCallback}
      * interface if a device is discovered and will provide the {@link GattConnection} to you
      *
      * @param context The android context for the scanner
@@ -1066,6 +1064,11 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     }
 
     @RestrictTo(RestrictTo.Scope.TESTS)
+    void setAlwaysConnectedScanner(AlwaysConnectedScanner scanner) {
+        this.alwaysConnectedScanner = scanner;
+    }
+
+    @RestrictTo(RestrictTo.Scope.TESTS)
     void setClientCallback(GattClientCallback callback) {
         this.clientCallback = callback;
     }
@@ -1289,7 +1292,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     private void addConnectedDevices(Context context) {
         fitbitGattAsyncOperationHandler.post(() -> {
             Timber.v("Adding connected or bonded devices");
-            BluetoothManager manager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
+            BluetoothManagerFacade manager = dependencyProvider.getBluetoothManagerFacade(appContext);
             if (manager != null) {
                 BluetoothAdapter adapter = manager.getAdapter();
                 if (adapter != null) {
@@ -1445,7 +1448,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * @param callback The async callback for resolving the gatt server open
      */
     private synchronized void startServer(OpenGattServerCallback callback) {
-        BluetoothManager manager = dependencyProvider.getBluetoothManagerProvider().get(this.appContext);
+        BluetoothManagerFacade manager = dependencyProvider.getBluetoothManagerFacade(appContext);
         if (manager != null && manager.getAdapter() != null) {
             /*
              * We've observed that the registration of the callback inside of the android
@@ -1464,8 +1467,12 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
     }
 
     @NonNull
+    Runnable tryAndStartGattServer(Context context, OpenGattServerCallback callback, BluetoothManagerFacade manager) {
+        return tryAndStartGattServer(context, callback, manager, serverCallback);
+    }
+
     @VisibleForTesting
-    Runnable tryAndStartGattServer(Context context, OpenGattServerCallback callback, BluetoothManager manager) {
+    Runnable tryAndStartGattServer(Context context, OpenGattServerCallback callback, BluetoothManagerFacade manager, GattServerCallback serverCallback) {
         return () -> {
             synchronized (FitbitGatt.this) {
                 //may have been started already in another thread in parallel trough another post
@@ -1580,7 +1587,7 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
      * come into the foreground, you should cancel the background scan
      * with {@link FitbitGatt#stopSystemManagedPendingIntentScan()} unless you want for
      * the background scan to continue. Be advised that this might result in multiple callbacks to
-     * {@link FitbitGatt.FitbitGattCallback#onBluetoothPeripheralDiscovered(GattConnection)}.
+     * {@link FitbitGattCallback#onBluetoothPeripheralDiscovered(GattConnection)}.
      * <p>
      * This background scan will be auto cancelled by the Android operating system in a way that we
      * can not control if BT is turned off or if the phone is rebooted.  This is a function of the
