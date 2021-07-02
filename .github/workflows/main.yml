@@ -3,7 +3,7 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
-  test:
+  unit_test_report:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
