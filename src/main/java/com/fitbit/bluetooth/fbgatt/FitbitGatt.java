@@ -986,8 +986,12 @@ public class FitbitGatt implements PeripheralScanner.TrackerScannerListener, Blu
             this.aclListener.unregister(this.appContext);
         }
         if (radioStatusListener != null) {
-            radioStatusListener.stopListening();
-            radioStatusListener.removeListener();
+            try {
+                radioStatusListener.stopListening();
+                radioStatusListener.removeListener();
+            } catch (IllegalArgumentException e) {
+                //no-op can happen during test runs
+            }
         }
 
         if(serverConnection != null) {
