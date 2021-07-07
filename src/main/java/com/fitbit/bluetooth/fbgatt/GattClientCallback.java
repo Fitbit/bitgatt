@@ -15,7 +15,6 @@ import com.fitbit.bluetooth.fbgatt.tx.RequestGattClientPhyChangeTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.RequestMtuGattTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
-
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -25,13 +24,11 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.os.Handler;
 import android.os.Looper;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-
 import timber.log.Timber;
 
 /**

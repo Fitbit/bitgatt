@@ -10,10 +10,8 @@ package com.fitbit.bluetooth.fbgatt;
 
 import com.fitbit.bluetooth.fbgatt.tx.SetClientConnectionStateTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.SetServerConnectionStateTransaction;
-
 import androidx.annotation.NonNull;
 import timber.log.Timber;
-
 import static com.fitbit.bluetooth.fbgatt.GattStateTransitionValidator.GuardState.INVALID_TARGET_STATE;
 import static com.fitbit.bluetooth.fbgatt.GattStateTransitionValidator.GuardState.OK;
 

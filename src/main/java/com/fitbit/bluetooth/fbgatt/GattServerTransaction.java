@@ -15,9 +15,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattService;
 import android.os.Build;
 import android.os.Looper;
-import java.util.ArrayList;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 

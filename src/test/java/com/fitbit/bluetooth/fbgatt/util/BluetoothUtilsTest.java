@@ -8,140 +8,89 @@
 
 package com.fitbit.bluetooth.fbgatt.util;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
+
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
+import androidx.test.core.app.ApplicationProvider;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowBluetoothAdapter;
 
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
+@Config(minSdk = 21)
 public class BluetoothUtilsTest {
 
-    private Context mockContext = mock(Context.class);
-    private BluetoothManager mockBluetoothManager = mock(BluetoothManager.class);
-    private BluetoothAdapter mockBluetoothAdapter = mock(BluetoothAdapter.class);
-    private BluetoothManagerProvider mockBluetoothManagerProvider = mock(BluetoothManagerProvider.class);
+    private Context ctx;
+    private ShadowBluetoothAdapter shadowBluetoothAdapter;
+    private BluetoothUtils utils = new BluetoothUtils();
 
-    private BluetoothUtils utils = new BluetoothUtils(mockBluetoothManagerProvider);
-
-    @Test
-    public void getBluetoothAdapter_shouldReturnNullIfBluetoothNotSupported() {
-        mockBluetoothNotAvailable();
-
-        BluetoothAdapter adapter = utils.getBluetoothAdapter(mockContext);
-        assertNull(adapter);
+    @Before
+    public void before() {
+        ctx = ApplicationProvider.getApplicationContext();
+        shadowBluetoothAdapter = shadowOf(utils.getBluetoothAdapter(ctx));
     }
 
     @Test
-    public void getBluetoothAdapter_shouldReturnNullIfNoDefaultAdapter() {
-        mockBluetoothAvailable();
-        mockNoDefaultAdapter();
-
-        BluetoothAdapter adapter = utils.getBluetoothAdapter(mockContext);
+    public void getBluetoothAdapter_shouldReturnNullIfBluetoothNotSupported() {
+        ShadowBluetoothAdapter.setIsBluetoothSupported(false);
+        BluetoothAdapter adapter = utils.getBluetoothAdapter(ctx);
         assertNull(adapter);
     }
 
     @Test
     public void getBluetoothAdapter_shouldReturnAdapterIfBluetoothIsSupported() {
-        mockBluetoothAvailable();
-        mockAdapter();
-
-        BluetoothAdapter adapter = utils.getBluetoothAdapter(mockContext);
-        assertEquals(mockBluetoothAdapter, adapter);
+        ShadowBluetoothAdapter.setIsBluetoothSupported(true);
+        BluetoothAdapter adapter = utils.getBluetoothAdapter(ctx);
+        assertNotNull(adapter);
     }
 
     @Test
     public void getBluetoothLeScanner_shouldReturnNullIfBluetoothNotSupported() {
-        mockBluetoothNotAvailable();
+        ShadowBluetoothAdapter.setIsBluetoothSupported(false);
 
-        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(mockContext);
-        assertNull(scanner);
-    }
-
-    @Test
-    public void getBluetoothLeScanner_shouldReturnNullIfNoDefaultAdapter() {
-        mockBluetoothAvailable();
-        mockNoDefaultAdapter();
-
-        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(mockContext);
+        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(ctx);
         assertNull(scanner);
     }
 
     @Test
     public void getBluetoothLeScanner_shouldReturnNullIfBluetoothNotEnabled() {
-        mockBluetoothAvailable();
-        mockAdapter();
-        mockBleDisabled();
+        shadowBluetoothAdapter.setEnabled(false);
 
-        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(mockContext);
+        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(ctx);
         assertNull(scanner);
     }
 
     @Test
     public void getBluetoothLeScanner_shouldReturnAdapterIfBluetoothIsSupported() {
-        mockBluetoothAvailable();
-        mockAdapter();
-        mockBleEnabled();
-        BluetoothLeScanner mockBluetoothLeScanner = mock(BluetoothLeScanner.class);
-        when(mockBluetoothAdapter.getBluetoothLeScanner()).thenReturn(mockBluetoothLeScanner);
-
-        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(mockContext);
-        assertEquals(mockBluetoothLeScanner, scanner);
+        ShadowBluetoothAdapter.setIsBluetoothSupported(true);
+        shadowBluetoothAdapter.setEnabled(true);
+        BluetoothLeScanner scanner = utils.getBluetoothLeScanner(ctx);
+        assertNotNull(scanner);
     }
+
 
     @Test
     public void isBluetoothEnabled_shouldReturnFalseIfBluetoothNotSupported() {
-        mockBluetoothNotAvailable();
+        ShadowBluetoothAdapter.setIsBluetoothSupported(false);
 
-        boolean enabled = utils.isBluetoothEnabled(mockContext);
-        assertFalse(enabled);
-    }
-
-    @Test
-    public void isBluetoothEnabled_shouldReturnFalseIfNoDefaultAdapter() {
-        mockBluetoothAvailable();
-        mockNoDefaultAdapter();
-
-        boolean enabled = utils.isBluetoothEnabled(mockContext);
+        boolean enabled = utils.isBluetoothEnabled(ctx);
         assertFalse(enabled);
     }
 
     @Test
     public void isBluetoothEnabled_shouldReturnTrueIfEnabled() {
-        mockBluetoothAvailable();
-        mockAdapter();
-        mockBleEnabled();
-
-        boolean enabled = utils.isBluetoothEnabled(mockContext);
+        ShadowBluetoothAdapter.setIsBluetoothSupported(true);
+        shadowBluetoothAdapter.setEnabled(true);
+        boolean enabled = utils.isBluetoothEnabled(ctx);
         assertTrue(enabled);
-    }
-
-    private void mockBluetoothNotAvailable() {
-        when(mockBluetoothManagerProvider.get(mockContext)).thenReturn(null);
-    }
-
-    private void mockBluetoothAvailable() {
-        when(mockBluetoothManagerProvider.get(mockContext)).thenReturn(mockBluetoothManager);
-    }
-
-    private void mockNoDefaultAdapter() {
-        when(mockBluetoothManager.getAdapter()).thenReturn(null);
-    }
-
-    private void mockAdapter() {
-        when(mockBluetoothManager.getAdapter()).thenReturn(mockBluetoothAdapter);
-    }
-
-    private void mockBleEnabled() {
-        when(mockBluetoothAdapter.isEnabled()).thenReturn(true);
-    }
-
-    private void mockBleDisabled() {
-        when(mockBluetoothAdapter.isEnabled()).thenReturn(false);
     }
 }

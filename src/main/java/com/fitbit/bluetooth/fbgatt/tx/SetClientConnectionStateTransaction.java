@@ -13,13 +13,10 @@ import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-
-import androidx.annotation.Nullable;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**

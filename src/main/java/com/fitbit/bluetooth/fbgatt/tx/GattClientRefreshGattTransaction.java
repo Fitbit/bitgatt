@@ -11,17 +11,13 @@ package com.fitbit.bluetooth.fbgatt.tx;
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-
 import android.bluetooth.BluetoothGatt;
-import androidx.annotation.Nullable;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.CountDownLatch;
-
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**

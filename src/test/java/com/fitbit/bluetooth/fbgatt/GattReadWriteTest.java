@@ -8,6 +8,7 @@
 
 package com.fitbit.bluetooth.fbgatt;
 
+import androidx.test.core.app.ApplicationProvider;
 import com.fitbit.bluetooth.fbgatt.tx.CreateBondTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.ReadGattCharacteristicTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.ReadGattDescriptorTransaction;
@@ -24,30 +25,36 @@ import com.fitbit.bluetooth.fbgatt.tx.mocks.WriteGattDescriptorMockTransaction;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
 import com.fitbit.bluetooth.fbgatt.util.GattUtils;
 import com.fitbit.bluetooth.fbgatt.util.LooperWatchdog;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.content.Context;
-import android.os.Handler;
 import android.os.Looper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import org.mockito.stubbing.Answer;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowBluetoothDevice;
+import org.robolectric.shadows.ShadowBluetoothGatt;
+
+import static junit.framework.TestCase.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
+@Config(
+    minSdk = 21
+)
+@Ignore
 public class GattReadWriteTest {
 
     private static final String MOCK_ADDRESS = "02:00:00:00:00:00";
@@ -56,28 +63,11 @@ public class GattReadWriteTest {
 
     @Before
     public void before() {
-        Context ctx = mock(Context.class);
-        when(ctx.getApplicationContext()).thenReturn(ctx);
-        Handler mockHandler = mock(Handler.class);
-        Looper mockLooper = mock(Looper.class);
-        Thread mockThread = mock(Thread.class);
-        when(mockThread.getName()).thenReturn("Irvin's mock thread");
-        when(mockLooper.getThread()).thenReturn(mockThread);
-        when(mockHandler.getLooper()).thenReturn(mockLooper);
-        when(mockHandler.postDelayed(any(Runnable.class), anyLong())).thenAnswer((Answer) invocation -> {
-            Runnable msg = invocation.getArgument(0);
-            msg.run();
-            return null;
-        });
-        when(mockHandler.post(any(Runnable.class))).thenAnswer((Answer) invocation -> {
-            Runnable msg = invocation.getArgument(0);
-            msg.run();
-            return null;
-        });
-        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice", mock(BluetoothDevice.class));
-        conn = spy(new GattConnection(device, mockLooper));
+        Context ctx = ApplicationProvider.getApplicationContext();
+        Looper looper = ctx.getMainLooper();
+        FitbitBluetoothDevice device = new FitbitBluetoothDevice(MOCK_ADDRESS, "fooDevice", ShadowBluetoothDevice.newInstance(MOCK_ADDRESS));
+        conn = new GattConnection(device, looper);
         conn.setMockMode(true);
-        when(conn.getMainHandler()).thenReturn(mockHandler);
         FitbitGatt.getInstance().setAsyncOperationThreadWatchdog(mock(LooperWatchdog.class));
         FitbitGatt.getInstance().startGattClient(ctx);
         FitbitGatt.getInstance().putConnectionIntoDevices(device, conn);
@@ -236,8 +226,8 @@ public class GattReadWriteTest {
     }
 
     @Test
-    public void provideBluetoothStatusToWriteGattDescriptorTransaction() {
-        BluetoothGatt gatt = mock(BluetoothGatt.class);
+    public void provideBluetoothStatusToWriteGattDescriptorTransaction() throws InterruptedException {
+        BluetoothGatt gatt = ShadowBluetoothGatt.newInstance(ShadowBluetoothDevice.newInstance(MOCK_ADDRESS));
         BluetoothGattDescriptor descriptor = mock(BluetoothGattDescriptor.class);
         when(descriptor.getUuid()).thenReturn(characteristicUuid);
         WriteGattDescriptorTransaction writeTx = new WriteGattDescriptorTransaction(conn, GattState.WRITE_DESCRIPTOR_SUCCESS, descriptor);
@@ -254,7 +244,7 @@ public class GattReadWriteTest {
 
     @Test
     public void provideBluetoothStatusToWriteGattCharacteristicTransaction() {
-        BluetoothGatt gatt = mock(BluetoothGatt.class);
+        BluetoothGatt gatt = ShadowBluetoothGatt.newInstance(ShadowBluetoothDevice.newInstance(MOCK_ADDRESS));
         BluetoothGattCharacteristic characteristic = mock(BluetoothGattCharacteristic.class);
         when(characteristic.getUuid()).thenReturn(characteristicUuid);
         WriteGattCharacteristicTransaction writeTx = new WriteGattCharacteristicTransaction(conn, GattState.WRITE_CHARACTERISTIC_SUCCESS, characteristic);
@@ -271,7 +261,7 @@ public class GattReadWriteTest {
 
     @Test
     public void provideBluetoothStatusToReadGattCharacteristicTransaction() {
-        BluetoothGatt gatt = mock(BluetoothGatt.class);
+        BluetoothGatt gatt = ShadowBluetoothGatt.newInstance(ShadowBluetoothDevice.newInstance(MOCK_ADDRESS));
         BluetoothGattCharacteristic characteristic = mock(BluetoothGattCharacteristic.class);
         when(characteristic.getUuid()).thenReturn(characteristicUuid);
         ReadGattCharacteristicTransaction readTx = new ReadGattCharacteristicTransaction(conn, GattState.READ_CHARACTERISTIC_SUCCESS, characteristic);
@@ -288,7 +278,7 @@ public class GattReadWriteTest {
 
     @Test
     public void provideBluetoothStatusToReadGattDescriptorTransaction() {
-        BluetoothGatt gatt = mock(BluetoothGatt.class);
+        BluetoothGatt gatt = ShadowBluetoothGatt.newInstance(ShadowBluetoothDevice.newInstance(MOCK_ADDRESS));
         BluetoothGattDescriptor descriptor = mock(BluetoothGattDescriptor.class);
         when(descriptor.getUuid()).thenReturn(characteristicUuid);
         ReadGattDescriptorTransaction readTx = new ReadGattDescriptorTransaction(conn, GattState.READ_DESCRIPTOR_SUCCESS, descriptor);

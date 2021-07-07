@@ -9,7 +9,6 @@
 package com.fitbit.bluetooth.fbgatt.btcopies;
 
 import android.bluetooth.BluetoothDevice;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

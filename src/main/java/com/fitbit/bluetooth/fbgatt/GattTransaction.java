@@ -36,7 +36,7 @@ import timber.log.Timber;
  * add a {@link com.fitbit.bluetooth.fbgatt.tx.SubscribeToCharacteristicNotificationsTransaction} as
  * a pre-commit, then an {@link com.fitbit.bluetooth.fbgatt.tx.WriteGattDescriptorTransaction} as the main
  * followed by an {@link com.fitbit.bluetooth.fbgatt.tx.UnSubscribeToGattCharacteristicNotificationsTransaction}
- * the resulting success {@link com.fitbit.bluetooth.fbgatt.TransactionResult} will be for the
+ * the resulting success {@link TransactionResult} will be for the
  * {@link com.fitbit.bluetooth.fbgatt.tx.UnSubscribeToGattCharacteristicNotificationsTransaction}, not
  * the {@link com.fitbit.bluetooth.fbgatt.tx.WriteGattDescriptorTransaction}
  * <p>

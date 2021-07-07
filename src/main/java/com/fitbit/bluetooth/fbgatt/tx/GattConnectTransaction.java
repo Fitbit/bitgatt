@@ -12,17 +12,13 @@ import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothProfile;
-
 import java.util.concurrent.TimeUnit;
-
 import timber.log.Timber;
 
 /**

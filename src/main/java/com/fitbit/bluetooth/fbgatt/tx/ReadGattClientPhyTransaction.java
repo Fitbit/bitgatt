@@ -12,15 +12,11 @@ import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
-
 import android.bluetooth.BluetoothGatt;
-
 import timber.log.Timber;
-
 import static android.os.Build.VERSION_CODES.O;
 
 /**

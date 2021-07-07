@@ -1,9 +1,7 @@
 package com.fitbit.bluetooth.fbgatt.util;
 
 import com.fitbit.bluetooth.fbgatt.FitbitBluetoothDevice;
-
 import android.bluetooth.BluetoothDevice;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 

@@ -12,11 +12,8 @@ import com.fitbit.bluetooth.fbgatt.AndroidDevice;
 import com.fitbit.bluetooth.fbgatt.FitbitGatt;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-
 import android.bluetooth.BluetoothGatt;
-
 import java.util.concurrent.TimeUnit;
-
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 

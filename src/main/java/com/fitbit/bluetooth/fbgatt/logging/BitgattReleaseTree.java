@@ -9,11 +9,8 @@
 package com.fitbit.bluetooth.fbgatt.logging;
 
 import android.util.Log;
-
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import timber.log.Timber;
 
 /**

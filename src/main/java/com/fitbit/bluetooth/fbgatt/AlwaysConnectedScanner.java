@@ -12,7 +12,6 @@ import com.fitbit.bluetooth.fbgatt.exception.BitGattStartException;
 import com.fitbit.bluetooth.fbgatt.tx.GattClientDiscoverServicesTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattConnectTransaction;
 import com.fitbit.bluetooth.fbgatt.tx.GattDisconnectTransaction;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.bluetooth.le.ScanFilter;
@@ -23,13 +22,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;

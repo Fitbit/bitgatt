@@ -9,26 +9,14 @@
 package com.fitbit.bluetooth.fbgatt.util;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
-
 import androidx.annotation.Nullable;
 
 /**
  * Bluetooth Utils
  */
 public class BluetoothUtils {
-
-    private final BluetoothManagerProvider bluetoothManagerProvider;
-
-    public BluetoothUtils() {
-        this(new BluetoothManagerProvider());
-    }
-
-    BluetoothUtils(BluetoothManagerProvider bluetoothManagerProvider) {
-        this.bluetoothManagerProvider = bluetoothManagerProvider;
-    }
 
     /**
      * Will fetch the bluetooth adapter or return null if it's not available
@@ -38,7 +26,7 @@ public class BluetoothUtils {
      */
     @Nullable
     public BluetoothAdapter getBluetoothAdapter(Context context) {
-        BluetoothManager manager = bluetoothManagerProvider.get(context);
+        BluetoothManagerFacade manager = new BluetoothManagerFacade(context);
         if (manager == null) {
             return null;
         }

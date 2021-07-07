@@ -14,7 +14,6 @@ import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattStatus;
-
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import androidx.annotation.Nullable;

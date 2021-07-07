@@ -11,9 +11,7 @@ package com.fitbit.bluetooth.fbgatt.util;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-
 import java.util.concurrent.TimeUnit;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;

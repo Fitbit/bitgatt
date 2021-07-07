@@ -163,7 +163,7 @@ public class MockLollipopScanner implements ScannerInterface {
             mLength = in.readInt();
         }
 
-        public static final Parcelable.Creator<ResultStorageDescriptor> CREATOR =
+        public static final Creator<ResultStorageDescriptor> CREATOR =
             new Creator<ResultStorageDescriptor>() {
                 @Override
                 public ResultStorageDescriptor createFromParcel(Parcel source) {

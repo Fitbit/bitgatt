@@ -8,16 +8,14 @@
 
 package com.fitbit.bluetooth.fbgatt.tx;
 
-import android.bluetooth.BluetoothGatt;
-import androidx.annotation.Nullable;
-
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
+import android.bluetooth.BluetoothGatt;
+import androidx.annotation.Nullable;
 
 /**
  * To read the RSSI from a remote device

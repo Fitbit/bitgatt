@@ -15,10 +15,8 @@ import com.fitbit.bluetooth.fbgatt.GattState;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
 import com.fitbit.bluetooth.fbgatt.util.GattDisconnectReason;
-
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattService;
-
 import timber.log.Timber;
 
 /**

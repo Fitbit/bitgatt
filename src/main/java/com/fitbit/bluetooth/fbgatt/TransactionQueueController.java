@@ -11,7 +11,6 @@ package com.fitbit.bluetooth.fbgatt;
 import java.util.Locale;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import androidx.annotation.VisibleForTesting;
 import timber.log.Timber;
 

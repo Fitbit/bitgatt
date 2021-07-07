@@ -8,17 +8,14 @@
 
 package com.fitbit.bluetooth.fbgatt.strategies;
 
-import android.os.Handler;
-import android.os.Looper;
-
 import com.fitbit.bluetooth.fbgatt.AndroidDevice;
 import com.fitbit.bluetooth.fbgatt.GattClientTransaction;
 import com.fitbit.bluetooth.fbgatt.GattConnection;
 import com.fitbit.bluetooth.fbgatt.GattState;
-import com.fitbit.bluetooth.fbgatt.GattTransaction;
 import com.fitbit.bluetooth.fbgatt.GattTransactionCallback;
 import com.fitbit.bluetooth.fbgatt.TransactionResult;
-
+import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.Nullable;
 
 /**

@@ -11,7 +11,6 @@
 package com.fitbit.bluetooth.fbgatt.exception;
 
 import java.util.UUID;
-
 import androidx.annotation.Nullable;
 
 /**
